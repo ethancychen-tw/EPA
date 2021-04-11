@@ -15,16 +15,6 @@ followers = db.Table('followers',
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
 
-class AskReview(db.Model):
-    __tablename__ = 'ask_review'
-    id = db.Column(db.Integer, primary_key=True)
-    requester = db.Column(db.Integer, db.ForeignKey('user.id'))
-    reviewer = db.Column(db.Integer, db.ForeignKey('user.id'))
-    location = db.Column(db.String(30))
-    epa = db.Column(db.Integer, db.ForeignKey('epa.id'))
-    create_time = db.Column(db.DateTime, default=datetime.utcnow)
-
-
 class EPA(db.Model):
     __tablename__ = 'epa'
     id = db.Column(db.Integer, primary_key=True)
@@ -45,7 +35,7 @@ class User(UserMixin, db.Model):
     # epa
     lineid_hash = db.Column(db.String(128))
     role = db.Column(db.String(20), default="student")
-    ask_reviews = db.relationship('AskReview', backref='author', lazy='dynamic')
+    # ask_reviews = db.relationship('AskReview', backref='author', lazy='dynamic')
 
     followed = db.relationship(
         'User', secondary=followers,
