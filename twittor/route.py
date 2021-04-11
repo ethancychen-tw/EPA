@@ -3,11 +3,25 @@ from flask import render_template, redirect, url_for, request, \
 from flask_login import login_user, current_user, logout_user, login_required
 
 from twittor.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
-    PasswdResetRequestForm, PasswdResetForm
+    PasswdResetRequestForm, PasswdResetForm, AskReviewForm
 from twittor.models.user import User, load_user
 from twittor.models.tweet import Tweet
 from twittor import db
 from twittor.email import send_email
+
+def ask_review():
+    form = AskReviewForm()
+    # if form.is_submitted():
+    #     print("submitted")
+
+    # if form.validate():
+    #     print("valid")
+
+    if form.validate_on_submit():
+        print(form.location.data)
+        print(form.teachername.data)
+        return redirect(url_for('index'))
+    return render_template('ask_review.html', form=form)
 
 
 @login_required

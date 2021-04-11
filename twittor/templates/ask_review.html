@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class='row'>
+    <div class="text-center col-lg-4"></div>
+<div class="text-center col-lg-4">
+    <h1 class="h3 mb-3 font-weight-normal">請求老師評分</h1>
+    <form action="" method="post">
+        {{ form.csrf_token() }}
+        <p>
+            {{ form.location.label }}
+            {{ form.location() }}
+        </p>
+        <p>
+            {{ form.epa.label }}
+            {{ form.epa() }}
+        </p>
+        <p>
+            {{ form.requester.label }}
+            {{ form.requester() }}
+        </p>
+        <p>
+            {{ form.reviewer.label }}
+            {{ form.reviewer() }}
+        </p>
+        <p>
+            {{form.submit()}}
+        </p>
+        <!-- <button class="btn btn-lg btn-outline-primary" type="submit">提交</button> -->
+        <!-- <p>
+            <a href="{{ url_for('register') }}">New User?</a>or 
+            <a href="{{ url_for('reset_password_request') }}">Forgot Password?</a>
+        </p> -->
+        <p class="mt-5 mb-3 text-muted">&copy; 2021-2021</p>
+    </form>
+</div>
+</div>
+{% endblock %}

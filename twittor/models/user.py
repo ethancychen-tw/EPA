@@ -15,6 +15,21 @@ followers = db.Table('followers',
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
 
+class AskReview(db.Model):
+    __tablename__ = 'ask_review'
+    id = db.Column(db.Integer, primary_key=True)
+    requester = db.Column(db.Integer, db.ForeignKey('user.id'))
+    reviewer = db.Column(db.Integer, db.ForeignKey('user.id'))
+    location = db.Column(db.String(30))
+    epa = db.Column(db.Integer, db.ForeignKey('epa.id'))
+    create_time = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class EPA(db.Model):
+    __tablename__ = 'epa'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(64))
+    desc = db.Column(db.String(64))
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,6 +41,11 @@ class User(UserMixin, db.Model):
     is_activated = db.Column(db.Boolean, default=False)
 
     tweets = db.relationship('Tweet', backref='author', lazy='dynamic')
+
+    # epa
+    lineid_hash = db.Column(db.String(128))
+    role = db.Column(db.String(20), default="student")
+    ask_reviews = db.relationship('AskReview', backref='author', lazy='dynamic')
 
     followed = db.relationship(
         'User', secondary=followers,
@@ -43,6 +63,9 @@ class User(UserMixin, db.Model):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def check_lineid(self, lineid):
+        return check_password_hash(self.lineid_hash, lineid)
 
     def avatar(self, size=80):
         md5_digest = md5(self.email.lower().encode('utf-8')).hexdigest()
