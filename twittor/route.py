@@ -4,7 +4,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 
 from twittor.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
     PasswdResetRequestForm, PasswdResetForm, AskReviewForm, ReviewForm
-from twittor.models.user import User, load_user, EPA, Location, Reviewee, Reviewer
+from twittor.models.user import User, load_user, EPA, Location
 from twittor.models.tweet import Tweet, Review
 from twittor import db
 from twittor.email import send_email

@@ -15,14 +15,6 @@ followers = db.Table('followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
-class Reviewee(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
-    reviews = db.relationship('Review', backref='reviewee', lazy='dynamic')
-class Reviewer(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
-    reviews = db.relationship('Review', backref='reviewer', lazy='dynamic')
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
@@ -37,9 +29,7 @@ class User(UserMixin, db.Model):
     #### epa
     lineid = db.Column(db.String(128))
     role = db.Column(db.String(20), default="student")
-    # https://docs.sqlalchemy.org/en/13/orm/join_conditions.html#composite-secondary-joins
-    # https://docs.sqlalchemy.org/en/13/orm/basic_relationships.html#association-object
-    make_reviews = db.relationship('Review', secondary='reviewer',primaryjoin=Reviewer.user_id==id, secondaryjoin=Reviewer.id==Review.reviewer_id, lazy='dynamic')
+    make_reviews = db.relationship('Review', primaryjoin=Review.reviewer_id==id, backref='reviewer', lazy='dynamic')
     # being_reviews = db.relationship('Reviewee', secondary=Review, backref='reviewee',primaryjoin=Reviewee.user_id==id, secondaryjoin=Reviewee.id==Review.reviewee_id, lazy='dynamic')
 
     followed = db.relationship(
