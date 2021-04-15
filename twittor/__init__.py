@@ -13,7 +13,7 @@ login_manager.login_view = 'login'
 mail = Mail()
 
 from twittor.route import index, login, logout, register, user, page_not_found, \
-    edit_profile, reset_password_request, password_reset, explore, user_activate, ask_review
+    edit_profile, reset_password_request, password_reset, explore, user_activate, ask_review, review
 
 
 def create_app():
@@ -46,6 +46,7 @@ def create_app():
     app.add_url_rule('/explore', 'explore', explore)
     app.add_url_rule('/activate/<token>', 'user_activate', user_activate)
     app.add_url_rule('/ask_review', 'ask_review', ask_review, methods=['GET', 'POST'])
+    app.add_url_rule('/review', 'review', review, methods=['GET', 'POST'])
     return app
 
 # app/__init__

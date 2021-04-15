@@ -8,19 +8,21 @@ from flask import current_app
 import jwt
 
 from twittor import db, login_manager
-from twittor.models.tweet import Tweet
+from twittor.models.tweet import Tweet, Review
+from twittor.models.fact import EPA, Location
 
 followers = db.Table('followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
-
-class EPA(db.Model):
-    __tablename__ = 'epa'
+class Reviewee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(64))
-    desc = db.Column(db.String(64))
-
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
+    reviews = db.relationship('Review', backref='reviewee', lazy='dynamic')
+class Reviewer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
+    reviews = db.relationship('Review', backref='reviewer', lazy='dynamic')
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
@@ -32,10 +34,13 @@ class User(UserMixin, db.Model):
 
     tweets = db.relationship('Tweet', backref='author', lazy='dynamic')
 
-    # epa
-    lineid_hash = db.Column(db.String(128))
+    #### epa
+    lineid = db.Column(db.String(128))
     role = db.Column(db.String(20), default="student")
-    # ask_reviews = db.relationship('AskReview', backref='author', lazy='dynamic')
+    # https://docs.sqlalchemy.org/en/13/orm/join_conditions.html#composite-secondary-joins
+    # https://docs.sqlalchemy.org/en/13/orm/basic_relationships.html#association-object
+    make_reviews = db.relationship('Review', secondary='reviewer',primaryjoin=Reviewer.user_id==id, secondaryjoin=Reviewer.id==Review.reviewer_id, lazy='dynamic')
+    # being_reviews = db.relationship('Reviewee', secondary=Review, backref='reviewee',primaryjoin=Reviewee.user_id==id, secondaryjoin=Reviewee.id==Review.reviewee_id, lazy='dynamic')
 
     followed = db.relationship(
         'User', secondary=followers,

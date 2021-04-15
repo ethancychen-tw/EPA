@@ -7,21 +7,22 @@ from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, \
 from twittor.models.user import User
 
 class AskReviewForm(FlaskForm):
-    location = SelectField(label='地點', choices=[('usual', '門診'), ('emergency', '急診')]) # make choices import from models
-    epa = SelectField(label='EPA', choices=[('epa1', 'epa1_showing'), ('epa2', 'epa2_showing')]) # make choices import from models
-    requester = SelectField(label="請求者", choices=[('teacher1', 'teacher1_showing'), ('teacher1', 'teacher2_showing')]) # quick search text field?
-    reviewer = SelectField(label='評核者', choices=[('teacher1', 'teacher1_showing'), ('teacher1', 'teacher2_showing')]) # quick search text field?
+    location = SelectField(label='地點') # quick search text field?
+    epa = SelectField(label='EPA') # quick search text field?
+    requester = SelectField(label="請求者") # quick search text field?
+    reviewer = SelectField(label='評核者') # quick search text field?
     submit = SubmitField(label='提交')
 
 class ReviewForm(FlaskForm):
-    location = SelectField('地點', choices=[('usual', '門診'), ('emergency', '急診')]) # make choices import from models
-    epa = SelectField('EPA', choices=[('epa1', 'epa1_showing'), ('epa2', 'epa2_showing')]) # make choices import from models
-    reviewee = SelectField("被評核者", choices=[('student1', 'tstudent_showing'), ('student1', 'student2_showing')]) # quick search text field?
-    reviewer = SelectField('評核者', choices=[('teacher1', 'teacher1_showing'), ('teacher1', 'teacher2_showing')]) # quick search text field?
-    review_difficulty = SelectField('review_difficulty', choices=[('basic', '基本'), ('advanced', '進階')])
-    review_compliment = StringField("review_compliment" ,validators=[DataRequired()])
-    review_suggestion = StringField("review_suggestion" ,validators=[DataRequired()])
-    review_score = SelectField('review_score', choices=[(0, '只能觀察，不能操作'), (4, '可指導別人')])
+    location = SelectField(label='我在')
+    epa = SelectField(label='EPA')
+    reviewee = SelectField(label="被評核者")
+    reviewer = SelectField(label='評核者')
+    review_difficulty = SelectField(label='這項工作的難度', choices=[(1, '基本'), (2, '進階')])
+    review_compliment = StringField(label="我覺得你表現不錯的地方是" ,validators=[DataRequired()])
+    review_suggestion = StringField(label="我覺得你可以改進的地方" , validators=[DataRequired()])
+    review_score = SelectField(label='整體來說，評分為', choices=[(0, '只能觀察，不能操作'), (4, '可指導別人')])
+    submit = SubmitField('提交')
 
 
 class LoginForm(FlaskForm):
