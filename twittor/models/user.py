@@ -15,6 +15,18 @@ followers = db.Table('followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
+
+user_group = db.Table('user_group',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('group_id', db.Integer, db.ForeignKey('group.id'))
+)
+
+class Group(db.Model):
+    # https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html#many-to-many
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, index=True)
+    desc = db.Column(db.String(64))
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
@@ -31,6 +43,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), default="student")
     make_reviews = db.relationship('Review', primaryjoin=Review.reviewer_id==id, backref='reviewer', lazy='dynamic')
     being_reviews = db.relationship('Review' ,primaryjoin=Review.reviewee_id==id, backref='reviewee', lazy='dynamic')
+    groups = db.relationship('Group', secondary=user_group, backref="users", lazy='dynamic')
 
     followed = db.relationship(
         'User', secondary=followers,
