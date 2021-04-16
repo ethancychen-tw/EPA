@@ -5,23 +5,15 @@ from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, \
     Length
 
 from twittor.models.user import User
-
-class AskReviewForm(FlaskForm):
-    location = SelectField(label='地點') # quick search text field?
-    epa = SelectField(label='EPA') # quick search text field?
-    requester = SelectField(label="請求者") # quick search text field?
-    reviewer = SelectField(label='評核者') # quick search text field?
-    submit = SubmitField(label='提交')
-
 class ReviewForm(FlaskForm):
     location = SelectField(label='我在')
     epa = SelectField(label='EPA')
     reviewee = SelectField(label="被評核者")
     reviewer = SelectField(label='評核者')
-    review_difficulty = SelectField(label='這項工作的難度', choices=[(1, '基本'), (2, '進階')])
+    review_difficulty = SelectField(label='這項工作的難度')
     review_compliment = StringField(label="我覺得你表現不錯的地方是" ,validators=[DataRequired()])
     review_suggestion = StringField(label="我覺得你可以改進的地方" , validators=[DataRequired()])
-    review_score = SelectField(label='整體來說，評分為', choices=[(0, '只能觀察，不能操作'), (4, '可指導別人')])
+    review_score = SelectField(label='整體來說，評分為')
     submit = SubmitField('提交')
 
 

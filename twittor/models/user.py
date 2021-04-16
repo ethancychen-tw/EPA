@@ -30,7 +30,7 @@ class User(UserMixin, db.Model):
     lineid = db.Column(db.String(128))
     role = db.Column(db.String(20), default="student")
     make_reviews = db.relationship('Review', primaryjoin=Review.reviewer_id==id, backref='reviewer', lazy='dynamic')
-    # being_reviews = db.relationship('Reviewee', secondary=Review, backref='reviewee',primaryjoin=Reviewee.user_id==id, secondaryjoin=Reviewee.id==Review.reviewee_id, lazy='dynamic')
+    being_reviews = db.relationship('Review' ,primaryjoin=Review.reviewee_id==id, backref='reviewee', lazy='dynamic')
 
     followed = db.relationship(
         'User', secondary=followers,

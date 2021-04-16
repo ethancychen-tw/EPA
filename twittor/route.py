@@ -3,86 +3,42 @@ from flask import render_template, redirect, url_for, request, \
 from flask_login import login_user, current_user, logout_user, login_required
 
 from twittor.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
-    PasswdResetRequestForm, PasswdResetForm, AskReviewForm, ReviewForm
+    PasswdResetRequestForm, PasswdResetForm, ReviewForm
 from twittor.models.user import User, load_user, EPA, Location
 from twittor.models.tweet import Tweet, Review
 from twittor import db
 from twittor.email import send_email
 
-def review():
-    # form.field(disabled=True)
-
+def form_builder(reviewee=None):
     form = ReviewForm()
-    try:
-        ask_review_id = request.args.get("ask_review_id", None)
-
-        ask_review_id = 1
-        if not ask_review_id:
-            raise ValueError("not from ask review")
-        
-        print(ask_review_id)
-        print(AskReview.query.get(int(ask_review_id)))
-        ask_review = AskReview.query.get(int(ask_review_id))
-        # TODO auth for this user. If not, raise error
-        prefilled_location = Location.query.with_entities(Location.id, Location.name, Location.desc).get(ask_review.location)
-        prefilled_epa = EPA.query.with_entities(EPA.id, EPA.title, EPA.desc).get(ask_review.epa)
-        prefilled_reviewee = User.query.get(ask_review.requester)
-        
-        # Question: is it ok that I reveal primary key?
-        form.location.choices = [(prefilled_location.id, prefilled_location.name)]
-        form.epa.choices = [(prefilled_epa.id, prefilled_epa.title) ]
-        form.reviewee.choices = [(prefilled_reviewee.id, prefilled_reviewee.username)]  
-
-    except:
-        form.location.choices = [(location.id, location.name) for location in Location.query.with_entities(Location.id, Location.name).all()]
-        form.epa.choices = [(epa.id, epa.title) for epa in EPA.query.with_entities(EPA.id, EPA.title).all()]
-        # Question: is it ok that I reveal primary key?
-        form.reviewee.choices = [(user.id, user.username) for user in User.query.with_entities(User.username, User.id)]  
-    
-    # TODO should fill in the (logined) reviewer user
-    user = User.query.with_entities(User.id, User.username).first()
-    if not user:
-        return redirect('/index')
-    form.reviewer.choices = [(user.id, user.username)]
-
-
-    
-    # form.location.choices = [(location.desc, location.name) for location in Location.query.with_entities(Location.name, Location.desc)]
-    # form.epa.choices = [(epa.desc, epa.title) for epa in EPA.query.with_entities(EPA.title, EPA.desc).all()]
-    # # Question: is it ok that I reveal primary key?
-    # form.reviewer.choices = [(user.id, user.username) for user in User.query.with_entities(User.username, User.id)]  
-    # form.requester.choices = [(user.id, user.username) for user in User.query.with_entities(User.username, User.id)]
-
-    # if form.validate_on_submit():
-    #     ar = AskReview(
-    #             location=form.location.data,
-    #             epa=form.epa.data,
-    #             requester=form.requester.data,
-    #             reviewer=form.reviewer.data
-    #         )
-    #     db.session.add(ar)
-    #     db.session.commit()
-    #     return redirect(url_for('index'))
-    return render_template('review.html', form=form)
-
-def ask_review():
-    form = AskReviewForm()
-
     form.location.choices = [(location.id, location.name) for location in Location.query.with_entities(Location.id, Location.name)]
     form.epa.choices = [(epa.id, epa.name) for epa in EPA.query.with_entities(EPA.id, EPA.name).all()]
+    form.review_difficulty.choices = []
+    form.review_score.choices = []
+
+    if not reviewee:
+        # empty form
+        pass
+
+
+
+def review():
+    form = AskReviewForm()
+
+    
     # Question: is it ok that I reveal primary key?
-    form.reviewer.choices = [(reviwer.id, reviwer.username) for reviwer in Reviewer.query.join(User).with_entities(User.username, Reviewer.id).all()]  
+    form.reviewer.choices = [(user.id, user.username) for user in User.query.filter(User.role=='teacher').with_entities(User.username, User.id).all()]  
     # reviewee should be login user
-    reviewee = Reviewee.query.join(User).filter(User.id==current_user.id).with_entities(Reviewee.id, User.username).first()
+    reviewee = current_user
     form.requester.choices = [(reviewee.id, reviewee.username)]
     
 
     if form.validate_on_submit():
         review = Review(
-                location=form.location.data,
-                epa=form.epa.data,
-                Reviewee=Reviewee.query.get(form.reviewee.data),
-                reviewer=form.reviewer.data
+                location_id=form.location.data,
+                epa_id=form.epa.data,
+                reviewee_id=form.requester.data,
+                reviewer_id=form.reviewer.data
             )
         db.session.add(review)
         db.session.commit()
