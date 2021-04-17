@@ -4,47 +4,100 @@ from flask_login import login_user, current_user, logout_user, login_required
 
 from twittor.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
     PasswdResetRequestForm, PasswdResetForm, ReviewForm
-from twittor.models.user import User, load_user, EPA, Location
+from twittor.models.user import User, load_user
 from twittor.models.tweet import Tweet, Review
+from twittor.models.fact import EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
 from twittor import db
 from twittor.email import send_email
 
-def form_builder(reviewee=None):
+def view_review():
+    pass
+
+def new_review():
+    # teacher make review
+    # fill all the blanks
+
     form = ReviewForm()
-    form.location.choices = [(location.id, location.name) for location in Location.query.with_entities(Location.id, Location.name)]
-    form.epa.choices = [(epa.id, epa.name) for epa in EPA.query.with_entities(EPA.id, EPA.name).all()]
-    form.review_difficulty.choices = []
-    form.review_score.choices = []
-
-    if not reviewee:
-        # empty form
-        pass
-
-
-
-def review():
-    form = AskReviewForm()
-
     
-    # Question: is it ok that I reveal primary key?
-    form.reviewer.choices = [(user.id, user.username) for user in User.query.filter(User.role=='teacher').with_entities(User.username, User.id).all()]  
-    # reviewee should be login user
-    reviewee = current_user
-    form.requester.choices = [(reviewee.id, reviewee.username)]
-    
+    form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
+    form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
 
-    if form.validate_on_submit():
-        review = Review(
-                location_id=form.location.data,
-                epa_id=form.epa.data,
-                reviewee_id=form.requester.data,
-                reviewer_id=form.reviewer.data
-            )
+    current_user_groups = current_user.groups.all()
+    form.reviewee.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.users if user.role=="student"]))
+    
+    form.review_difficulty.choices = [(review_difficulty.id, review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
+    form.review_score.choices = [(review_score.id, review_score.desc) for review_score in ReviewScore.query.all()]
+    
+    if form.is_submitted():
+        review = Review()
+        review.epa = EPA.query.get(form.epa.data)
+        review.location = Location.query.get(form.location.data)
+        review.reviewee = User.query.get(form.reviewee.data)
+        review.reviewer = current_user
+        review.review_compliment = form.review_compliment.data
+        review.review_suggestion = form.review_suggestion.data
+        review.review_difficulty = ReviewDifficulty.query.get(form.review_difficulty.data)
+        review.review_score = ReviewScore.query.get(form.review_score.data)
+        review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
+        review.complete = True
         db.session.add(review)
         db.session.commit()
         return redirect(url_for('index'))
-    return render_template('ask_review.html', form=form)
+    return render_template('review.html', form=form, review_type="new")
 
+def request_review():
+    # anyone could make a review request to any teacher
+    # fill epa, location, reviewer
+    form = ReviewForm()
+    
+    form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
+    form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
+
+    current_user_groups = current_user.groups.all()
+    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.users if user.role=="teacher"]))
+    
+    if form.is_submitted():
+        review = Review()
+        review.epa = EPA.query.get(form.epa.data)
+        review.location = Location.query.get(form.location.data)
+        review.reviewee = current_user
+        review.reviewer = User.query.get(form.reviewer.data)
+        review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
+        review.complete = False
+        db.session.add(review)
+        db.session.commit()
+        return redirect(url_for('index'))
+    
+    
+    return render_template('review.html', form=form, review_type="request")
+
+
+def fill_review(review_id):
+    # teacher may finish the review request by any others
+    # fill review_X stuffts
+    prefilled_review = Review.query.get(review_id)
+    if prefilled_review.reviewer.id != current_user.id or prefilled_review.complete:
+        return redirect(url_for('index'))
+    form = ReviewForm()
+    form.reviewer.data = prefilled_review.reviewer.username
+    form.reviewee.data = prefilled_review.reviewee.username
+    form.location.data = prefilled_review.location.desc
+    form.epa.data = prefilled_review.epa.desc
+
+    form.review_difficulty.choices = [(review_difficulty.id, review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
+    form.review_score.choices = [(review_score.id, review_score.desc) for review_score in ReviewScore.query.all()]
+    
+    if form.is_submitted():
+        review = prefilled_review
+        review.review_compliment = form.review_compliment.data
+        review.review_suggestion = form.review_suggestion.data
+        review.review_difficulty = ReviewDifficulty.query.get(form.review_difficulty.data)
+        review.review_score = ReviewScore.query.get(form.review_score.data)
+        review.complete = True
+        db.session.add(review)
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('review.html', form=form, review_type="fill")
 
 @login_required
 def index():
@@ -70,7 +123,7 @@ def login():
         return redirect(url_for('index'))
 
     # for now, direct login 
-    user = User.query.first()
+    user = User.query.get(6)
     login_user(user)
     flash(' direct login as user1 for now', 'error')
     return redirect(url_for('index'))

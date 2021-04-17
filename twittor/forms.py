@@ -11,8 +11,8 @@ class ReviewForm(FlaskForm):
     reviewee = SelectField(label="被評核者")
     reviewer = SelectField(label='評核者')
     review_difficulty = SelectField(label='這項工作的難度')
-    review_compliment = StringField(label="我覺得你表現不錯的地方是" ,validators=[DataRequired()])
-    review_suggestion = StringField(label="我覺得你可以改進的地方" , validators=[DataRequired()])
+    review_compliment = TextAreaField(label="我覺得你表現不錯的地方是" ,validators=[DataRequired()])
+    review_suggestion = TextAreaField(label="我覺得你可以改進的地方" , validators=[DataRequired()])
     review_score = SelectField(label='整體來說，評分為')
     submit = SubmitField('提交')
 

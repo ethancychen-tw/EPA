@@ -6,43 +6,86 @@
     <div class="text-center col-lg-4"></div>
 <div class="text-center col-lg-4">
     <h1 class="h3 mb-3 font-weight-normal">評分表</h1>
+    
     <form action="" method="post">
         {{ form.csrf_token() }}
-        <p>
-            {{ form.reviewer.label }}
-            {{ form.reviewer() }}
-        </p>
-        <p>
-            {{ form.reviewee.label }}
-            {{ form.reviewee() }}
-        </p>
-        <p>
-            {{ form.location.label }}
-            {{ form.location() }}
-        </p>
-        <p>
-            {{ form.epa.label }}
-            {{ form.epa() }}
-        </p>
-        <p>
-            {{ form.review_difficulty.label }}
-            {{ form.review_difficulty() }}
-        </p>
-        <p>
-            {{ form.review_compliment.label }}
-            {{ form.review_compliment() }}
-        </p>
-        <p>
-            {{ form.review_suggestion.label }}
-            {{ form.review_suggestion() }}
-        </p>
-        <p>
-            {{ form.review_score.label }}
-            {{ form.review_score() }}
-        </p>
-        <p>
-            {{form.submit()}}
-        </p>
+        {% if review_type == "request" %}
+            <p>
+            我是 {{ current_user.username }}，
+            </p>
+            <p>
+                想請求 {{ form.reviewer() }}
+            </p>
+            <p>
+                評核我在 {{ form.location() }}
+            </p>
+            <p>
+                執行的 {{ form.epa() }}
+            </p>
+            <p>
+                {{form.submit()}}
+            </p>
+        {% endif %}
+
+        {% if review_type == "new" %}
+            <p>
+            我是 {{ current_user.username }}，
+            </p>
+            <p>
+                以下評核 {{ form.reviewee() }} 
+            </p>
+            <p>
+                在 {{ form.location() }} 
+            </p>
+            <p>
+                執行的 {{ form.epa() }}
+            </p>
+            <p>
+                (1) 這項工作的複雜程度為 {{ form.review_difficulty() }}
+            </p>
+            <p>
+                (2) 我覺得你表現不錯的地方在 
+            </p>
+            <p>{{ form.review_compliment(cols="50", rows="5") }}</p>
+            <p>
+                (3) 如果你能做到以下建議，就可以獲得老師或病人更高的信任 
+            </p>
+            <p>{{ form.review_suggestion(cols="50", rows="5") }}</p>
+            <p>
+                (4) 如果下次再遇到類似情形，我對你的信賴等級為 {{ form.review_score() }}
+            </p>
+            <p>
+                {{form.submit()}}
+            </p>
+        {% endif %}
+        {% if review_type == "fill" %}
+            {{statement}}
+            <p>
+            我是 {{ current_user.username }}，
+            </p>
+            <p>
+                以下評核在{{form.location.data}} 觀察 {{ form.reviewee.data }} 執行的 {{form.epa.data}}
+            </p>
+            <p>
+                (1) 這項工作的複雜程度為 {{ form.review_difficulty() }}
+            </p>
+            <p>
+                (2) 我覺得你表現不錯的地方在 
+            </p>
+            <p>{{ form.review_compliment(cols="50", rows="5") }}</p>
+            <p>
+                (3) 如果你能做到以下建議，就可以獲得老師或病人更高的信任 
+            </p>
+            <p>{{ form.review_suggestion(cols="50", rows="5") }}</p>
+            <p>
+                (4) 如果下次再遇到類似情形，我對你的信賴等級為 {{ form.review_score() }}
+            </p>
+            <p>
+                {{form.submit()}}
+            </p>
+        {% endif %}
+        
+        
         <!-- <button class="btn btn-lg btn-outline-primary" type="submit">提交</button> -->
         <!-- <p>
             <a href="{{ url_for('register') }}">New User?</a>or 
