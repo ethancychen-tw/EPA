@@ -116,4 +116,4 @@ dmypy.json
 .vscode
 
 # database
-.db
+*.db
