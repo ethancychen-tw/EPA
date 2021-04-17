@@ -27,6 +27,7 @@ class Group(db.Model):
     name = db.Column(db.String(64), unique=True, index=True)
     desc = db.Column(db.String(64))
 
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
@@ -41,6 +42,7 @@ class User(UserMixin, db.Model):
     #### epa
     lineid = db.Column(db.String(128))
     role = db.Column(db.String(20), default="student")
+    # If you use backref you don't need to declare the relationship on the second table.
     make_reviews = db.relationship('Review', primaryjoin=Review.reviewer_id==id, backref='reviewer', lazy='dynamic')
     being_reviews = db.relationship('Review' ,primaryjoin=Review.reviewee_id==id, backref='reviewee', lazy='dynamic')
     groups = db.relationship('Group', secondary=user_group, backref="users", lazy='dynamic')

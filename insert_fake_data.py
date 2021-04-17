@@ -23,7 +23,7 @@ for name, desc in zip(location_name, location_desc):
 
 
 #ReviewSource
-review_source_name = ["request", "native"]
+review_source_name = ["request", "new"]
 review_source_desc = ["請求評核", "直接評核"]
 for name, desc in zip(review_source_name, review_source_desc):
     db.session.add(ReviewSource(name=name, desc=desc))
@@ -65,18 +65,47 @@ tea_name = ["林凱南", "劉嘉銘", "梁家光", "陳正文", "王守仁", "�
 for name in tea_name:
     user = User(username=name, lineid=f"line {name}", role="teacher")
     user.groups.append(Group.query.get(1))
+    user.groups.append(Group.query.get(2))
     db.session.add(user)
 
 
-for name in ["a"+name for name in std_name]:
+for name in ["only2"+name for name in std_name]:
     user = User(username=name, lineid=f"line {name}", role="student")
     user.groups.append(Group.query.get(2))
     db.session.add(user)
 
 
-for name in ["a"+name for name in tea_name]:
+for name in ["only2"+name for name in tea_name]:
     user = User(username=name, lineid=f"line {name}", role="teacher")
     user.groups.append(Group.query.get(2))
     db.session.add(user)
 
+db.session.commit()
+
+
+# ask review
+review = Review()
+review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
+review.reviewer = User.query.filter(User.role=='teacher').first()
+review.reviewee = User.query.get(1)
+review.location = Location.query.get(3)
+review.epa = EPA.query.get(10)
+
+db.session.add(review)
+db.session.commit()
+
+# finished review
+review = Review()
+review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
+review.reviewer = User.query.filter(User.role=='teacher').first()
+review.reviewee = User.query.get(2)
+review.location = Location.query.get(2)
+review.epa = EPA.query.get(3)
+review.review_compliment = "good job"
+review.review_suggestion = "next time you should..."
+review.review_difficulty = ReviewDifficulty.query.get(2)
+review.review_score = ReviewScore.query.get(4)
+review.complete = True
+
+db.session.add(review)
 db.session.commit()
