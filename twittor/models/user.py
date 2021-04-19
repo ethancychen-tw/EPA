@@ -117,4 +117,8 @@ class User(UserMixin, db.Model):
 
 @login_manager.user_loader
 def load_user(id):
+    """
+    implement login_user method for flask_login
+    this global function makes the login manager instance(in __init__.py) could get user instance in route
+    """
     return User.query.get(int(id))

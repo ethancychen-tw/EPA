@@ -13,7 +13,7 @@ login_manager.login_view = 'login'
 mail = Mail()
 
 from twittor.route import index, login, logout, register, user, page_not_found, \
-    edit_profile, reset_password_request, password_reset, explore, user_activate, new_review, request_review, fill_review, view_review
+    edit_profile, reset_password_request, password_reset, user_activate, new_review, request_review, fill_review, view_reviews, review
 
 
 def create_app():
@@ -43,12 +43,13 @@ def create_app():
         methods=['GET', 'POST']
     )
     app.register_error_handler(404, page_not_found)
-    app.add_url_rule('/explore', 'explore', explore)
+    # app.add_url_rule('/explore', 'explore', explore)
     app.add_url_rule('/activate/<token>', 'user_activate', user_activate)
     app.add_url_rule('/review/new', 'new_review', new_review, methods=['GET', 'POST'])
     app.add_url_rule('/review/request', 'request_review', request_review, methods=['GET', 'POST'])
     app.add_url_rule('/review/fill/<review_id>', 'fill_review', fill_review, methods=['GET', 'POST'])
-    app.add_url_rule('/review/<review_id>', 'view_review', view_review, methods=['GET', 'POST'])
+    app.add_url_rule('/view_reviews', 'view_reviews', view_reviews, methods=['GET', 'POST'])
+    app.add_url_rule('/review/<review_id>', 'review', review, methods=['GET'])
     return app
 
 # app/__init__

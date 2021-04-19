@@ -1,7 +1,7 @@
 from flask import render_template, redirect, url_for, request, \
     abort, current_app, flash
 from flask_login import login_user, current_user, logout_user, login_required
-
+from sqlalchemy import or_
 from twittor.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
     PasswdResetRequestForm, PasswdResetForm, ReviewForm
 from twittor.models.user import User, load_user
@@ -10,9 +10,19 @@ from twittor.models.fact import EPA, Location, ReviewDifficulty, ReviewScore, Re
 from twittor import db
 from twittor.email import send_email
 
-def view_review():
-    pass
+@login_required
+def review(review_id):
+    review = Review.query.get(review_id)
+    if current_user != review.reviewer and current_user != review.reviewee:
+        return redirect(url_for('index'))
+    return render_template('review.html', review=review)
 
+@login_required
+def view_reviews():
+    all_reviews = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user)).order_by(Review.last_edited.desc()).all()
+    return render_template('view_reviews.html', reviews=all_reviews) #TODO pagingate
+
+@login_required
 def new_review():
     # teacher make review
     # fill all the blanks
@@ -43,8 +53,9 @@ def new_review():
         db.session.add(review)
         db.session.commit()
         return redirect(url_for('index'))
-    return render_template('review.html', form=form, review_type="new")
+    return render_template('make_review.html', form=form, review_type="new")
 
+@login_required
 def request_review():
     # anyone could make a review request to any teacher
     # fill epa, location, reviewer
@@ -69,9 +80,9 @@ def request_review():
         return redirect(url_for('index'))
     
     
-    return render_template('review.html', form=form, review_type="request")
+    return render_template('make_review.html', form=form, review_type="request")
 
-
+@login_required
 def fill_review(review_id):
     # teacher may finish the review request by any others
     # fill review_X stuffts
@@ -83,6 +94,12 @@ def fill_review(review_id):
     form.reviewee.data = prefilled_review.reviewee.username
     form.location.data = prefilled_review.location.desc
     form.epa.data = prefilled_review.epa.desc
+    form.review_compliment.data = prefilled_review.review_compliment
+    form.review_suggestion.data = prefilled_review.review_suggestion
+    if prefilled_review.review_difficulty:
+        form.review_difficulty.data = prefilled_review.review_difficulty.id
+    if prefilled_review.review_score:
+        form.review_score.data = prefilled_review.review_score.id
 
     form.review_difficulty.choices = [(review_difficulty.id, review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
     form.review_score.choices = [(review_score.id, review_score.desc) for review_score in ReviewScore.query.all()]
@@ -97,7 +114,7 @@ def fill_review(review_id):
         db.session.add(review)
         db.session.commit()
         return redirect(url_for('index'))
-    return render_template('review.html', form=form, review_type="fill")
+    return render_template('make_review.html', form=form, review_type="fill")
 
 @login_required
 def index():
@@ -119,13 +136,14 @@ def index():
 
 
 def login():
+    # already login
     if current_user.is_authenticated:
         return redirect(url_for('index'))
 
     # for now, direct login 
     user = User.query.get(6)
     login_user(user)
-    flash(' direct login as user1 for now', 'error')
+    flash(' direct login for now', 'error')
     return redirect(url_for('index'))
     # if form.validate_on_submit():
     #     u = User.query.filter_by(username=form.username.data).first()
@@ -304,15 +322,15 @@ def password_reset(token):
     )
 
 
-@login_required
-def explore():
-    # get all user and sort by followers
-    page_num = int(request.args.get('page') or 1)
-    tweets = Tweet.query.order_by(Tweet.create_time.desc()).paginate(
-        page=page_num, per_page=current_app.config['TWEET_PER_PAGE'], error_out=False)
+# @login_required
+# def explore():
+#     # get all user and sort by followers
+#     page_num = int(request.args.get('page') or 1)
+#     tweets = Tweet.query.order_by(Tweet.create_time.desc()).paginate(
+#         page=page_num, per_page=current_app.config['TWEET_PER_PAGE'], error_out=False)
 
-    next_url = url_for('index', page=tweets.next_num) if tweets.has_next else None
-    prev_url = url_for('index', page=tweets.prev_num) if tweets.has_prev else None
-    return render_template(
-        'explore.html', tweets=tweets.items, next_url=next_url, prev_url=prev_url
-    )
+#     next_url = url_for('index', page=tweets.next_num) if tweets.has_next else None
+#     prev_url = url_for('index', page=tweets.prev_num) if tweets.has_prev else None
+#     return render_template(
+#         'explore.html', tweets=tweets.items, next_url=next_url, prev_url=prev_url
+#     )

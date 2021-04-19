@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class='row'>
+    <div class="text-center col-lg-2"></div>
+<div class="text-center col-lg-8">
+    <form action="" method="post">
+        {{ form.csrf_token() }}
+        {% if review_type == "request" %}
+            <h1 class="h3 mb-3 font-weight-normal">請求老師評核</h1>
+            <table class="table text-left">
+                <tr><th>被評核者 </th><td>{{ current_user.username }}</td></tr>
+                <tr><th>指定評核老師 </th><td>{{ form.reviewer() }}</td></tr>
+                <tr><th>要求老師評核的項目 </th><td>{{ form.epa() }}</td></tr>
+                <tr><th>實作的地點 </th><td>{{ form.location() }}</td></tr>
+            </table>
+            <button class="btn btn-lg btn-outline-primary" type="submit">送出請求</button>
+        {% endif %}
+
+        {% if review_type == "new" %}
+            <h1 class="h3 mb-3 font-weight-normal">新增評核</h1>
+            <table class="table text-left">
+                
+                <tr><th>評核老師 </th><td>{{ current_user.username }}</td></tr>
+                <tr><th>被評核者 </th><td>{{ form.reviewee() }}</td></tr>
+                <tr><th>要求老師評核的項目 </th><td>{{ form.epa() }}</td></tr>
+                <tr><th>實作的地點 </th><td>{{ form.location() }}</td></tr>
+
+                <tr><th>(1) 這項工作的複雜程度為 </th><td>{{ form.review_difficulty(class="form-control form-control-lg") }}</td></tr>
+                <tr><th>(2) 我覺得你表現不錯的地方在 </th><td>{{ form.review_compliment(class="form-control",cols="50", rows="5") }}</td></tr>
+                <tr><th>(3) 如果你能做到以下建議，就可以獲得老師或病人更高的信任  </th><td>{{ form.review_suggestion(class="form-control",cols="50", rows="5") }}</td></tr>
+                <tr><th>(4) 如果下次再遇到類似情形，我對你的信賴等級為  </th><td>{{ form.review_score(class="form-control form-control-lg") }}</td></tr>
+                 
+            </table>
+            <button class="btn btn-lg btn-outline-primary" type="submit">提交</button>
+        {% endif %}
+        {% if review_type == "fill" %}
+            <h1 class="h3 mb-3 font-weight-normal">填寫評核</h1>
+            <h3 class="h5 mb-3 font-weight-normal">以下評核{{ form.reviewee.data }} 在{{form.location.data}} 執行的 {{form.epa.data}}</h3>
+            
+            <table class="table text-left">
+                <tr><th >(1) 這項工作的複雜程度為 </th><td>{{ form.review_difficulty(class="form-control form-control-lg") }}</td></tr>
+                <tr><th >(2) 我覺得你表現不錯的地方在 </th><td>{{ form.review_compliment(class="form-control",cols="50", rows="5") }}</td></tr>
+                <tr><th >(3) 如果你能做到以下建議，就可以獲得老師或病人更高的信任  </th><td>{{ form.review_suggestion(class="form-control",cols="50", rows="5") }}</td></tr>
+                <tr><th >(4) 如果下次再遇到類似情形，我對你的信賴等級為  </th><td>{{ form.review_score(class="form-control form-control-lg") }}</td></tr> 
+            </table>
+            <button class="btn btn-lg btn-outline-primary" type="submit">提交</button>
+        {% endif %}
+        
+        <!-- <button class="btn btn-lg btn-outline-primary" type="submit">提交</button> -->
+        <!-- <p>
+            <a href="{{ url_for('register') }}">New User?</a>or 
+            <a href="{{ url_for('reset_password_request') }}">Forgot Password?</a>
+        </p> -->
+        <p class="mt-5 mb-3 text-muted">&copy; 2021-2021</p>
+    </form>
+</div>
+<div class="col-2"></div>
+{% endblock %}

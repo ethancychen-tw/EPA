@@ -13,9 +13,11 @@
 </head>
 <body style="background-color:#f3f8ff;">
     <div class="sticky-top d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
-            <a class="p-2 text-dark my-0 mr-md-auto font-weight-normal" href="{{ url_for('index') }}">Twittor</a>
+            <a class="p-2 text-dark my-0 mr-md-auto font-weight-normal" href="{{ url_for('index') }}">EPA評核系統</a>
             <nav class="my-2 my-md-0 mr-md-3">
-                <a class="p-2 text-dark" href="{{ url_for('explore') }}">Explore</a>
+                <a class="p-2 text-dark" href="{{ url_for('new_review') }}">新增評核</a>
+                <a class="p-2 text-dark" href="{{ url_for('request_review') }}">請求評核</a>
+                <a class="p-2 text-dark" href="{{ url_for('view_reviews') }}">查看所有評核</a>
             </nav>
             {% if current_user.is_anonymous %}
             <a class="btn btn-outline-primary" href="{{ url_for('login') }}">Login</a>
