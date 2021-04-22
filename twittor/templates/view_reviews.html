@@ -3,47 +3,15 @@
 {% block content %}
 
 <div class='row'>
-
-    <div class="col-lg-4"></div>
-    <div class="col-lg-2">
-    <h2>Hello, {{ current_user.username }}</h2>
-    </div>
+    <div class="mx-auto"><h2>查看所有評核</h2></div>
 </div>
 <div class='row'>
     <div class="col-lg-1"></div>
-    <div class="col-lg-10">
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>來源</th>
-                <th>評核者</th>
-                <th>被評核者</th>
-                <th>項目</th>
-                <th>地點</th>
-                <th>已完成</th>
-                <th>最近更新時間</th>
-                <th></th>
-                
-            </tr>
-        </thead>
-        <tbody>
-        {% for review in reviews %}
-            <tr valign="top">
-                <td>{{review.review_source.desc}}</td>
-                <td>{{review.reviewee.username}}</td>
-                <td>{{review.reviewer.username}}</td>
-                <td>{{review.epa.desc}}</td>
-                <td>{{review.location.desc}}</td>
-                <td>{% if review.complete %} 是 {% else %} 否 {% endif %}</td>
-                <td>{{review.last_edited.strftime('%Y-%m-%d %-I%p') }}
-                </td>
-                <td><a href="/review/{{review.id}}"><button type="button" class="btn btn-outline-dark">查看</button></a></td>
-                
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-            
+    <div class="col-lg-10"> 
+        {% set button_route = "review/"%}
+        {% set button_text = "查看"%}
+        {% set reviews = reviews%}
+        {% include "_reviews.html" %}     
 
     {% if prev_url %}
     <a href="{{ prev_url }}">Prev Page</a>

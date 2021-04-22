@@ -1,0 +1,22 @@
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>來源</th><th>評核者</th><th>被評核者</th><th>項目</th><th>地點</th><th>已完成</th><th>最近更新時間</th><th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for review in reviews %}
+        <tr valign="top">
+            <td>{{review.review_source.desc}}</td>
+            <td>{{review.reviewer.username}}</td>
+            <td>{{review.reviewee.username}}</td>
+            <td>{{review.epa.desc}}</td>
+            <td>{{review.location.desc}}</td>
+            <td>{% if review.complete %} 是 {% else %} 否 {% endif %}</td>
+            <td>{{review.last_edited.strftime('%Y-%m-%d %-I%p') }}
+            </td>
+            <td><a href="{{button_route}}{{review.id}}"><button type="button" class="btn btn-outline-dark">{{button_text}}</button></a></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
