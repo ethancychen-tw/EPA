@@ -4,7 +4,9 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 
-from twittor.config import Config
+from linebot import LineBotApi, WebhookHandler
+
+from twittor.config import config
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -16,13 +18,16 @@ from twittor.route import index, login, logout, register, user, page_not_found, 
     edit_profile, reset_password_request, password_reset, user_activate, new_review, request_review, fill_review, view_reviews, review
 
 
-def create_app():
+def create_app(config_name='development'):
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object(config[config_name])
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
     mail.init_app(app)
+
+    # line_bot_api = LineBotApi(app.config)
+    # handler = WebhookHandler('')
     app.add_url_rule('/index', 'index', methods=['GET', 'POST'])
     app.add_url_rule('/', 'index', index, methods=['GET', 'POST'])
     app.add_url_rule('/login', 'login', login, methods=['GET', 'POST'])
