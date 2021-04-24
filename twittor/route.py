@@ -2,12 +2,15 @@ from flask import render_template, redirect, url_for, request, \
     abort, current_app, flash
 from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import or_
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from twittor.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
     PasswdResetRequestForm, PasswdResetForm, ReviewForm
 from twittor.models.user import User, load_user
 from twittor.models.tweet import Tweet, Review
 from twittor.models.fact import EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
 from twittor import db
+from twittor import line_bot_api, handler
 from twittor.email import send_email
 
 @login_required
@@ -19,8 +22,12 @@ def review(review_id):
 
 @login_required
 def view_reviews():
-    all_reviews = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user)).order_by(Review.last_edited.desc()).all()
-    return render_template('view_reviews.html', reviews=all_reviews) #TODO pagingate
+    cur_page_num = int(request.args.get('page') or 1)
+    all_user_related_reviews = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user)).order_by(Review.last_edited.desc())\
+                    .paginate(page=cur_page_num, per_page=int(current_app.config['REVIEW_PER_PAGE']), error_out=False)
+    next_url = url_for('view_reviews',page=all_user_related_reviews.next_num) if all_user_related_reviews.has_next else None
+    prev_url = url_for('view_reviews', page=all_user_related_reviews.prev_num) if all_user_related_reviews.has_prev else None
+    return render_template('view_reviews.html', reviews=all_user_related_reviews.items, next_url=next_url, prev_url=prev_url)
 
 @login_required
 def new_review():
@@ -118,6 +125,7 @@ def fill_review(review_id):
 
 @login_required
 def index():
+    
     # form = TweetForm()
     # if form.validate_on_submit():
     #     t = Tweet(body=form.tweet.data, author=current_user)
@@ -125,8 +133,7 @@ def index():
     #     db.session.commit()
     #     return redirect(url_for('index'))
     # page_num = int(request.args.get('page') or 1)
-    # tweets = current_user.own_and_followed_tweets().paginate(
-    #     page=page_num, per_page=current_app.config['TWEET_PER_PAGE'], error_out=False)
+    # tweets = current_user.own_and_followed_tweets().
 
     # next_url = url_for('index', page=tweets.next_num) if tweets.has_next else None
     # prev_url = url_for('index', page=tweets.prev_num) if tweets.has_prev else None
@@ -146,8 +153,6 @@ def login():
     # already login
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-
-    # for now, direct login 
     user = User.query.get(6)
     login_user(user)
     flash(' direct login for now', 'error')
@@ -341,3 +346,23 @@ def password_reset(token):
 #     return render_template(
 #         'explore.html', tweets=tweets.items, next_url=next_url, prev_url=prev_url
 #     )
+
+def callback():
+    # get X-Line-Signature header value
+    signature = request.headers['X-Line-Signature']
+    # get request body as text
+    body = request.get_data(as_text=True)
+    # handle webhook body
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        print("Invalid signature. Please check your channel access token/channel secret.")
+        abort(400)
+    return 'OK'
+
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    # if registered, reply login link(using token)
+
+    line_bot_api.reply_message(event.reply_token,TextSendMessage(text=event.message.text))

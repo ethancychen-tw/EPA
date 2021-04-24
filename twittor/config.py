@@ -5,7 +5,7 @@ config_path = os.path.abspath(os.path.dirname(__file__))
 # Environment variables
 if os.path.exists('config.env'):
     for line in open('config.env', 'r'):
-        var = line.strip().split('=')
+        var = line.strip().split('=', 1)
         if len(var) == 2:
             os.environ[var[0]] = var[1].replace("\"", "")
 
@@ -18,11 +18,16 @@ class Config:
         SECRET_KEY = 'SECRET_KEY_ENV_VAR_NOT_SET'
         print('SECRET KEY ENV VAR NOT SET! SHOULD NOT SEE IN PRODUCTION')
 
+    LINEBOT_MSG_CHANNEL_ACCESS_TOKEN = os.environ.get('LINEBOT_MSG_CHANNEL_ACCESS_TOKEN')
+    LINEBOT_MSG_CHANNEL_SECRET = os.environ.get('LINEBOT_MSG_CHANNEL_SECRET')
+    if not LINEBOT_MSG_CHANNEL_ACCESS_TOKEN or not LINEBOT_MSG_CHANNEL_SECRET:
+        print("line bot not set!!! ")
+
     SQLALCHEMY_COMMIT_ON_TEARDOWN = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     TWEET_PER_PAGE = os.environ.get('TWEET_PER_PAGE', 20)  # should remove
-    REVIEW_PER_PAGE = os.environ.get('REVIEW_PER_PAGE', 20)
+    REVIEW_PER_PAGE = int(os.environ.get('REVIEW_PER_PAGE', 20))
 
     # twittor
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@twittor.com')
