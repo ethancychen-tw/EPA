@@ -5,8 +5,6 @@ from flask_login import LoginManager
 from flask_mail import Mail
 
 from linebot import LineBotApi, WebhookHandler
-from linebot.models.rich_menu import RichMenu, RichMenuSize,RichMenuArea,RichMenuBounds
-from linebot.models.actions import URIAction
 from twittor.config import config
 
 db = SQLAlchemy()
@@ -17,25 +15,8 @@ mail = Mail()
 line_bot_api = LineBotApi(config['production'].LINEBOT_MSG_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(config['production'].LINEBOT_MSG_CHANNEL_SECRET)
 
-rich_menu_to_create = RichMenu(
-    size=RichMenuSize(width=2500, height=843),
-    selected=False,
-    name="Nice richmenu",
-    chat_bar_text="Tap here",
-    areas=[RichMenuArea(
-        bounds=RichMenuBounds(x=0, y=0, width=2500, height=843),
-        action=URIAction(label='Go to line.me', uri='https://636d7168be66.ngrok.io/'))]
-)
-rich_menu_id = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
-with open("./kerker.png", 'rb') as f:
-    try:
-        line_bot_api.set_rich_menu_image(rich_menu_id, "image/png", f)
-        line_bot_api.set_default_rich_menu(rich_menu_id)
-    except Exception as e:
-        print("===Upload Exception===")
-
 from twittor.route import index, login, logout, register, user, page_not_found, \
-    edit_profile, reset_password_request, password_reset, user_activate, new_review, request_review, fill_review, view_reviews, review, callback
+    edit_profile, reset_password_request, password_reset, user_activate, new_review, request_review, fill_review, view_reviews, review, callback, login_token
 
 def create_app(config_name='development'):
     app = Flask(__name__)
@@ -49,6 +30,7 @@ def create_app(config_name='development'):
     app.add_url_rule('/index', 'index', methods=['GET', 'POST'])
     app.add_url_rule('/', 'index', index, methods=['GET', 'POST'])
     app.add_url_rule('/login', 'login', login, methods=['GET', 'POST'])
+    app.add_url_rule('/login_token', 'login_token', login_token, methods=['GET', 'POST'])
     app.add_url_rule('/logout', 'logout', logout)
     app.add_url_rule('/register', 'register', register, methods=['GET', 'POST'])
     app.add_url_rule('/<username>', 'profile', user, methods=['GET', 'POST'])

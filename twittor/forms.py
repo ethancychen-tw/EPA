@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, \
-    TextAreaField, SelectField
+    TextAreaField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, \
     Length
 
@@ -25,13 +25,20 @@ class LoginForm(FlaskForm):
     remember_me = BooleanField("Remember Me")
     submit = SubmitField('Sign In')
 
+class LineActivateForm(FlaskForm):
+    submit = SubmitField('activate')
 
 class RegisterForm(FlaskForm):
+    class Meta:
+        csrf = False
     username = StringField("Username" ,validators=[DataRequired()])
-    # email = StringField("Email Address", validators=[DataRequired(), Email()])
+    bindline = BooleanField(label="linebind", default=False)
+    role = SelectField(label='role', validators=[DataRequired()])
+    groups = SelectMultipleField(label="groups", validators=[DataRequired()])
+    email = StringField("Email Address", validators=[DataRequired(), Email()])
     password = PasswordField("Password", validators=[DataRequired()])
-    password2 = PasswordField(
-        "Password Repeat", validators=[DataRequired(), EqualTo('password')])
+    password2 = PasswordField("Password Repeat", validators=[DataRequired(), EqualTo('password')])
+    
     submit = SubmitField('Register')
 
     def validate_username(self, username):

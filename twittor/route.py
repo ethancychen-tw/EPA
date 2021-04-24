@@ -5,8 +5,8 @@ from sqlalchemy import or_
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from twittor.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
-    PasswdResetRequestForm, PasswdResetForm, ReviewForm
-from twittor.models.user import User, load_user
+    PasswdResetRequestForm, PasswdResetForm, ReviewForm, LineActivateForm
+from twittor.models.user import User, load_user, Group
 from twittor.models.tweet import Tweet, Review
 from twittor.models.fact import EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
 from twittor import db
@@ -125,48 +125,50 @@ def fill_review(review_id):
 
 @login_required
 def index():
-    
-    # form = TweetForm()
-    # if form.validate_on_submit():
-    #     t = Tweet(body=form.tweet.data, author=current_user)
-    #     db.session.add(t)
-    #     db.session.commit()
-    #     return redirect(url_for('index'))
-    # page_num = int(request.args.get('page') or 1)
-    # tweets = current_user.own_and_followed_tweets().
-
-    # next_url = url_for('index', page=tweets.next_num) if tweets.has_next else None
-    # prev_url = url_for('index', page=tweets.prev_num) if tweets.has_prev else None
-    # return render_template(
-    #     'index.html', tweets=tweets.items, form=form, next_url=next_url, prev_url=prev_url
-    # )
+    linebotinfo = line_bot_api.get_bot_info()
+    if current_user.is_activated:
+        line_user_profile = line_bot_api.get_profile(current_user.line_userId)
+    else:
+        line_user_profile = None
     unfin_being_reviews = current_user.being_reviews.filter(Review.complete==False).all()
     unfin_make_reviews = current_user.make_reviews.filter(Review.complete==False).all()
-
-
     return render_template(
-        'index.html', unfin_being_reviews=unfin_being_reviews, unfin_make_reviews=unfin_make_reviews
+        'index.html', unfin_being_reviews=unfin_being_reviews, unfin_make_reviews=unfin_make_reviews, linebotinfo=linebotinfo, line_user_profile=line_user_profile
     )
 
+def login_token():
+    login_token = request.args.get("login_token", None)
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    user = User.verify_jwt(login_token)
+    if not user:
+        flash('連結已過期，請以帳號密碼登入，或透過Line對話筐重新索取登入連結')
+        return redirect(url_for('login'))
+    login_user(user)
+    return redirect(url_for('index'))
 
 def login():
     # already login
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-    user = User.query.get(6)
-    login_user(user)
-    flash(' direct login for now', 'error')
-    return redirect(url_for('index'))
-    # if form.validate_on_submit():
-    #     u = User.query.filter_by(username=form.username.data).first()
-    #     if u is None or not u.check_password(form.password.data):
-    #         flash('invalid username or password')
-    #         return redirect(url_for('login'))
-    #     login_user(u, remember=form.remember_me.data)
-    #     next_page = request.args.get('next')
-    #     if next_page:
-    #         return redirect(next_page)
-    #     return redirect(url_for('index'))
+
+    
+    # user = User.query.get(6)
+    # login_user(user)
+    # flash(' direct login for now', 'error')
+    # return redirect(url_for('index'))
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        u = User.query.filter_by(username=form.username.data).first()
+        if u is None or not u.check_password(form.password.data):
+            flash('invalid username or password')
+            return redirect(url_for('login'))
+        login_user(u, remember=form.remember_me.data)
+        next_page = request.args.get('next')
+        if next_page:
+            return redirect(next_page)
+        return redirect(url_for('index'))
     return render_template('login.html', title="Sign In", form=form)
 
 def logout():
@@ -177,34 +179,50 @@ def logout():
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
+    linebotinfo = line_bot_api.get_bot_info()
+    
+    line_userId = request.args.get("line_userId", None)
+    try:
+        line_user_profile = line_bot_api.get_profile(line_userId)
+    except Exception as e:
+        print(e)
+        line_user_profile = None
+        flash("invalid line_userId. 哈哈哈")
+        print("invalid line user Id")
+    
     form = RegisterForm()
+    form.role.choices = [("student", "學生"), ("teacher", "老師")]  # hard coded roles for now
+    form.bindline.data = True if line_user_profile else False
+    all_groups = Group.query.all()
+    form.groups.choices = [(str(group.id), group.name) for group in all_groups]
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
+        user = User(username=form.username.data, email=form.email.data, role=form.role.data)
+        if line_user_profile and form.bindline.data:
+            user.line_userId = line_userId
+            user.is_activated = True
+        for group_id in form.groups.data:
+            user.groups.append(Group.query.get(int(group_id)))
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
         return redirect(url_for('login'))
-    return render_template('register.html', title='Registration', form=form)
+
+    return render_template('register.html', title='Registration', form=form, line_user_profile=line_user_profile, linebotinfo=linebotinfo)
 
 @login_required
 def user(username):
-    u = User.query.filter_by(username=username).first()
-    if u is None:
+    if current_user.role not in ['admin', 'manager']:
+        flash("This is a page accessable for admin/ manager. If you think this is an error, Please contact to get access")
+        return redirect(url_for('index'))
+    user = User.query.filter_by(username=username).first()
+    if user is None:
         abort(404)
-    page_num = int(request.args.get('page') or 1)
-    tweets = u.tweets.order_by(Tweet.create_time.desc()).paginate(
-        page=page_num,
-        per_page=current_app.config['TWEET_PER_PAGE'],
-        error_out=False)
-
-    next_url = url_for(
-        'profile',
-        page=tweets.next_num,
-        username=username) if tweets.has_next else None
-    prev_url = url_for(
-        'profile',
-        page=tweets.prev_num,
-        username=username) if tweets.has_prev else None
+    current_page_num = int(request.args.get('page') or 1)
+    all_user_related_reviews = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user)).order_by(Review.last_edited.desc())\
+                    .paginate(page=cur_page_num, per_page=int(current_app.config['REVIEW_PER_PAGE']), error_out=False)
+    next_url = url_for('user',page=all_user_related_reviews.next_num) if all_user_related_reviews.has_next else None
+    prev_url = url_for('user', page=all_user_related_reviews.prev_num) if all_user_related_reviews.has_prev else None
+    
     if request.method == 'POST':
         if request.form['request_button'] == 'Follow':
             current_user.follow(u)
@@ -364,5 +382,24 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     # if registered, reply login link(using token)
+    print(f"event type: {event.type}")
+    line_userId = event.source.user_id # The attribute is called user_id, surprise lol
+    print(line_userId)
+    try:
+        user = User.query.filter(User.line_userId == line_userId).first()
+    except:
+        user = None
+    print(user)
+    if not user:
+        # I think this is not safe. But let use this for now
+        # for more advanced link token see, https://developers.line.biz/en/docs/messaging-api/linking-accounts/#implement-account-link-feature
+        # or alternatively, we could have our own token auth method
+        app_webhook = "https://fe8dfe389f01.ngrok.io"
+        line_bot_api.reply_message(event.reply_token,TextSendMessage(f'新用戶你好，請點此連結註冊: {app_webhook}/register?line_userId={line_userId}'))  
+    else:
+        # if registered, issue a login URL with token
+        login_token = user.get_jwt()
+        url_index = url_for('login_token',login_token=login_token, _external=True)
+        line_bot_api.reply_message(event.reply_token,TextSendMessage(f'嗨，{user.username}，請點此連結進入EPA系統 {url_index}'))  
 
-    line_bot_api.reply_message(event.reply_token,TextSendMessage(text=event.message.text))
+    

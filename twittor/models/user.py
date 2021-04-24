@@ -40,7 +40,7 @@ class User(UserMixin, db.Model):
     tweets = db.relationship('Tweet', backref='author', lazy='dynamic')
 
     #### epa
-    lineid = db.Column(db.String(128))
+    line_userId = db.Column(db.String(128))
     role = db.Column(db.String(20), default="student")
     # If you use backref you don't need to declare the relationship on the second table.
     make_reviews = db.relationship('Review', primaryjoin=Review.reviewer_id==id, backref='reviewer', lazy='dynamic')
@@ -64,13 +64,9 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def check_lineid(self, lineid):
-        return check_password_hash(self.lineid_hash, lineid)
-
     def avatar(self, size=80):
         md5_digest = md5(self.email.lower().encode('utf-8')).hexdigest()
-        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
-            md5_digest, size)
+        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(md5_digest, size)
 
     def follow(self, user):
         if not self.is_following(user):
@@ -91,7 +87,7 @@ class User(UserMixin, db.Model):
         own = Tweet.query.filter_by(user_id=self.id)
         return followed.union(own).order_by(Tweet.create_time.desc())
 
-    def get_jwt(self, expire=7200):
+    def get_jwt(self, expire=300):
         return jwt.encode(
             {
                 'email': self.email,
@@ -99,7 +95,7 @@ class User(UserMixin, db.Model):
             },
             current_app.config['SECRET_KEY'],
             algorithm='HS256'
-        ).decode('utf-8')
+        )
 
     @staticmethod
     def verify_jwt(token):
