@@ -56,27 +56,27 @@ db.session.commit()
 # use "append" to resolve bridging table
 std_name = ["R1卓筱茜", "R2陳佩欣", "R3廖晨竹", "R4謝易達", "R5余瑞彬"]
 for name in std_name:
-    user = User(username=name, lineid=f"line {name}", role="student")
+    user = User(username=name, line_userId=f"line {name}", role="student")
     user.groups.append(Group.query.get(1))
     db.session.add(user)
 
 
 tea_name = ["林凱南", "劉嘉銘", "梁家光", "陳正文", "王守仁", "林世倉", "張淳翔", "李嘉欣", "蘇家弘", "陳一嘉", "余瑞彬"]
 for name in tea_name:
-    user = User(username=name, lineid=f"line {name}", role="teacher")
+    user = User(username=name, line_userId=f"line {name}", role="teacher")
     user.groups.append(Group.query.get(1))
     user.groups.append(Group.query.get(2))
     db.session.add(user)
 
 
 for name in ["only2"+name for name in std_name]:
-    user = User(username=name, lineid=f"line {name}", role="student")
+    user = User(username=name, line_userId=f"line {name}", role="student")
     user.groups.append(Group.query.get(2))
     db.session.add(user)
 
 
 for name in ["only2"+name for name in tea_name]:
-    user = User(username=name, lineid=f"line {name}", role="teacher")
+    user = User(username=name, line_userId=f"line {name}", role="teacher")
     user.groups.append(Group.query.get(2))
     db.session.add(user)
 
@@ -84,14 +84,19 @@ db.session.commit()
 
 
 # ask review
-review = Review()
-review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
-review.reviewer = User.query.filter(User.role=='teacher').first()
-review.reviewee = User.query.get(1)
-review.location = Location.query.get(3)
-review.epa = EPA.query.get(10)
-
-db.session.add(review)
+all_teachers = User.query.filter(User.role=='teacher').all()
+all_users = User.query.all()
+import random
+all_locations = Location.query.all()
+all_epa = EPA.query.all()
+for i in range(1000):
+    review = Review()
+    review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
+    review.reviewer = all_teachers[int(random.random()*len(all_teachers))]
+    review.reviewee = all_users[int(random.random()*len(all_users))]
+    review.location = all_locations[int(random.random()*len(all_locations))]
+    review.epa = all_epa[int(random.random()*len(all_epa))]
+    db.session.add(review)
 db.session.commit()
 
 # finished review
