@@ -2,12 +2,17 @@ from twittor import db, create_app  # 此時db仍沒有連上engine，因為twit
 app = create_app() # 這裏db也還是沒有連上，只是創造出app 環境而已
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
 
-from twittor.models.tweet import Review
-from twittor.models.user import User, Group, user_group
-from twittor.models.fact import Location, EPA, ReviewDifficulty, ReviewScore, ReviewSource
+from twittor.models.tweet import Review, Location, EPA, ReviewDifficulty, ReviewScore, ReviewSource
+from twittor.models.user import User, Group, user_group, Role
 
-for table_name in ["epa", "location", "user", "review_source", "review_score", "review_difficulty", "group", "user_group", "review"]:
-    db.session.execute(f"DELETE from `{table_name}`;")
+for table_name in ["epa", "location",  "review_source", "review_score", "review_difficulty", "users", "groups", "user_group", "reviews"]:
+    print(table_name)
+    db.session.execute(f"TRUNCATE TABLE \"{table_name}\" RESTART IDENTITY CASCADE ;")# RESTART IDENTITY would reset id starting from 1, cascade would del related rows in other tables
+
+# Role
+roles = [("主治醫師","可以評核與被評核其他醫師"),("住院醫師","只能請求評核"), ("admin","後台管理"), ("manager","可以編輯使用者資料")]
+for role in roles:
+    db.session.add(Role(name=role[0], desc=role[1]))
 
 #EPA
 epa_desc = ["EPA1(Airway) 呼吸道評估與處置", "EPA2(FB) 耳鼻喉頭頸部異物評估與處置", "EPA3(Bleeding) 耳鼻喉頭頸部出血評估與處置", "EPA4(Vertigo) 眩暈評估與處置", "EPA5(Infection) 耳鼻喉頭頸部感染症評估與處置", "EPA6(H&N) 耳鼻喉頭頸部(含口腔)腫瘤評估與處置", "EPA7(Ear/Hearing) 耳部與聽力疾病評估與處置", "EPA8(Nose/Sinus) 鼻部與鼻竇疾病評估與處置", "EPA9(Larynx) 咽喉部(音聲、語言、吞嚥)疾病評估與處置", "EPA10(SDB) 睡眠呼吸障礙評估與處置", "EPA11(Plasty) 顏面整形重建評估與處"]
@@ -45,8 +50,8 @@ db.session.commit()
 
 
 #Group
-group_name = ["耕莘醫院", "第二間醫院"]
-group_desc = ["耕莘醫院的老師和學生", "第二間醫院的描述"]
+group_name = ["第一間醫院", "第二間醫院"]
+group_desc = ["第一間醫院的描述", "第二間醫院的描述"]
 for name, desc in zip(group_name, group_desc):
     db.session.add(Group(name=name, desc=desc))
 db.session.commit()
@@ -56,35 +61,39 @@ db.session.commit()
 # use "append" to resolve bridging table
 std_name = ["R1卓筱茜", "R2陳佩欣", "R3廖晨竹", "R4謝易達", "R5余瑞彬"]
 for name in std_name:
-    user = User(username=name, line_userId=f"line {name}", role="student")
-    user.groups.append(Group.query.get(1))
+    user = User(username=name, line_userId=f"line {name}")
+    user.role = Role.query.filter(Role.name=="住院醫師").first()
+    user.groups.append(Group.query.filter(Group.name=="第一間醫院").first())
     db.session.add(user)
 
 
 tea_name = ["林凱南", "劉嘉銘", "梁家光", "陳正文", "王守仁", "林世倉", "張淳翔", "李嘉欣", "蘇家弘", "陳一嘉", "余瑞彬"]
 for name in tea_name:
-    user = User(username=name, line_userId=f"line {name}", role="teacher")
-    user.groups.append(Group.query.get(1))
-    user.groups.append(Group.query.get(2))
+    user = User(username=name, line_userId=f"line {name}")
+    user.role = Role.query.filter(Role.name=="主治醫師").first()
+    user.groups.append(Group.query.filter(Group.name=="第一間醫院").first())
+    user.groups.append(Group.query.filter(Group.name=="第二間醫院").first())
     db.session.add(user)
 
 
 for name in ["only2"+name for name in std_name]:
-    user = User(username=name, line_userId=f"line {name}", role="student")
-    user.groups.append(Group.query.get(2))
+    user = User(username=name, line_userId=f"line {name}")
+    user.role = Role.query.filter(Role.name=="住院醫師").first()
+    user.groups.append(Group.query.filter(Group.name=="第二間醫院").first())
     db.session.add(user)
 
 
 for name in ["only2"+name for name in tea_name]:
-    user = User(username=name, line_userId=f"line {name}", role="teacher")
-    user.groups.append(Group.query.get(2))
+    user = User(username=name, line_userId=f"line {name}")
+    user.role = Role.query.filter(Role.name=="主治醫師").first()
+    user.groups.append(Group.query.filter(Group.name=="第二間醫院").first())
     db.session.add(user)
 
 db.session.commit()
 
 
 # ask review
-all_teachers = User.query.filter(User.role=='teacher').all()
+all_teachers = User.query.join(Role).filter(Role.name=='主治醫師').all()
 all_users = User.query.all()
 import random
 all_locations = Location.query.all()
@@ -102,7 +111,7 @@ db.session.commit()
 # finished review
 review = Review()
 review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
-review.reviewer = User.query.filter(User.role=='teacher').first()
+review.reviewer = User.query.join(Role).filter(Role.name=='主治醫師').first()
 review.reviewee = User.query.get(2)
 review.location = Location.query.get(2)
 review.epa = EPA.query.get(3)
