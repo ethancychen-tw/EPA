@@ -1,12 +1,11 @@
-from twittor import db, create_app  # 此時db仍沒有連上engine，因為twittor在  __init__.py 中只有初始化SQLAlchemy空物件而已
+from app import db, create_app  # 此時db仍沒有連上engine，因為app在  __init__.py 中只有初始化SQLAlchemy空物件而已
 app = create_app() # 這裏db也還是沒有連上，只是創造出app 環境而已
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
 
-from twittor.models.tweet import Review, Location, EPA, ReviewDifficulty, ReviewScore, ReviewSource
-from twittor.models.user import User, Group, user_group, Role
+from app.models.review import Review, Location, EPA, ReviewDifficulty, ReviewScore, ReviewSource
+from app.models.user import User, Group, user_group, Role
 
 for table_name in ["epa", "location",  "review_source", "review_score", "review_difficulty", "users", "groups", "user_group", "reviews"]:
-    print(table_name)
     db.session.execute(f"TRUNCATE TABLE \"{table_name}\" RESTART IDENTITY CASCADE ;")# RESTART IDENTITY would reset id starting from 1, cascade would del related rows in other tables
 
 # Role
@@ -58,6 +57,29 @@ db.session.commit()
 
 
 # User
+# admin
+user = User(username="ethan", line_userId=f"line ethan")
+user.email = "ethan.cychen@gmail.com"
+user.set_password("ethan")
+user.role = Role.query.filter(Role.name=="admin").first()
+user.groups.append(Group.query.filter(Group.name=="第一間醫院").first())
+db.session.add(user)
+
+user = User(username="aaa", line_userId=f"line aaa")
+user.email = "gatheringbc@gmail.com"
+user.set_password("aaa")
+user.role = Role.query.filter(Role.name=="主治醫師").first()
+user.groups.append(Group.query.filter(Group.name=="第一間醫院").first())
+db.session.add(user)
+
+user = User(username="bbb", line_userId=f"line bbb")
+user.email = "gatheringbc@yahoo.com.tw"
+user.set_password("bbb")
+user.role = Role.query.filter(Role.name=="主治醫師").first()
+user.groups.append(Group.query.filter(Group.name=="第一間醫院").first())
+db.session.add(user)
+
+
 # use "append" to resolve bridging table
 std_name = ["R1卓筱茜", "R2陳佩欣", "R3廖晨竹", "R4謝易達", "R5余瑞彬"]
 for name in std_name:

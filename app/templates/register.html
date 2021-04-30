@@ -35,7 +35,7 @@
                             
                         {% else %}
                             無法辨識你的 line 帳號
-                            <p><a href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}"><button class="btn btn-outline-dark">前往綁定</button></a></p>
+                            <p><a class="btn btn-outline-dark" href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">前往綁定</a></p>
                         {% endif %}
                         {{ form.bindline.errors[0] }}
                     </td>

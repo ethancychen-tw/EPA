@@ -7,8 +7,8 @@ from flask_login import UserMixin
 from flask import current_app
 import jwt
 
-from twittor import db, login_manager
-from twittor.models.tweet import  Review
+from app import db, login_manager
+from app.models.review import Review
 
 user_group = db.Table('user_group',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),

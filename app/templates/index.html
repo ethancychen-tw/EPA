@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class='row'>
+    <div class="mx-auto">
+        <h3>嗨，{{ current_user.username }}</h3>
+    </div>
+    
+
+</div>
+<div class='row'>
+    <div class="col-lg-1"></div>
+    <div class="col-lg-10">
+    {% if unfin_being_reviews | length == 0 and unfin_make_reviews | length == 0%}
+        太棒了，你沒有待辦事項
+    {% endif %}
+    {% if unfin_make_reviews | length > 0%}
+        <h5>以下是你待完成的評核</h5>
+        {% set button_route = "review/fill/"%}
+        {% set button_text = "前往評核"%}
+        {% set reviews = unfin_make_reviews%}
+        {% include "_reviews.html" %}
+    {% endif %}
+    {% if unfin_being_reviews | length > 0%}
+        <h5>以下是關於你的評核，等待指定老師完成</h5>
+        {% set button_route = "review/"%}
+        {% set button_text = "查看"%}
+        {% set reviews = unfin_being_reviews%}
+        {% include "_reviews.html" %}
+    {% endif %}
+    
+    </div>
+    <div class="col-lg-1"></div>
+</div>
+<div class='row'>
+    <div class="col-lg-4"></div>
+    <div class="col-lg-8">
+    {% if prev_url %}
+    <a href="{{ prev_url }}">Prev Page</a>
+    {% endif %}
+    {% if next_url %}
+    <a href="{{ next_url }}">Next Page</a>
+    {% endif %}
+    </div>
+</div>
+{% endblock %}

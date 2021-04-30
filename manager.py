@@ -1,6 +1,6 @@
 from flask_script import Manager
 from flask_migrate import MigrateCommand
-from twittor import create_app
+from app import create_app
 
 app = create_app(config_name="development")
 manager = Manager(app)

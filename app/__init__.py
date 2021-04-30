@@ -5,7 +5,7 @@ from flask_login import LoginManager
 from flask_mail import Mail
 
 from linebot import LineBotApi, WebhookHandler
-from twittor.config import config
+from app.config import config
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -15,7 +15,7 @@ mail = Mail()
 line_bot_api = LineBotApi(config['production'].LINEBOT_MSG_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(config['production'].LINEBOT_MSG_CHANNEL_SECRET)
 
-from twittor.route import index, login, logout, register, user, page_not_found, \
+from app.route import index, login, logout, register, user, page_not_found, \
     edit_profile, reset_password_request, password_reset, user_activate, new_review, request_review, fill_review, view_reviews, review, callback, login_token
 
 def create_app(config_name='development'):

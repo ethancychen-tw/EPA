@@ -4,14 +4,13 @@ from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import or_
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
-from twittor.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
+from app.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
     PasswdResetRequestForm, PasswdResetForm, ReviewForm, LineActivateForm
-from twittor.models.user import User, load_user, Group
-from twittor.models.tweet import Tweet, Review
-from twittor.models.fact import EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
-from twittor import db
-from twittor import line_bot_api, handler
-from twittor.email import send_email
+from app.models.user import User, load_user, Group, Role
+from app.models.review import Review, EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
+from app import db
+from app import line_bot_api, handler
+from app.email import send_email
 
 @login_required
 def review(review_id):
@@ -40,7 +39,7 @@ def new_review():
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
 
     current_user_groups = current_user.groups.all()
-    form.reviewee.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.users if user.role=="student"]))
+    form.reviewee.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.users if user != current_user]))
     
     form.review_difficulty.choices = [(review_difficulty.id, review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
     form.review_score.choices = [(review_score.id, review_score.desc) for review_score in ReviewScore.query.all()]
@@ -72,7 +71,7 @@ def request_review():
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
 
     current_user_groups = current_user.groups.all()
-    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.users if user.role=="teacher"]))
+    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.users if user != current_user and user.role.name=="主治醫師"]))
     
     if form.is_submitted():
         review = Review()
@@ -191,12 +190,14 @@ def register():
         print("invalid line user Id")
     
     form = RegisterForm()
-    form.role.choices = [("student", "學生"), ("teacher", "老師")]  # hard coded roles for now
+    registerable_roles = Role.query.with_entities(Role.id, Role.name).all()
+    form.role.choices = [(str(role.id), role.name) for role in registerable_roles]
     form.bindline.data = True if line_user_profile else False
     all_groups = Group.query.all()
     form.groups.choices = [(str(group.id), group.name) for group in all_groups]
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data, role=form.role.data)
+        user = User(username=form.username.data, email=form.email.data)
+        user.role = Role.query.filter(Role.name == form.role.data).first()
         if line_user_profile and form.bindline.data:
             user.line_userId = line_userId
             user.is_activated = True
@@ -211,7 +212,7 @@ def register():
 
 @login_required
 def user(username):
-    if current_user.role not in ['admin', 'manager']:
+    if current_user.role.name not in ['admin', 'manager']:
         flash("This is a page accessable for admin/ manager. If you think this is an error, Please contact to get access")
         return redirect(url_for('index'))
     user = User.query.filter_by(username=username).first()
@@ -248,7 +249,7 @@ def send_email_for_user_activate(user):
     url_user_activate = url_for(
         'user_activate',
         token=token,
-        _external=True
+        _external=True # external make the url universaly aviable
     )
     send_email(
         subject=current_app.config['MAIN_SUBJECT_USER_ACTIVATE'],
