@@ -1,19 +1,16 @@
 from datetime import datetime
 
 from twittor import db
-from twittor.models.fact import EPA, Location
-
-
 class Review(db.Model):
-    __table__name = "review"
+    __tablename__ = "reviews"
     id = db.Column(db.Integer, primary_key=True)
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
     epa_id = db.Column(db.Integer, db.ForeignKey('epa.id'))
     review_source_id = db.Column(db.Integer, db.ForeignKey('review_source.id'))
     review_difficulty_id = db.Column(db.Integer, db.ForeignKey('review_difficulty.id')) 
     review_score_id = db.Column(db.Integer, db.ForeignKey('review_score.id')) 
-    reviewee_id = db.Column(db.Integer, db.ForeignKey('user.id')) 
-    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    reviewee_id = db.Column(db.Integer, db.ForeignKey('users.id')) 
+    reviewer_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     review_compliment = db.Column(db.String(512))
     review_suggestion = db.Column(db.String(512))
     complete = db.Column(db.Boolean, default=False)
@@ -32,13 +29,56 @@ class Review(db.Model):
         review_source_id={self.review_score_id}, 
         review_difficulty_id={self.review_difficulty_id}
         """
-class Tweet(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.String(140))
-    create_time = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
+class Location(db.Model):
+    __tablename__ = 'location'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    desc = db.Column(db.String(64))
+
+    reviews = db.relationship('Review', backref='location', lazy='dynamic')
     def __repr__(self):
-        return "id={}, body={}, create_time={}, user_id={}".format(
-            self.id, self.body, self.create_time, self.user_id
-        )
+        return f"location: id={self.id}, name={self.name},desc={self.desc}"
+
+class EPA(db.Model):
+    __tablename__ = 'epa'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    desc = db.Column(db.String(64))
+
+    reviews = db.relationship('Review', backref='epa', lazy='dynamic')
+    def __repr__(self):
+        return f"epa: id={self.id}, name={self.name},desc={self.desc}"
+
+class ReviewScore(db.Model):
+    __tablename__ = 'review_score'
+    id = db.Column(db.Integer, primary_key=True)
+    value = db.Column(db.Integer)
+    name = db.Column(db.String(64))
+    desc = db.Column(db.String(64))
+    
+    reviews = db.relationship('Review', backref='review_score', lazy='dynamic')
+    def __repr__(self):
+        return f"review_score: id={self.id}, value={self.value},  name={self.name},desc={self.desc}"
+
+class ReviewDifficulty(db.Model):
+    __tablename__ = 'review_difficulty'
+    id = db.Column(db.Integer, primary_key=True)
+    value = db.Column(db.Integer)
+    name = db.Column(db.String(64))
+    desc = db.Column(db.String(64))
+
+    review = db.relationship('Review', backref='review_difficulty', lazy='dynamic')
+    def __repr__(self):
+        return f"review_difficulty: id={self.id}, value={self.value},  name={self.name},desc={self.desc}"
+
+class ReviewSource(db.Model):
+    __tablename__ = 'review_source'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    desc = db.Column(db.String(64))  
+
+    review = db.relationship('Review', backref='review_source', lazy='dynamic')
+    def __repr__(self):
+        return f"review_source: id={self.id}, name={self.name},desc={self.desc}"
+    
