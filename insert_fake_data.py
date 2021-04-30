@@ -9,7 +9,16 @@ for table_name in ["epa", "location",  "review_source", "review_score", "review_
     db.session.execute(f"TRUNCATE TABLE \"{table_name}\" RESTART IDENTITY CASCADE ;")# RESTART IDENTITY would reset id starting from 1, cascade would del related rows in other tables
 
 # Role
-roles = [("主治醫師","可以評核與被評核其他醫師"),("住院醫師","只能請求評核"), ("admin","後台管理"), ("manager","可以編輯使用者資料")]
+roles = [
+    ("主治醫師", "可以評核與被評核其他醫師"),
+    ("住院醫師-R1", "只能請求評核"), 
+    ("住院醫師-R2", "只能請求評核"),
+    ("住院醫師-R3", "只能請求評核"),
+    ("住院醫師-R4", "只能請求評核"),
+    ("住院醫師-R5(總醫師)", "只能請求評核"), 
+    ("admin", "後台管理"), 
+    ("manager", "可以編輯使用者資料")
+    ]
 for role in roles:
     db.session.add(Role(name=role[0], desc=role[1]))
 

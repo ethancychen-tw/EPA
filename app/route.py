@@ -13,18 +13,18 @@ from app import line_bot_api, handler
 from app.email import send_email
 
 @login_required
-def review(review_id):
+def investigate_review(review_id):
     review = Review.query.get(review_id)
     if current_user != review.reviewer and current_user != review.reviewee:
         return redirect(url_for('index'))
-    return render_template('review.html', review=review)
+    return render_template('investigate_review.html', review=review)
 
 @login_required
 def view_reviews():
     cur_page_num = int(request.args.get('page') or 1)
     all_user_related_reviews = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user)).order_by(Review.last_edited.desc())\
                     .paginate(page=cur_page_num, per_page=int(current_app.config['REVIEW_PER_PAGE']), error_out=False)
-    next_url = url_for('view_reviews',page=all_user_related_reviews.next_num) if all_user_related_reviews.has_next else None
+    next_url = url_for('view_reviews', page=all_user_related_reviews.next_num) if all_user_related_reviews.has_next else None
     prev_url = url_for('view_reviews', page=all_user_related_reviews.prev_num) if all_user_related_reviews.has_prev else None
     return render_template('view_reviews.html', reviews=all_user_related_reviews.items, next_url=next_url, prev_url=prev_url)
 
@@ -46,6 +46,7 @@ def new_review():
     
     if form.is_submitted():
         review = Review()
+        review.implement_date = form.implement_date.data
         review.epa = EPA.query.get(form.epa.data)
         review.location = Location.query.get(form.location.data)
         review.reviewee = User.query.get(form.reviewee.data)

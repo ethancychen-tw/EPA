@@ -6,6 +6,7 @@ class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
     epa_id = db.Column(db.Integer, db.ForeignKey('epa.id'))
+    implement_date = db.Column(db.DateTime)
     review_source_id = db.Column(db.Integer, db.ForeignKey('review_source.id'))
     review_difficulty_id = db.Column(db.Integer, db.ForeignKey('review_difficulty.id')) 
     review_score_id = db.Column(db.Integer, db.ForeignKey('review_score.id')) 

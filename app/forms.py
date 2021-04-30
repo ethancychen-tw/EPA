@@ -1,12 +1,15 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, \
     TextAreaField, SelectField, SelectMultipleField
+from wtforms.fields.html5 import DateField, EmailField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, \
     Length
 
 from app.models.user import User
 
+import datetime
 class ReviewForm(FlaskForm):
+    implement_date = DateField(label="實作時間", validators=[DataRequired()], default=datetime.date.today())
     location = SelectField(label='我在')
     epa = SelectField(label='EPA')
     reviewee = SelectField(label="被評核者")
@@ -36,7 +39,7 @@ class RegisterForm(FlaskForm):
     bindline = BooleanField(label="linebind", default=False)
     role = SelectField(label='role', validators=[DataRequired()])
     groups = SelectMultipleField(label="groups", validators=[DataRequired()])
-    email = StringField("Email Address", validators=[DataRequired(), Email()])
+    email = EmailField("Email Address", validators=[DataRequired(), Email()])
     password = PasswordField("Password", validators=[DataRequired()])
     password2 = PasswordField("Password Repeat", validators=[DataRequired(), EqualTo('password')])
     

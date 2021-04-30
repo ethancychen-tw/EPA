@@ -14,6 +14,7 @@
                 <tr><th>指定評核老師 </th><td>{{ form.reviewer() }}</td></tr>
                 <tr><th>要求老師評核的項目 </th><td>{{ form.epa() }}</td></tr>
                 <tr><th>實作的地點 </th><td>{{ form.location() }}</td></tr>
+                <tr><th>實作時間</th><td>{{ form.implement_date(class='datepicker') }}</td></tr>
             </table>
             <button class="btn btn-lg btn-outline-primary" type="submit">送出請求</button>
         {% endif %}
@@ -26,6 +27,7 @@
                 <tr><th>被評核者 </th><td>{{ form.reviewee() }}</td></tr>
                 <tr><th>要求老師評核的項目 </th><td>{{ form.epa() }}</td></tr>
                 <tr><th>實作的地點 </th><td>{{ form.location() }}</td></tr>
+                <tr><th>實作時間</th><td>{{form.implement_date(class='datepicker')}}</td></tr>
 
                 <tr><th>(1) 這項工作的複雜程度為 </th><td>{{ form.review_difficulty(class="form-control form-control-lg") }}</td></tr>
                 <tr><th>(2) 我覺得你表現不錯的地方在 </th><td>{{ form.review_compliment(class="form-control",cols="50", rows="5") }}</td></tr>
