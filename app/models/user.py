@@ -10,7 +10,7 @@ import jwt
 from app import db, login_manager
 from app.models.review import Review
 
-user_group = db.Table('user_group',
+user_externalgroup = db.Table('user_externalgroup',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
     db.Column('group_id', db.Integer, db.ForeignKey('groups.id'))
 )
@@ -21,6 +21,8 @@ class Group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, index=True)
     desc = db.Column(db.String(64))
+
+    internal_users = db.relationship('User', backref="internal_group", lazy='dynamic')
 
 class Role(db.Model):
     __tablename__ = 'role'
@@ -38,13 +40,14 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     create_time = db.Column(db.DateTime, default=datetime.utcnow)
     is_activated = db.Column(db.Boolean, default=False)
+    internal_group_id = db.Column(db.Integer, db.ForeignKey('groups.id')) 
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
     
     # If you use backref you don't need to declare the relationship on the second table.
     line_userId = db.Column(db.String(128))
     make_reviews = db.relationship('Review', primaryjoin=Review.reviewer_id==id, backref='reviewer', lazy='dynamic') # need to specify primary join, cuz there are more than one ways to join users and review
     being_reviews = db.relationship('Review' ,primaryjoin=Review.reviewee_id==id, backref='reviewee', lazy='dynamic') 
-    groups = db.relationship('Group', secondary=user_group, backref="users", lazy='dynamic') # first specify the target
+    external_groups = db.relationship('Group', secondary=user_externalgroup, backref="external_users", lazy='dynamic') # first specify the target
     
 
     # followed = db.relationship(
@@ -71,6 +74,7 @@ class User(UserMixin, db.Model):
     def get_jwt(self, expire=300):
         return jwt.encode(
             {
+                'email': self.email,
                 'line_userId': self.line_userId,
                 'exp': time.time() + expire
             },
@@ -86,10 +90,11 @@ class User(UserMixin, db.Model):
                 current_app.config['SECRET_KEY'],
                 algorithms=['HS256']
             )
+            email = pay_load['email']
             line_userId = pay_load['line_userId']
         except:
             return
-        return User.query.filter_by(line_userId=line_userId).first()
+        return User.query.filter_by(User.line_userId==line_userId, User.email==email).first()
 
 
 @login_manager.user_loader

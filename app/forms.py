@@ -29,21 +29,18 @@ class LoginForm(FlaskForm):
     remember_me = BooleanField("Remember Me")
     submit = SubmitField('Sign In')
 
-class LineActivateForm(FlaskForm):
-    submit = SubmitField('activate')
-
 class RegisterForm(FlaskForm):
     class Meta:
         csrf = False
-    username = StringField("Username" ,validators=[DataRequired()])
-    bindline = BooleanField(label="linebind", default=False)
-    role = SelectField(label='role', validators=[DataRequired()])
-    groups = SelectMultipleField(label="groups", validators=[DataRequired()])
-    email = EmailField("Email Address", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired()])
-    password2 = PasswordField("Password Repeat", validators=[DataRequired(), EqualTo('password')])
-    
-    submit = SubmitField('Register')
+    username = StringField("姓名" ,validators=[DataRequired()])
+    bindline = BooleanField(label="綁定我的line帳號", default=False)
+    role = SelectField(label='身份/職級', validators=[DataRequired()])
+    internal_group = SelectField(label="所屬醫院/群組", validators=[DataRequired()])
+    external_groups = SelectMultipleField(label="外派醫院/群組(可複選)")
+    email = EmailField(label="Email", validators=[DataRequired(), Email()])
+    password = PasswordField(label="密碼", validators=[DataRequired()])
+    password2 = PasswordField(label="密碼確認", validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField(label='送出')
 
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
@@ -57,14 +54,12 @@ class RegisterForm(FlaskForm):
 
 
 class EditProfileForm(FlaskForm):
-    about_me = TextAreaField('About me', validators=[Length(min=0, max=120)])
+    bindline = BooleanField(label="bindline")
+    role = SelectField(label='role', validators=[DataRequired()])
+    internal_group = SelectMultipleField(label="internal_group", validators=[DataRequired()])
+    external_groups = SelectMultipleField(label="external_groups", validators=[DataRequired()])
+    email = EmailField("Email Address", validators=[DataRequired(), Email()])
     submit = SubmitField('Save')
-
-
-class TweetForm(FlaskForm):
-    tweet = TextAreaField('Tweet', validators=[DataRequired(), Length(min=0, max=140)])
-    submit = SubmitField('Tweet')
-
 
 class PasswdResetRequestForm(FlaskForm):
     email = StringField("Email Address", validators=[DataRequired(), Email()])
@@ -78,7 +73,6 @@ class PasswdResetRequestForm(FlaskForm):
 
 
 class PasswdResetForm(FlaskForm):
-    password = PasswordField("Password", validators=[DataRequired()])
-    password2 = PasswordField(
-        "Password Repeat", validators=[DataRequired(), EqualTo('password')])
-    submit = SubmitField('Submit')
+    password = PasswordField(label="Password", validators=[DataRequired()])
+    password2 = PasswordField(label="Password Repeat", validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField(label='Submit')

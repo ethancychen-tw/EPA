@@ -4,8 +4,8 @@ from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import or_
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
-from app.forms import LoginForm, RegisterForm, EditProfileForm, TweetForm, \
-    PasswdResetRequestForm, PasswdResetForm, ReviewForm, LineActivateForm
+from app.forms import LoginForm, RegisterForm, EditProfileForm, \
+    PasswdResetRequestForm, PasswdResetForm, ReviewForm
 from app.models.user import User, load_user, Group, Role
 from app.models.review import Review, EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
 from app import db
@@ -177,38 +177,47 @@ def logout():
 
 
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    linebotinfo = line_bot_api.get_bot_info()
-    
     line_userId = request.args.get("line_userId", None)
     try:
         line_user_profile = line_bot_api.get_profile(line_userId)
     except Exception as e:
         print(e)
         line_user_profile = None
-        flash("invalid line_userId. 哈哈哈")
-        print("invalid line user Id")
-    
+
+    if current_user.is_authenticated:
+        if not current_user.line_userId:
+            if line_user_profile:
+                current_user.line_userId = line_userId
+                db.session.commit()
+                return redirect(url_for('index'))
+            else:
+                raise ValueError('register line fail')
+        return redirect(url_for('index'))
+
     form = RegisterForm()
-    registerable_roles = Role.query.with_entities(Role.id, Role.name).all()
+    registerable_roles = Role.query.filter(Role.name!="admin", Role.name!="manager").with_entities(Role.id, Role.name).all()
     form.role.choices = [(str(role.id), role.name) for role in registerable_roles]
     form.bindline.data = True if line_user_profile else False
     all_groups = Group.query.all()
-    form.groups.choices = [(str(group.id), group.name) for group in all_groups]
+    form.internal_group.choices = [(str(group.id), group.name) for group in all_groups]
+    form.external_groups.choices = [(str(group.id), group.name) for group in all_groups]
+
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data)
         user.role = Role.query.filter(Role.name == form.role.data).first()
         if line_user_profile and form.bindline.data:
             user.line_userId = line_userId
-            user.is_activated = True
-        for group_id in form.groups.data:
-            user.groups.append(Group.query.get(int(group_id)))
+        user.internal_group = Group.query.get(int(form.internal_group.data))
+        
+        for group_id in form.external_groups.data:
+            user.external_groups.append(Group.query.get(int(group_id)))
+
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
         return redirect(url_for('login'))
 
+    linebotinfo = line_bot_api.get_bot_info()
     return render_template('register.html', title='Registration', form=form, line_user_profile=line_user_profile, linebotinfo=linebotinfo)
 
 @login_required
@@ -289,12 +298,26 @@ def page_not_found(e):
 @login_required
 def edit_profile():
     form = EditProfileForm()
-    if request.method == 'GET':
-        form.about_me.data = current_user.about_me
+    form.bindline.data = True if current_user.line_userId else False
+    form.email.data = current_user.email
+    form.role.data = current_user.role.id
+    form.internal_group.data = current_user.internal_group.id
+    form.external_group.data = [ext_group.id for ext_group in current_user.internal_group]
+    
+    form.role.choices = [(current_user.role.id, current_user.role.name)]
+    all_groups = Group.query.with_entities(Group.id, Group.name).all()
+    form.internal_group.choices = [(group.id, group.name) for group in all_groups]
+    form.external_groups.choices = [(group.id, group.name) for group in all_groups]
+
     if form.validate_on_submit():
-        current_user.about_me = form.about_me.data
+        if not form.bindline.data:
+            current_user.line_userId = None
+        current_user.email = form.email
+        current_user.internal_group = Group.query.get(form.group.data)
+        current_user.external_groups = [Group.query.get(group_id) for group_id in form.external_groups.data]
+        
         db.session.commit()
-        return redirect(url_for('profile', username=current_user.username))
+        flash('資料更新成功')
     return render_template('edit_profile.html', form=form)
 
 
@@ -396,7 +419,7 @@ def handle_message(event):
         # I think this is not safe. But let use this for now
         # for more advanced link token see, https://developers.line.biz/en/docs/messaging-api/linking-accounts/#implement-account-link-feature
         # or alternatively, we could have our own token auth method
-        app_webhook = "https://fe8dfe389f01.ngrok.io"
+        app_webhook = "https://fd479b0ec622.ngrok.io"
         line_bot_api.reply_message(event.reply_token,TextSendMessage(f'新用戶你好，請點此連結註冊: {app_webhook}/register?line_userId={line_userId}'))  
     else:
         # if registered, issue a login URL with token

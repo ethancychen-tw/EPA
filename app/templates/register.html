@@ -2,98 +2,51 @@
 
 {% block content %}
 
-<div class='row'>
-    <div class="text-center col-lg-4"></div>
-    <div class="text-center col-lg-4">
-        <h1>註冊我的帳號</h1><br>
-        <form action="" method="post">
-            {{ form.hidden_tag() }}
-            {{ form.csrf_token }}
-            <table class="table text-left">
-                
-                <tr>
-                    <th> 姓名 </th>
-                    <td>
-                        {{ form.username() }}
-                        {% for error in form.username.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    </td>
-                </tr>
-                
-                <tr>
-                    <th>綁定我的line帳號 </th>
-                    <td>
-                        {% if line_user_profile %}
-                            <div class='row'>
-                                <div class="col"><img src="{{line_user_profile.picture_url}}" width="50" height="50"></div>
-                                <div class="col">
-                                    <p>  {{line_user_profile.display_name }}</p>
-                                    <p>{{form.bindline()}} 綁定此帳號 </p>
-                                </div>
-                            </div>
-                            
-                        {% else %}
-                            無法辨識你的 line 帳號
-                            <p><a class="btn btn-outline-dark" href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">前往綁定</a></p>
-                        {% endif %}
-                        {{ form.bindline.errors[0] }}
-                    </td>
-                </tr>
-                <tr>
-                    <th>{{ form.role.label }}</th>
-                    <td>
-                        {{ form.role(class="form-control form-control-lg") }}
-                        {% for error in form.role.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    </td>
-                    
-                </tr>
-                <tr>
-                    <th> 所屬醫院/群組 </th>
-                    <td>
-                        {{form.groups()}}
+
+
+
+<form action="" method="post">
+<div class="container">
+    <div class='row justify-content-center align-items-center'><h1>註冊我的帳號</h1></div>
+    {{ form.hidden_tag() }}
+    {{ form.csrf_token }}
+    {% for field in [form.username, form.bindline, form.role, form.internal_group, form.external_groups, form.email, form.password, form.password2] %}
+    <div class='row justify-content-center align-items-center'>
+        <div class=" col-lg-3 col-sm-2 col-md-12">
+            {{ field.label }}
+        </div>
+        <div class="justify-content-left col-lg-4 col-sm-4 col-md-12">
+            {% if 'line' in field.label|string %}
+                {% if line_user_profile %}
+                    <div class='row'>
+                        <img src="{{line_user_profile.picture_url}}" width="50" height="50">
                         
-                        {% for error in form.groups.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    </td>
-                </tr>
+                            <p>{{ line_user_profile.display_name }}</p>
+                            <p>{{ field() }}</p>
+                        
+                    </div>
+                {% else %}
+                    <p style="color: orange;">無法辨識你的 line 帳號<br>
+                    <a class="btn btn-outline-dark" href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">前往綁定</a></p>
+                {% endif %}
+            
+            {% else %}
+                {{ field(class="form-control form-control-lg") }}
+            {% endif %}
 
-
-                <tr>
-                    <th>{{ form.email.label }}</th>
-                    <td>
-                        {{ form.email() }}
-                        {% for error in form.email.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    </td>
-                </tr>
-                
-                <tr>
-                    <th>{{ form.password.label }}</th>
-                    <td>
-                        {{ form.password() }}<br>
-                        {% for error in form.password.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}
-                    </td>
-                </tr>
-                <tr>
-                    <th>{{ form.password2.label }}</th>
-                    <td>
-                        {{ form.password2() }}<br>
-                        {% for error in form.password2.errors %}
-                            <span style="color: red;">[{{ error }}]</span>
-                        {% endfor %}</td>
-                </tr>
-            </table>
-
-            <button class="btn btn-lg btn-outline-primary" type="submit">送出</button>
-        </form>
+            {% for error in field.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+            
+        </div>
     </div>
+    {% endfor %}
+
+    <div class='row text-center justify-content-center align-items-center'>
+        {{ form.submit(title=form.submit.description, class="btn btn-lg btn-outline-primary")}}
+    </div>
+    
 </div>
+</form>
 
 {% endblock %}
