@@ -9,15 +9,16 @@ from app.models.user import User
 
 import datetime
 class ReviewForm(FlaskForm):
+    review_source = SelectField(label='來源', choices=[('', '')], default='')
     implement_date = DateField(label="實作時間", validators=[DataRequired()], default=datetime.date.today())
-    location = SelectField(label='我在')
+    location = SelectField(label='實作地點')
     epa = SelectField(label='EPA')
     reviewee = SelectField(label="被評核者")
     reviewer = SelectField(label='評核者')
-    review_difficulty = SelectField(label='這項工作的難度')
-    review_compliment = TextAreaField(label="我覺得你表現不錯的地方是" ,validators=[DataRequired()])
-    review_suggestion = TextAreaField(label="我覺得你可以改進的地方" , validators=[DataRequired()])
-    review_score = SelectField(label='整體來說，評分為')
+    review_difficulty = SelectField(label='(1) 這項工作的複雜程度為')
+    review_compliment = TextAreaField(label="(2) 我覺得你表現不錯的地方在" ,validators=[DataRequired()])
+    review_suggestion = TextAreaField(label="(3) 如果你能做到以下建議，就可以獲得老師或病人更高的信任" , validators=[DataRequired()])
+    review_score = SelectField(label='(4) 如果下次再遇到類似情形，我對你的信賴等級為')
     submit = SubmitField('提交')
 
 

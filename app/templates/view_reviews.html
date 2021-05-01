@@ -1,28 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-
-<div class='row'>
-    <div class="mx-auto"><h2>查看所有評核</h2></div>
-</div>
-<div class='row'>
-    <div class="col-lg-1"></div>
-    <div class="col-lg-10"> 
-        {% set button_route = "review/investigate/"%}
-        {% set button_text = "查看"%}
-        {% set reviews = reviews%}
-        {% include "_reviews.html" %}     
-        <div class='row'>
-            <div class='col-lg-6 text-center'>
-                {% if prev_url %}<a href="{{ prev_url }}">Prev Page</a>{% endif %}
-            </div>
-            <div class='col-lg-6 text-center'>
-                {% if next_url %}<a href="{{ next_url }}">Next Page</a>{% endif %}
-            </div>
+<div class="container">
+    <div class='row justify-content-center align-items-center'><h1>{{title}}</h1></div>
+    {% set button_text = "查看"%}
+    {% set reviews = reviews %}
+    {% include "_reviews.html" %}     
+    <div class='row'>
+        <div class='col-lg-6 text-center'>
+            {% if prev_url %}<a href="{{ prev_url }}">Prev Page</a>{% endif %}
+        </div>
+        <div class='col-lg-6 text-center'>
+            {% if next_url %}<a href="{{ next_url }}">Next Page</a>{% endif %}
         </div>
     </div>
 
-    <div class="col-lg-1"></div>
 </div>
 
 {% endblock %}

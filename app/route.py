@@ -13,11 +13,86 @@ from app import line_bot_api, handler
 from app.email import send_email
 
 @login_required
-def investigate_review(review_id):
-    review = Review.query.get(review_id)
-    if current_user != review.reviewer and current_user != review.reviewee:
+def inspect_review(review_id):
+    """
+    see only, can't edit
+    only reviewer or reviewee could see
+    """
+    prefilled_review = Review.query.get(review_id)
+    if current_user.id not in [prefilled_review.reviewer.id, prefilled_review.reviewee.id]:
+        flash('您沒有權限存取這個評核')
         return redirect(url_for('index'))
-    return render_template('investigate_review.html', review=review)
+    form = ReviewForm()
+    
+    form.review_source.choices = [("",prefilled_review.review_source.desc)]
+    form.review_source.render_kw = {'disabled': 'disabled'}
+    form.reviewer.choices = [( "" ,prefilled_review.reviewer.username)]
+    form.reviewer.render_kw = {'disabled': 'disabled'}
+    form.reviewee.choices = [( "" ,prefilled_review.reviewee.username)]
+    form.reviewee.render_kw = {'disabled': 'disabled'}
+    form.location.choices = [( "" ,prefilled_review.location.desc)]
+    form.location.render_kw = {'disabled': 'disabled'}
+    form.implement_date.data = prefilled_review.implement_date
+    form.implement_date.render_kw = {'disabled': 'disabled'}
+    form.epa.choices = [("" ,prefilled_review.epa.desc)]
+    form.epa.render_kw = {'disabled': 'disabled'}
+    form.review_compliment.data = prefilled_review.review_compliment
+    form.review_compliment.render_kw = {'disabled': 'disabled'}
+    form.review_suggestion.data = prefilled_review.review_suggestion
+    form.review_suggestion.render_kw = {'disabled': 'disabled'}
+    form.review_difficulty.choices = [("" ,prefilled_review.review_difficulty.desc if prefilled_review.review_score else "")]
+    form.review_difficulty.render_kw = {'disabled': 'disabled'}
+    form.review_score.choices = [("", prefilled_review.review_score.desc if prefilled_review.review_score else "") ]
+    form.review_score.render_kw = {'disabled': 'disabled'}
+    return render_template('make_review.html', title="查看評核", form=form, review_type="inspect")
+
+@login_required
+def edit_review(review_id):
+    # teacher may finish the review request by any others
+    # fill review_X stuffts
+    prefilled_review = Review.query.get(review_id)
+    if prefilled_review.reviewer.id != current_user.id:
+        flash('您沒有權限存取這個評核')
+        return redirect(url_for('index'))
+    form = ReviewForm()
+
+    form.reviewer.choices = [("" ,prefilled_review.reviewer.username)]
+    form.reviewer.render_kw = {'disabled':'disabled'}
+
+    form.reviewee.choices = [("" ,prefilled_review.reviewee.username)]
+    form.reviewee.render_kw = {'disabled':'disabled'}
+
+    form.location.choices = [("" ,prefilled_review.location.desc)]
+    form.location.render_kw = {'disabled':'disabled'}
+    
+    
+    form.epa.choices = [("" ,prefilled_review.epa.desc)]
+    form.epa.render_kw = {'disabled':'disabled'}
+
+    form.implement_date.data = prefilled_review.implement_date
+    form.implement_date.render_kw = {'disabled':'disabled'}
+
+    form.review_compliment.data = prefilled_review.review_compliment
+    form.review_suggestion.data = prefilled_review.review_suggestion
+    if prefilled_review.review_difficulty:
+        form.review_difficulty.data = str(prefilled_review.review_difficulty.id)
+    if prefilled_review.review_score:
+        form.review_score.data = str(prefilled_review.review_score.id)
+
+    form.review_difficulty.choices = [(str(review_difficulty.id), review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
+    form.review_score.choices = [(str(review_score.id), review_score.desc) for review_score in ReviewScore.query.all()]
+    
+    if form.is_submitted():
+        review = prefilled_review
+        review.review_compliment = form.review_compliment.data
+        review.review_suggestion = form.review_suggestion.data
+        review.review_difficulty = ReviewDifficulty.query.get(int(form.review_difficulty.data))
+        review.review_score = ReviewScore.query.get(int(form.review_score.data))
+        review.complete = True
+        db.session.add(review)
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('make_review.html', title="填寫/編輯評核", form=form, review_type="fill")
 
 @login_required
 def view_reviews():
@@ -26,7 +101,7 @@ def view_reviews():
                     .paginate(page=cur_page_num, per_page=int(current_app.config['REVIEW_PER_PAGE']), error_out=False)
     next_url = url_for('view_reviews', page=all_user_related_reviews.next_num) if all_user_related_reviews.has_next else None
     prev_url = url_for('view_reviews', page=all_user_related_reviews.prev_num) if all_user_related_reviews.has_prev else None
-    return render_template('view_reviews.html', reviews=all_user_related_reviews.items, next_url=next_url, prev_url=prev_url)
+    return render_template('view_reviews.html', title="查看所有評核", reviews=all_user_related_reviews.items, next_url=next_url, prev_url=prev_url)
 
 @login_required
 def new_review():
@@ -34,50 +109,51 @@ def new_review():
     # fill all the blanks
 
     form = ReviewForm()
-    
     form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
 
-    current_user_groups = current_user.groups.all()
-    form.reviewee.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.users if user != current_user]))
-    
+    user_options = list(set(current_user.internal_group.internal_users.all() + current_user.internal_group.external_users))
+    form.reviewee.choices = [(user.id, user.username) for user in user_options if user!=current_user]
+    form.reviewer.choices = [(current_user.id, current_user.username)]
+
     form.review_difficulty.choices = [(review_difficulty.id, review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
     form.review_score.choices = [(review_score.id, review_score.desc) for review_score in ReviewScore.query.all()]
     
-    if form.is_submitted():
+    if form.validate_on_submit():
         review = Review()
         review.implement_date = form.implement_date.data
         review.epa = EPA.query.get(form.epa.data)
-        review.location = Location.query.get(form.location.data)
-        review.reviewee = User.query.get(form.reviewee.data)
+        review.location = Location.query.get(int(form.location.data))
+        review.reviewee = User.query.get(int(form.reviewee.data))
         review.reviewer = current_user
+        review.review_score = ReviewScore.query.get(int(form.review_score.data))
         review.review_compliment = form.review_compliment.data
         review.review_suggestion = form.review_suggestion.data
-        review.review_difficulty = ReviewDifficulty.query.get(form.review_difficulty.data)
-        review.review_score = ReviewScore.query.get(form.review_score.data)
+        review.review_difficulty = ReviewDifficulty.query.get(int(form.review_difficulty.data))
         review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
         review.complete = True
         db.session.add(review)
         db.session.commit()
         return redirect(url_for('index'))
-    return render_template('make_review.html', form=form, review_type="new")
+    return render_template('make_review.html', title="新增評核", form=form, review_type="new")
 
 @login_required
 def request_review():
     # anyone could make a review request to any teacher
     # fill epa, location, reviewer
     form = ReviewForm()
-    
+    form.reviewee.choices = [(current_user.id, current_user.username)]
     form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
 
-    current_user_groups = current_user.groups.all()
-    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.users if user != current_user and user.role.name=="主治醫師"]))
+    current_user_groups = set(current_user.external_groups.all() + [current_user.internal_group])
+    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.internal_users if user != current_user and user.role.name in "主治醫師"]))
     
     if form.is_submitted():
         review = Review()
         review.epa = EPA.query.get(form.epa.data)
         review.location = Location.query.get(form.location.data)
+        review.implement_date = form.implement_date.data
         review.reviewee = current_user
         review.reviewer = User.query.get(form.reviewer.data)
         review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
@@ -87,41 +163,9 @@ def request_review():
         return redirect(url_for('index'))
     
     
-    return render_template('make_review.html', form=form, review_type="request")
+    return render_template('make_review.html', title="請求評核", form=form, review_type="request")
 
-@login_required
-def fill_review(review_id):
-    # teacher may finish the review request by any others
-    # fill review_X stuffts
-    prefilled_review = Review.query.get(review_id)
-    if prefilled_review.reviewer.id != current_user.id or prefilled_review.complete:
-        return redirect(url_for('index'))
-    form = ReviewForm()
-    form.reviewer.data = prefilled_review.reviewer.username
-    form.reviewee.data = prefilled_review.reviewee.username
-    form.location.data = prefilled_review.location.desc
-    form.epa.data = prefilled_review.epa.desc
-    form.review_compliment.data = prefilled_review.review_compliment
-    form.review_suggestion.data = prefilled_review.review_suggestion
-    if prefilled_review.review_difficulty:
-        form.review_difficulty.data = prefilled_review.review_difficulty.id
-    if prefilled_review.review_score:
-        form.review_score.data = prefilled_review.review_score.id
 
-    form.review_difficulty.choices = [(review_difficulty.id, review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
-    form.review_score.choices = [(review_score.id, review_score.desc) for review_score in ReviewScore.query.all()]
-    
-    if form.is_submitted():
-        review = prefilled_review
-        review.review_compliment = form.review_compliment.data
-        review.review_suggestion = form.review_suggestion.data
-        review.review_difficulty = ReviewDifficulty.query.get(form.review_difficulty.data)
-        review.review_score = ReviewScore.query.get(form.review_score.data)
-        review.complete = True
-        db.session.add(review)
-        db.session.commit()
-        return redirect(url_for('index'))
-    return render_template('make_review.html', form=form, review_type="fill")
 
 @login_required
 def index():

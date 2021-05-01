@@ -6,9 +6,9 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     {% if title %}
-    <title>{{ title }}</title>
+    <title> EPA評核系統-{{ title }}</title>
     {% else %}
-    <title>Welcome to Twittor</title>
+    <title> EPA評核系統 </title>
     {% endif %}
 </head>
 <body style="background-color:#f3f8ff;">
@@ -17,13 +17,22 @@
             
 
             <nav class="my-2 my-md-0 mr-md-3">
-                <a class="p-2 text-dark" href="{{ url_for('new_review') }}">新增評核</a>
-                <a class="p-2 text-dark" href="{{ url_for('request_review') }}">請求評核</a>
-                <a class="p-2 text-dark" href="{{ url_for('view_reviews') }}">查看所有評核</a>
-                <a class="p-2 text-dark" href="{{ url_for('edit_profile') }}">
-                    {%if line_user_profile %}<img src="{{ line_user_profile.picture_url }}" width="20" height="20">{% endif%}
-                    {{ current_user.username }}
-                </a>
+                {% if current_user.is_authenticated%}
+                    {% if current_user.role.name in ["主治醫師", "住院醫師-R5(總醫師)", "admin", "manager"]%}
+                        <a class="p-2 text-dark" href="{{ url_for('new_review') }}">新增評核</a>
+                    {% endif %}
+                    {% if current_user.role.name in ["住院醫師-R1","住院醫師-R2","住院醫師-R3","住院醫師-R4","住院醫師-R5(總醫師)", "admin", "manager"]%}
+                        <a class="p-2 text-dark" href="{{ url_for('request_review') }}">請求評核</a>
+                    {% endif %}
+
+                    <a class="p-2 text-dark" href="{{ url_for('view_reviews') }}">查看所有評核</a>
+                    <a class="p-2 text-dark" href="{{ url_for('edit_profile') }}">
+                            {% if line_user_profile %}
+                                <img class="mr-3" src="{{ line_user_profile.picture_url }}">
+                            {% endif %}
+                            {{ current_user.username }}
+                    </a>
+                {% endif %}
                 
             </nav>
             {% if current_user.is_anonymous %}
