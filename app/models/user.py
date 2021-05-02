@@ -94,7 +94,7 @@ class User(UserMixin, db.Model):
             line_userId = pay_load['line_userId']
         except:
             return
-        return User.query.filter_by(User.line_userId==line_userId, User.email==email).first()
+        return User.query.filter(User.email==email).first()
     
     def can_remove_review(self, review=None):
         return not review.complete or self.role.name in ["主治醫師", "住院醫師-R5(總醫師)", "admin", "manager"]

@@ -138,7 +138,14 @@ def new_review():
         review.complete = True
         db.session.add(review)
         db.session.commit()
+
+        msg_body = f"[EPA通知]{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date}實作的{review.epa.desc}，你可前往系統查看"
+        try:
+            line_bot_api.push_message(review.reviewee.line_userId, TextSendMessage(text=msg_body))
+        except:
+            send_email(subject="[EPA]通知", recipients=review.reviewee.email, text_body=msg_body, html_body=msg_body)
         return redirect(url_for('index'))
+        
     return render_template('make_review.html', title="新增評核", form=form, review_type="new")
 
 @login_required
@@ -164,9 +171,15 @@ def request_review():
         review.complete = False
         db.session.add(review)
         db.session.commit()
+
+        flash(f'提交成功，已透過 Line 或 email 通知 {review.reviewer.username} 評核')
+        msg_body = f"[EPA通知]{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可前往系統查看"
+        try:
+            line_bot_api.push_message(review.reviewer.line_userId, TextSendMessage(text=msg_body))
+        except:
+            send_email(subject="[EPA]通知", recipients=review.reviewer.email, text_body=msg_body, html_body=msg_body)
+
         return redirect(url_for('index'))
-    
-    
     return render_template('make_review.html', title="請求評核", form=form, review_type="request")
 
 
@@ -242,11 +255,12 @@ def register():
             if line_user_profile:
                 current_user.line_userId = line_userId
                 db.session.commit()
+                flash('已將你的帳號與line帳號綁定')
                 return redirect(url_for('index'))
             else:
-                raise ValueError('register line fail')
+                flash('綁定失敗，你的line帳號似乎出了點問題，請聯絡系統管理者')
         return redirect(url_for('index'))
-
+    # (1) form configuration
     form = RegisterForm()
     registerable_roles = Role.query.filter(Role.name!="admin", Role.name!="manager").with_entities(Role.id, Role.name).all()
     form.role.choices = [(str(role.id), role.name) for role in registerable_roles]
@@ -255,9 +269,10 @@ def register():
     form.internal_group.choices = [(str(group.id), group.name) for group in all_groups]
     form.external_groups.choices = [(str(group.id), group.name) for group in all_groups]
 
+    # (2) on submit handling
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data)
-        user.role = Role.query.filter(Role.name == form.role.data).first()
+        user.role = Role.query.filter(Role.id == int(form.role.data), Role.name!= "admin", Role.name!="manager" ).first()
         if line_user_profile and form.bindline.data:
             user.line_userId = line_userId
         user.internal_group = Group.query.get(int(form.internal_group.data))
@@ -269,7 +284,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         return redirect(url_for('login'))
-
+    
     linebotinfo = line_bot_api.get_bot_info()
     return render_template('register.html', title='Registration', form=form, line_user_profile=line_user_profile, linebotinfo=linebotinfo)
 
@@ -362,7 +377,9 @@ def edit_profile():
     
     # (1) form configuration
     form = EditProfileForm()
+    form.role.render_kw = {'disabled': 'disabled'}
     form.role.choices = [(str(current_user.role.id), current_user.role.name)]
+    form.role.data = str(current_user.role.id)
     all_groups = Group.query.with_entities(Group.id, Group.name).all()
     form.internal_group.choices = [(str(group.id), group.name) for group in all_groups]
     form.external_groups.choices = [(str(group.id), group.name) for group in all_groups]
@@ -390,55 +407,48 @@ def edit_profile():
 
 
 def reset_password_request():
+    # if already login, directly reset
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        token = current_user.get_jwt()
+        return redirect(url_for('password_reset',token=token))
+
     form = PasswdResetRequestForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
-            flash(
-                "You should soon receive an email allowing you to reset your \
-                password. Please make sure to check your spam and trash \
-                if you can't find the email."
-            )
+            flash("已發送密碼重置連結到你的 line 或 email")
             token = user.get_jwt()
-            url_password_reset = url_for(
-                'password_reset',
-                token=token,
-                _external=True
-            )
-            url_password_reset_request = url_for(
-                'reset_password_request',
-                _external=True
-            )
+            url_password_reset = url_for('password_reset',token=token,_external=True)
+
+            try:
+                if not user.line_userId:
+                    raise ValueError("the user don't have a line account")
+                line_bot_api.push_message(user.line_userId, TextSendMessage(text=f'[EPA密碼重設]{user.username}你好，\n你的密碼重設連結為{url_password_reset}'))
+            except LineBotApiError as e:
+                print("can't send line msg")
+                print(e)
             send_email(
                 subject=current_app.config['MAIL_SUBJECT_RESET_PASSWORD'],
                 recipients=[user.email],
-                text_body= render_template(
-                    'email/passwd_reset.txt',
-                    url_password_reset=url_password_reset,
-                    url_password_reset_request=url_password_reset_request
-                ),
-                html_body=render_template(
-                    'email/passwd_reset.html',
-                    url_password_reset=url_password_reset,
-                    url_password_reset_request=url_password_reset_request
-                )
+                text_body= render_template('email/passwd_reset.txt',url_password_reset=url_password_reset),
+                html_body=render_template( 'email/passwd_reset.html',url_password_reset=url_password_reset)
             )
         return redirect(url_for('login'))
     return render_template('password_reset_request.html', form=form)
 
 
 def password_reset(token):
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
+    # if current_user.is_authenticated:
+    #     return redirect(url_for('index'))
     user = User.verify_jwt(token)
     if not user:
+        flash('你哪來這個 Token  是我給的嗎？')
         return redirect(url_for('login'))
     form = PasswdResetForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
         db.session.commit()
+        flash('密碼重設完成，記得下次用新密碼登入喔！')
         return redirect(url_for('login'))
     return render_template(
         'password_reset.html', title='Password Reset', form=form
@@ -487,7 +497,7 @@ def handle_message(event):
         # I think this is not safe. But let use this for now
         # for more advanced link token see, https://developers.line.biz/en/docs/messaging-api/linking-accounts/#implement-account-link-feature
         # or alternatively, we could have our own token auth method
-        app_webhook = "https://fd479b0ec622.ngrok.io"
+        app_webhook = "https://0c849b9e57c7.ngrok.io"
         line_bot_api.reply_message(event.reply_token,TextSendMessage(f'新用戶你好，請點此連結註冊: {app_webhook}/register?line_userId={line_userId}'))  
     else:
         # if registered, issue a login URL with token

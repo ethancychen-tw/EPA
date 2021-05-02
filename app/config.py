@@ -30,14 +30,14 @@ class Config:
     REVIEW_PER_PAGE = int(os.environ.get('REVIEW_PER_PAGE', 20))
 
     # twittor
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@twittor.com')
-    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@epa.org')
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.mail.yahoo.com')
     MAIL_PORT = os.environ.get('MAIL_PORT', 587)
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 1)
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'username')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'password')
-    MAIL_SUBJECT_RESET_PASSWORD = '[Twittor] Please Reset Your Password'
-    MAIN_SUBJECT_USER_ACTIVATE = '[Twittor] Please Activate Your Accout'
+    MAIL_SUBJECT_RESET_PASSWORD = '[EPA] Please Reset Your Password'
+    MAIN_SUBJECT_USER_ACTIVATE = '[EPA] Please Activate Your Accout'
 
     @staticmethod
     def init_app(app):

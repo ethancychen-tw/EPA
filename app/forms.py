@@ -64,11 +64,12 @@ class RegisterForm(FlaskForm):
 
 
 class EditProfileForm(FlaskForm):
-    bindline = BooleanField(label="綁定我的line帳號")
+    
+    bindline = BooleanField(label="Line帳號")
+    email = EmailField("Email", validators=[DataRequired(), Email()])
     role = SelectField(label='職級', validators=[DataRequired()])
     internal_group = SelectField(label="所屬醫院", validators=[DataRequired()])
     external_groups = SelectMultipleField(label="外派醫院", validators=[DataRequired()])
-    email = EmailField("Email", validators=[DataRequired(), Email()])
     submit = SubmitField(label='更新並儲存')
 
 class PasswdResetRequestForm(FlaskForm):

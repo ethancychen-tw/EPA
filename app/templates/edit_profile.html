@@ -14,14 +14,14 @@
                 </div>
                 <div class="justify-content-left col-lg-4 col-sm-4 col-md-12">
                     
-                    {% if field.label.text in ['綁定我的line帳號'] %}
+                    {% if field.label.text in ['Line帳號'] %}
                         <div class="media justify-content-center align-items-center">
                             {%if line_user_profile %}
                                 <img src="{{ line_user_profile.picture_url }}" width="50" height="50">
                                 <div class="media-body">
                                     line人名
                                 </div>
-                                {{field(type="button", value="false", class="btn btn-danger")}}
+                                {{field(type="button", value="解除綁定", class="btn btn-danger")}}
                             {% else %}
                                 <div class="meida-body">
                                     目前無綁定帳號
@@ -48,8 +48,10 @@
             
         {% endfor %}
         <div class='row text-center justify-content-center align-items-center'>
-            {{ form.submit(title=form.submit.description, class="btn btn-info")}}
+            {{ form.submit(title=form.submit.description, class="btn btn-outline-info")}}
+            <a href="{{url_for('reset_password_request')}}" class='btn btn-outline-danger'>重設密碼</a>
         </div>
+        
     </div>
 
 </form>
