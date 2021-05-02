@@ -12,6 +12,7 @@ from app import db
 from app import line_bot_api, handler
 from app.email import send_email
 
+
 @login_required
 def inspect_review(review_id):
     """
@@ -22,67 +23,38 @@ def inspect_review(review_id):
     if current_user.id not in [prefilled_review.reviewer.id, prefilled_review.reviewee.id]:
         flash('您沒有權限存取這個評核')
         return redirect(url_for('index'))
-    form = ReviewForm()
     
+    # (1) form configuration
+    form = ReviewForm()
+    for field in form:
+        field.render_kw = {'disabled': 'disabled'}
     form.review_source.choices = [("",prefilled_review.review_source.desc)]
-    form.review_source.render_kw = {'disabled': 'disabled'}
+    
+    # (2) on submit handle (not applicable here)
+    # (3) prefill
     form.reviewer.choices = [( "" ,prefilled_review.reviewer.username)]
-    form.reviewer.render_kw = {'disabled': 'disabled'}
     form.reviewee.choices = [( "" ,prefilled_review.reviewee.username)]
-    form.reviewee.render_kw = {'disabled': 'disabled'}
     form.location.choices = [( "" ,prefilled_review.location.desc)]
-    form.location.render_kw = {'disabled': 'disabled'}
     form.implement_date.data = prefilled_review.implement_date
-    form.implement_date.render_kw = {'disabled': 'disabled'}
     form.epa.choices = [("" ,prefilled_review.epa.desc)]
-    form.epa.render_kw = {'disabled': 'disabled'}
     form.review_compliment.data = prefilled_review.review_compliment
-    form.review_compliment.render_kw = {'disabled': 'disabled'}
     form.review_suggestion.data = prefilled_review.review_suggestion
-    form.review_suggestion.render_kw = {'disabled': 'disabled'}
     form.review_difficulty.choices = [("" ,prefilled_review.review_difficulty.desc if prefilled_review.review_score else "")]
-    form.review_difficulty.render_kw = {'disabled': 'disabled'}
     form.review_score.choices = [("", prefilled_review.review_score.desc if prefilled_review.review_score else "") ]
-    form.review_score.render_kw = {'disabled': 'disabled'}
     return render_template('make_review.html', title="查看評核", form=form, review_type="inspect")
 
 @login_required
 def edit_review(review_id):
-    # teacher may finish the review request by any others
-    # fill review_X stuffts
     prefilled_review = Review.query.get(review_id)
     if prefilled_review.reviewer.id != current_user.id:
         flash('您沒有權限存取這個評核')
         return redirect(url_for('index'))
+    # (1) form configuration
     form = ReviewForm()
-
-    form.reviewer.choices = [("" ,prefilled_review.reviewer.username)]
-    form.reviewer.render_kw = {'disabled':'disabled'}
-
-    form.reviewee.choices = [("" ,prefilled_review.reviewee.username)]
-    form.reviewee.render_kw = {'disabled':'disabled'}
-
-    form.location.choices = [("" ,prefilled_review.location.desc)]
-    form.location.render_kw = {'disabled':'disabled'}
-    
-    
-    form.epa.choices = [("" ,prefilled_review.epa.desc)]
-    form.epa.render_kw = {'disabled':'disabled'}
-
-    form.implement_date.data = prefilled_review.implement_date
-    form.implement_date.render_kw = {'disabled':'disabled'}
-
-    form.review_compliment.data = prefilled_review.review_compliment
-    form.review_suggestion.data = prefilled_review.review_suggestion
-    if prefilled_review.review_difficulty:
-        form.review_difficulty.data = str(prefilled_review.review_difficulty.id)
-    if prefilled_review.review_score:
-        form.review_score.data = str(prefilled_review.review_score.id)
-
     form.review_difficulty.choices = [(str(review_difficulty.id), review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
     form.review_score.choices = [(str(review_score.id), review_score.desc) for review_score in ReviewScore.query.all()]
-    
-    if form.is_submitted():
+    # (2) on submit process
+    if form.validate_on_submit():
         review = prefilled_review
         review.review_compliment = form.review_compliment.data
         review.review_suggestion = form.review_suggestion.data
@@ -92,7 +64,41 @@ def edit_review(review_id):
         db.session.add(review)
         db.session.commit()
         return redirect(url_for('index'))
+    
+    # (3) prefill (if have)
+    for field in form.requesting_fields:
+        field.render_kw = {'disabled':'disabled'}
+    form.reviewer.choices = [("" ,prefilled_review.reviewer.username)]
+    form.reviewee.choices = [("" ,prefilled_review.reviewee.username)]
+    form.location.choices = [("" ,prefilled_review.location.desc)]
+    form.epa.choices = [("" ,prefilled_review.epa.desc)]
+    form.implement_date.data = prefilled_review.implement_date
+    form.review_compliment.data = prefilled_review.review_compliment
+    form.review_suggestion.data = prefilled_review.review_suggestion
+    if prefilled_review.review_difficulty:
+        form.review_difficulty.data = str(prefilled_review.review_difficulty.id)
+    if prefilled_review.review_score:
+        form.review_score.data = str(prefilled_review.review_score.id)
+    
     return render_template('make_review.html', title="填寫/編輯評核", form=form, review_type="fill")
+
+@login_required
+def remove_review(review_id):
+    try:
+        review = Review.query.get(review_id)
+    except Exception as e:
+        flash('review not found!')
+        print(e)
+
+    if current_user.role.name in ["主治醫師", "住院醫師-R5(總醫師)", "admin", "manager"] or not review.complete:
+        try:
+            db.session.delete(review)
+            db.session.commit()
+            flash('已成功刪除')
+        except Exception as e:
+            flash('未成功刪除，如果問題一直存在，請聯絡管理員')
+            print(e)
+    return redirect(url_for('view_reviews'))    
 
 @login_required
 def view_reviews():
@@ -105,9 +111,7 @@ def view_reviews():
 
 @login_required
 def new_review():
-    # teacher make review
-    # fill all the blanks
-
+    # (1) form configuration
     form = ReviewForm()
     form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
@@ -118,7 +122,7 @@ def new_review():
 
     form.review_difficulty.choices = [(review_difficulty.id, review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
     form.review_score.choices = [(review_score.id, review_score.desc) for review_score in ReviewScore.query.all()]
-    
+    # (2) on submit handling
     if form.validate_on_submit():
         review = Review()
         review.implement_date = form.implement_date.data
@@ -147,7 +151,7 @@ def request_review():
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
 
     current_user_groups = set(current_user.external_groups.all() + [current_user.internal_group])
-    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.internal_users if user != current_user and user.role.name in "主治醫師"]))
+    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.internal_users if user != current_user and user.can_edit_review()]))
     
     if form.is_submitted():
         review = Review()
@@ -170,14 +174,19 @@ def request_review():
 @login_required
 def index():
     linebotinfo = line_bot_api.get_bot_info()
-    if current_user.is_activated:
+    try:
+        if not current_user.line_userId:
+            raise ValueError("no line_userId")
         line_user_profile = line_bot_api.get_profile(current_user.line_userId)
-    else:
+    except Exception as e:
+        print(e)
+        print("can't get this line account info")
         line_user_profile = None
+    
     unfin_being_reviews = current_user.being_reviews.filter(Review.complete==False).all()
     unfin_make_reviews = current_user.make_reviews.filter(Review.complete==False).all()
     return render_template(
-        'index.html', unfin_being_reviews=unfin_being_reviews, unfin_make_reviews=unfin_make_reviews, linebotinfo=linebotinfo, line_user_profile=line_user_profile
+        'index.html', title="首頁", unfin_being_reviews=unfin_being_reviews, unfin_make_reviews=unfin_make_reviews, linebotinfo=linebotinfo, line_user_profile=line_user_profile
     )
 
 def login_token():
@@ -341,28 +350,43 @@ def page_not_found(e):
 
 @login_required
 def edit_profile():
-    form = EditProfileForm()
-    form.bindline.data = True if current_user.line_userId else False
-    form.email.data = current_user.email
-    form.role.data = current_user.role.id
-    form.internal_group.data = current_user.internal_group.id
-    form.external_group.data = [ext_group.id for ext_group in current_user.internal_group]
+    linebotinfo = line_bot_api.get_bot_info()
+    try:
+        if not current_user.line_userId:
+            raise ValueError("no line_userId")
+        line_user_profile = line_bot_api.get_profile(current_user.line_userId)
+    except Exception as e:
+        print(e)
+        print("can't get this line account info")
+        line_user_profile = None
     
-    form.role.choices = [(current_user.role.id, current_user.role.name)]
+    # (1) form configuration
+    form = EditProfileForm()
+    form.role.choices = [(str(current_user.role.id), current_user.role.name)]
     all_groups = Group.query.with_entities(Group.id, Group.name).all()
-    form.internal_group.choices = [(group.id, group.name) for group in all_groups]
-    form.external_groups.choices = [(group.id, group.name) for group in all_groups]
+    form.internal_group.choices = [(str(group.id), group.name) for group in all_groups]
+    form.external_groups.choices = [(str(group.id), group.name) for group in all_groups]
 
+    # (2) on submit handling
     if form.validate_on_submit():
         if not form.bindline.data:
             current_user.line_userId = None
-        current_user.email = form.email
-        current_user.internal_group = Group.query.get(form.group.data)
-        current_user.external_groups = [Group.query.get(group_id) for group_id in form.external_groups.data]
-        
+        current_user.email = form.email.data
+        current_user.internal_group = Group.query.get(int(form.internal_group.data))
+        current_user.external_groups = [Group.query.get(int(group_id)) for group_id in form.external_groups.data]
         db.session.commit()
         flash('資料更新成功')
-    return render_template('edit_profile.html', form=form)
+        return redirect(url_for('edit_profile'))
+    # (3) prefill
+    form.bindline.data = True if current_user.line_userId else False
+    form.email.data = current_user.email
+    form.role.data = str(current_user.role.id)
+    form.internal_group.data = str(current_user.internal_group.id)
+    form.external_groups.data = [str(ext_group.id) for ext_group in current_user.external_groups]
+
+
+    
+    return render_template('edit_profile.html',title=current_user.username, form=form, linebotinfo=linebotinfo, line_user_profile=line_user_profile)
 
 
 def reset_password_request():

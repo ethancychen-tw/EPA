@@ -1,21 +1,57 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class='row'>
-    <div class="text-center col-lg-4"></div>
-    <div class="text-center col-lg-4">
-        <h1>Edit Profile</h1>
-        <form action="" method="post">
-            {{ form.hidden_tag() }}
-            <p>
-                {{ form.about_me.label }}<br>
-                {{ form.about_me(cols=50, rows=4) }}<br>
-                {% for error in form.about_me.errors %}
-                <span style="color: red;">[{{ error }}]</span>
-                {% endfor %}
-            </p>
-            <button class="btn btn-info" type="submit">Save</button>
-        </form>
+
+<form action="" method="post">
+    <div class="container">
+        <div class='row justify-content-center align-items-center'><h1>{{title}}</h1></div>
+        {{ form.hidden_tag() }}
+        {{ form.csrf_token }}
+        {% for field in form if field.type in ['BooleanField', 'SelectField','SelectField','SelectMultipleField','TextAreaField', 'EmailField'] %}
+            <div class='row justify-content-center align-items-center'>
+                <div class=" col-lg-3 col-sm-2 col-md-12">
+                    {{ field.label.text }}
+                </div>
+                <div class="justify-content-left col-lg-4 col-sm-4 col-md-12">
+                    
+                    {% if field.label.text in ['綁定我的line帳號'] %}
+                        <div class="media justify-content-center align-items-center">
+                            {%if line_user_profile %}
+                                <img src="{{ line_user_profile.picture_url }}" width="50" height="50">
+                                <div class="media-body">
+                                    line人名
+                                </div>
+                                {{field(type="button", value="false", class="btn btn-danger")}}
+                            {% else %}
+                                <div class="meida-body">
+                                    目前無綁定帳號
+                                    <a class="btn btn-outline-primary" href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">前往綁定</a>
+                                </div>
+                            {% endif %}
+                            
+                        </div>
+                    {% else %}
+                        {{ field(class="form-control form-control-lg") }}
+                    {% endif %}
+                    
+                </div>
+                
+            </div>
+            <div class='row justify-content-center align-items-center'>
+                <div class=" col-lg-3 col-sm-2 col-md-12"></div>
+                <div class="justify-content-left col-lg-4 col-sm-4 col-md-12">
+                    {% for error in field.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                </div>
+            </div>
+            
+        {% endfor %}
+        <div class='row text-center justify-content-center align-items-center'>
+            {{ form.submit(title=form.submit.description, class="btn btn-info")}}
+        </div>
     </div>
-</div>
+
+</form>
+
 {% endblock %}

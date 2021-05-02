@@ -1,17 +1,12 @@
-    <thead>
-        <tr>
-            <th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th>
-        </tr>
-    </thead>
 <div class='row justify-content-center align-items-center'>
     <div class=" col-lg-1 col-sm-2 col-md-2">來源</div>
     <div class=" col-lg-1 col-sm-2 col-md-5">評核者</div>
     <div class=" col-lg-1 col-sm-2 col-md-5">被評核者</div>
-    <div class=" col-lg-4 col-sm-2 col-md-12">項目</div>
+    <div class=" col-lg-2 col-sm-2 col-md-4">實作時間</div>
+    <div class=" col-lg-3 col-sm-2 col-md-12">項目</div>
     <div class=" col-lg-1 col-sm-2 col-md-2">地點</div>
     <div class=" col-lg-1 col-sm-2 col-md-2">已完成</div>
-    <div class=" col-lg-2 col-sm-2 col-md-4">最近更新時間</div>
-    <div class=" col-lg-1 col-sm-2 col-md-4"></div>
+    <div class=" col-lg-2 col-sm-2 col-md-4"></div>
     
 </div>
 
@@ -27,7 +22,10 @@
         <div class=" col-lg-1 col-sm-2 col-md-5">
             {{ review.reviewee.username }}
         </div>
-        <div class=" col-lg-4 col-sm-2 col-md-12">
+        <div class=" col-lg-2 col-sm-2 col-md-4">
+            {{review.implement_date.strftime('%Y-%m-%d %-I%p') }}
+        </div>
+        <div class=" col-lg-3 col-sm-2 col-md-12">
             {{ review.epa.desc }}
         </div>
         <div class=" col-lg-1 col-sm-2 col-md-2">
@@ -37,11 +35,17 @@
         <div class=" col-lg-1 col-sm-2 col-md-2">
             {% if review.complete %} 是 {% else %} 否 {% endif %}
         </div>
+        
         <div class=" col-lg-2 col-sm-2 col-md-4">
-            {{review.last_edited.strftime('%Y-%m-%d %-I%p') }}
-        </div>
-        <div class=" col-lg-1 col-sm-2 col-md-4">
-            <a href="{{url_for('inspect_review',review_id=review.id)}}"><button type="button" class="btn btn-outline-dark">{{button_text}}</button></a>
+            
+            {% if current_user.can_edit_review(review) %}
+                <a href="{{url_for('edit_review',review_id=review.id)}}"><button type="button" class="btn btn-outline-primary">查看並填寫/編輯</button></a>
+            {% else %}
+                <a href="{{url_for('inspect_review',review_id=review.id)}}"><button type="button" class="btn btn-outline-dark">查看</button></a>
+            {% endif %}
+            {% if current_user.can_remove_review(review) %}
+                <a href="{{url_for('remove_review',review_id=review.id)}}"><button type="button" class="btn btn-outline-danger">刪除</button></a>
+            {% endif %}
         </div>
         
     </div>

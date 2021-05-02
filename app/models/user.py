@@ -95,6 +95,12 @@ class User(UserMixin, db.Model):
         except:
             return
         return User.query.filter_by(User.line_userId==line_userId, User.email==email).first()
+    
+    def can_remove_review(self, review=None):
+        return not review.complete or self.role.name in ["主治醫師", "住院醫師-R5(總醫師)", "admin", "manager"]
+
+    def can_edit_review(self, review=None):
+        return self.role.name in ["主治醫師", "住院醫師-R5(總醫師)", "admin", "manager"]
 
 
 @login_manager.user_loader

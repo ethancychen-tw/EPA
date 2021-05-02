@@ -11,15 +11,24 @@ import datetime
 class ReviewForm(FlaskForm):
     review_source = SelectField(label='來源', choices=[('', '')], default='')
     implement_date = DateField(label="實作時間", validators=[DataRequired()], default=datetime.date.today())
-    location = SelectField(label='實作地點')
-    epa = SelectField(label='EPA')
-    reviewee = SelectField(label="被評核者")
-    reviewer = SelectField(label='評核者')
+    location = SelectField(label='實作地點', choices=[('', '')], default='')
+    epa = SelectField(label='EPA', choices=[('', '')], default='')
+    reviewee = SelectField(label="被評核者", choices=[('', '')], default='')
+    reviewer = SelectField(label='評核者', choices=[('', '')], default='')
     review_difficulty = SelectField(label='(1) 這項工作的複雜程度為')
     review_compliment = TextAreaField(label="(2) 我覺得你表現不錯的地方在" ,validators=[DataRequired()])
     review_suggestion = TextAreaField(label="(3) 如果你能做到以下建議，就可以獲得老師或病人更高的信任" , validators=[DataRequired()])
     review_score = SelectField(label='(4) 如果下次再遇到類似情形，我對你的信賴等級為')
     submit = SubmitField('提交')
+
+    @property
+    def requesting_fields(self):
+        return [self.implement_date, self.location, self.epa, self.reviewee, self.reviewer]
+    
+    @property
+    def scoring_fields(self):
+        return [self.implement_date, self.location, self.epa, self.reviewee, self.reviewer]
+    
 
 
 class LoginForm(FlaskForm):
@@ -55,12 +64,12 @@ class RegisterForm(FlaskForm):
 
 
 class EditProfileForm(FlaskForm):
-    bindline = BooleanField(label="bindline")
-    role = SelectField(label='role', validators=[DataRequired()])
-    internal_group = SelectMultipleField(label="internal_group", validators=[DataRequired()])
-    external_groups = SelectMultipleField(label="external_groups", validators=[DataRequired()])
-    email = EmailField("Email Address", validators=[DataRequired(), Email()])
-    submit = SubmitField('Save')
+    bindline = BooleanField(label="綁定我的line帳號")
+    role = SelectField(label='職級', validators=[DataRequired()])
+    internal_group = SelectField(label="所屬醫院", validators=[DataRequired()])
+    external_groups = SelectMultipleField(label="外派醫院", validators=[DataRequired()])
+    email = EmailField("Email", validators=[DataRequired(), Email()])
+    submit = SubmitField(label='更新並儲存')
 
 class PasswdResetRequestForm(FlaskForm):
     email = StringField("Email Address", validators=[DataRequired(), Email()])

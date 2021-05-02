@@ -62,8 +62,7 @@ db.session.commit()
 
 # User
 # admin
-user = User(username="ethan", line_userId=f"line ethan")
-user.email = "ethan.cychen@gmail.com"
+user = User(username="ethan", line_userId=f"line ethan", email="ethan.cychen@gmail.com")
 user.set_password("ethan")
 user.role = Role.query.filter(Role.name=="admin").first()
 user.internal_group = Group.query.filter(Group.name=="第一間醫院").first()
@@ -77,12 +76,17 @@ user.internal_group = Group.query.filter(Group.name == "第一間醫院").first(
 user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
 db.session.add(user)
 
-# user = User(username="bbb", line_userId=f"line bbb")
-# user.email = "gatheringbc@yahoo.com.tw"
-# user.set_password("bbb")
-# user.role = Role.query.filter(Role.name=="主治醫師").first()
-# user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
-# db.session.add(user)
+user = User(username="bbb", line_userId=f"line bbb", email="gatheringbc@yahoo.com.tw")
+user.set_password("bbb")
+user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
+user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
+db.session.add(user)
+
+user = User(username="ccc", line_userId=f"line ccc",email="r04725046@ntu.edu.tw")
+user.set_password("ccc")
+user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
+user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
+db.session.add(user)
 
 db.session.commit()
 
