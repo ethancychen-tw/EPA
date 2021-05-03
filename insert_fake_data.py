@@ -93,6 +93,7 @@ db.session.add(user)
 db.session.commit()
 
 # # use "append" to resolve bridging table
+
 # std_name = ["R1卓筱茜", "R2陳佩欣", "R3廖晨竹", "R4謝易達", "R5余瑞彬"]
 # for name in std_name:
 #     user = User(username=name, line_userId=f"line {name}")
@@ -126,21 +127,24 @@ db.session.commit()
 # db.session.commit()
 
 
-# # ask review
-# all_teachers = User.query.join(Role).filter(Role.name=='主治醫師').all()
-# all_users = User.query.all()
-# import random
-# all_locations = Location.query.all()
-# all_epa = EPA.query.all()
-# for i in range(1000):
-#     review = Review()
-#     review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
-#     review.reviewer = all_teachers[int(random.random()*len(all_teachers))]
-#     review.reviewee = all_users[int(random.random()*len(all_users))]
-#     review.location = all_locations[int(random.random()*len(all_locations))]
-#     review.epa = all_epa[int(random.random()*len(all_epa))]
-#     db.session.add(review)
-# db.session.commit()
+# ask review
+from datetime import date
+
+all_teachers = User.query.join(Role).filter(Role.name=='主治醫師').all()
+all_users = User.query.all()
+import random
+all_locations = Location.query.all()
+all_epa = EPA.query.all()
+for i in range(1000):
+    review = Review()
+    review.implement_date = date.fromisoformat('2019-12-04')
+    review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
+    review.reviewer = all_teachers[int(random.random()*len(all_teachers))]
+    review.reviewee = all_users[int(random.random()*len(all_users))]
+    review.location = all_locations[int(random.random()*len(all_locations))]
+    review.epa = all_epa[int(random.random()*len(all_epa))]
+    db.session.add(review)
+db.session.commit()
 
 # # finished review
 # review = Review()

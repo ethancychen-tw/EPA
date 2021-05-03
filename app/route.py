@@ -186,20 +186,10 @@ def request_review():
 
 @login_required
 def index():
-    linebotinfo = line_bot_api.get_bot_info()
-    try:
-        if not current_user.line_userId:
-            raise ValueError("no line_userId")
-        line_user_profile = line_bot_api.get_profile(current_user.line_userId)
-    except Exception as e:
-        print(e)
-        print("can't get this line account info")
-        line_user_profile = None
-    
     unfin_being_reviews = current_user.being_reviews.filter(Review.complete==False).all()
     unfin_make_reviews = current_user.make_reviews.filter(Review.complete==False).all()
     return render_template(
-        'index.html', title="首頁", unfin_being_reviews=unfin_being_reviews, unfin_make_reviews=unfin_make_reviews, linebotinfo=linebotinfo, line_user_profile=line_user_profile
+        'index.html', title="首頁", unfin_being_reviews=unfin_being_reviews, unfin_make_reviews=unfin_make_reviews
     )
 
 def login_token():
@@ -228,7 +218,7 @@ def login():
     if form.validate_on_submit():
         u = User.query.filter_by(username=form.username.data).first()
         if u is None or not u.check_password(form.password.data):
-            flash('invalid username or password')
+            flash('invalid username or password', 'alert-danger')
             return redirect(url_for('login'))
         login_user(u, remember=form.remember_me.data)
         next_page = request.args.get('next')

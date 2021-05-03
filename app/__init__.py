@@ -10,6 +10,8 @@ from app.config import config
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
+login_manager.login_message = '請先登入以存取此頁面'
+login_manager.login_message_category = 'alert-info'
 login_manager.login_view = 'login'
 mail = Mail()
 line_bot_api = LineBotApi(config['production'].LINEBOT_MSG_CHANNEL_ACCESS_TOKEN)

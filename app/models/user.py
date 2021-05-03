@@ -7,7 +7,7 @@ from flask_login import UserMixin
 from flask import current_app
 import jwt
 
-from app import db, login_manager
+from app import db, login_manager, line_bot_api
 from app.models.review import Review
 
 user_externalgroup = db.Table('user_externalgroup',
@@ -54,13 +54,6 @@ class User(UserMixin, db.Model):
     make_reviews = db.relationship('Review', primaryjoin=Review.reviewer_id==id, backref='reviewer', lazy='dynamic') # need to specify primary join, cuz there are more than one ways to join users and review
     being_reviews = db.relationship('Review' ,primaryjoin=Review.reviewee_id==id, backref='reviewee', lazy='dynamic') 
     external_groups = db.relationship('Group', secondary=user_externalgroup, backref="external_users", lazy='dynamic') # first specify the target
-    
-
-    # followed = db.relationship(
-    #     'User', secondary=followers,
-    #     primaryjoin=(followers.c.follower_id == id),
-    #     secondaryjoin=(followers.c.followed_id == id),
-    #     backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
 
     def __repr__(self):
         return 'id={}, username={}, email={}, password_hash={}'.format(
@@ -73,9 +66,23 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def avatar(self, size=80):
-        md5_digest = md5(self.email.lower().encode('utf-8')).hexdigest()
-        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(md5_digest, size)
+    def avatar(self):
+        img_src = None
+        if not img_src and self.line_userId:
+            try:
+                line_user_profile = line_bot_api.get_profile(self.line_userId)
+                img_src = line_user_profile.picture_url
+            except Exception as e:
+                print("can't get line profile")
+                print(e)
+        if not img_src:
+            try:
+                md5_digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+                img_src = f'https://www.gravatar.com/avatar/{md5_digest}?d=identicon&s=40'
+            except Exception as e:
+                print("can't get gravatar")
+                print(e)
+        return img_src
 
     def get_jwt(self, expire=300):
         return jwt.encode(
@@ -102,6 +109,7 @@ class User(UserMixin, db.Model):
             return
         return User.query.filter(User.email==email).first()
     
+    # should refactor using role auth
     def can_remove_review(self, review=None):
         return not review.complete or self.role.name in ["主治醫師", "住院醫師-R5(總醫師)", "admin", "manager"]
 
