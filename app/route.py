@@ -497,7 +497,7 @@ def handle_message(event):
         # I think this is not safe. But let use this for now
         # for more advanced link token see, https://developers.line.biz/en/docs/messaging-api/linking-accounts/#implement-account-link-feature
         # or alternatively, we could have our own token auth method
-        app_webhook = "https://0c849b9e57c7.ngrok.io"
+        app_webhook = current_app.config['WEBHOOK_URL']
         line_bot_api.reply_message(event.reply_token,TextSendMessage(f'新用戶你好，請點此連結註冊: {app_webhook}/register?line_userId={line_userId}'))  
     else:
         # if registered, issue a login URL with token

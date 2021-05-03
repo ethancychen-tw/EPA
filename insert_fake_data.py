@@ -9,11 +9,15 @@ for table_name in ["epa", "role","location",  "review_source", "review_score", "
     db.session.execute(f"TRUNCATE TABLE \"{table_name}\" RESTART IDENTITY CASCADE ;")# RESTART IDENTITY would reset id starting from 1, cascade would del related rows in other tables
 
 # Role
-role_name = ["主治醫師", "住院醫師-R1","住院醫師-R2","住院醫師-R3","住院醫師-R4","住院醫師-R5(總醫師)","admin","manager"]
-role_desc = ["可以評核與被評核其他醫師","只能請求評核","只能請求評核","只能請求評核","只能請求評核","可請求評核和評核","後台管理","可以編輯使用者資料"]
-
-for name, desc in zip(role_name, role_desc):
-    db.session.add(Role(name=name, desc=desc))
+for i in range(1,5):
+    role = Role(name=f"住院醫師-R{i}", desc=f"住院醫師-R{i} desc", can_request_review=True, can_create_and_edit_review=False, is_manager=False)
+    db.session.add(role)
+role = Role(name=f"住院醫師-R5(總醫師)", desc="住院醫師-R5 desc", can_request_review=True, can_create_and_edit_review=True, is_manager=False)
+db.session.add(role)
+role = Role(name=f"主治醫師", desc="主治醫師 desc", can_request_review=False, can_create_and_edit_review=True, is_manager=False)
+db.session.add(role)
+role = Role(name=f"醫院管理者", desc="醫院管理者 desc", can_request_review=True, can_create_and_edit_review=True, is_manager=True)
+db.session.add(role)
 
 #EPA
 epa_desc = ["EPA1(Airway) 呼吸道評估與處置", "EPA2(FB) 耳鼻喉頭頸部異物評估與處置", "EPA3(Bleeding) 耳鼻喉頭頸部出血評估與處置", "EPA4(Vertigo) 眩暈評估與處置", "EPA5(Infection) 耳鼻喉頭頸部感染症評估與處置", "EPA6(H&N) 耳鼻喉頭頸部(含口腔)腫瘤評估與處置", "EPA7(Ear/Hearing) 耳部與聽力疾病評估與處置", "EPA8(Nose/Sinus) 鼻部與鼻竇疾病評估與處置", "EPA9(Larynx) 咽喉部(音聲、語言、吞嚥)疾病評估與處置", "EPA10(SDB) 睡眠呼吸障礙評估與處置", "EPA11(Plasty) 顏面整形重建評估與處"]
@@ -56,36 +60,34 @@ group_name = ["第一間醫院", "第二間醫院"]
 group_desc = ["第一間醫院的描述", "第二間醫院的描述"]
 for name, desc in zip(group_name, group_desc):
     db.session.add(Group(name=name, desc=desc))
-
 db.session.commit()
-
 
 # User
 # admin
-user = User(username="ethan", line_userId=f"line ethan", email="ethan.cychen@gmail.com")
-user.set_password("ethan")
-user.role = Role.query.filter(Role.name=="admin").first()
+user = User(username="admin", email="admin@epa.com")
+user.set_password("admin")
+user.role = Role.query.filter(Role.name=="醫院管理者").first()
 user.internal_group = Group.query.filter(Group.name=="第一間醫院").first()
 user.external_groups.append(Group.query.filter(Group.name=="第二間醫院").first())
 db.session.add(user)
 
-user = User(username="aaa", line_userId=f"line aaa", email="gatheringbc@gmail.com")
-user.set_password("aaa")
-user.role = Role.query.filter(Role.name=="主治醫師").first()
-user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
-user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
-db.session.add(user)
-
-user = User(username="bbb", line_userId=f"line bbb", email="gatheringbc@yahoo.com.tw")
-user.set_password("bbb")
+user = User(username="R1", email="R1@epa.com")
+user.set_password("R1")
 user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
 user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
 db.session.add(user)
 
-user = User(username="ccc", line_userId=f"line ccc",email="r04725046@ntu.edu.tw")
-user.set_password("ccc")
+user = User(username="R5",email="R5@epa.com")
+user.set_password("R5")
 user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
 user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
+db.session.add(user)
+
+user = User(username="R6", email="R6@epa.com")
+user.set_password("R6")
+user.role = Role.query.filter(Role.name=="主治醫師").first()
+user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
+user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
 db.session.add(user)
 
 db.session.commit()

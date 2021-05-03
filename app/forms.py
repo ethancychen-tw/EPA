@@ -34,10 +34,10 @@ class ReviewForm(FlaskForm):
 class LoginForm(FlaskForm):
     class Meta:
         csrf = False
-    username = StringField("Username" ,validators=[DataRequired()])
-    password = PasswordField("Password", validators=[DataRequired()])
-    remember_me = BooleanField("Remember Me")
-    submit = SubmitField('Sign In')
+    username = StringField("姓名" ,validators=[DataRequired()])
+    password = PasswordField("密碼", validators=[DataRequired()])
+    remember_me = BooleanField("記住我")
+    submit = SubmitField('登入')
 
 class RegisterForm(FlaskForm):
     class Meta:
@@ -73,8 +73,8 @@ class EditProfileForm(FlaskForm):
     submit = SubmitField(label='更新並儲存')
 
 class PasswdResetRequestForm(FlaskForm):
-    email = StringField("Email Address", validators=[DataRequired(), Email()])
-    submit = SubmitField('Reset Password')
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    submit = SubmitField('密碼重設')
 
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
@@ -84,6 +84,6 @@ class PasswdResetRequestForm(FlaskForm):
 
 
 class PasswdResetForm(FlaskForm):
-    password = PasswordField(label="Password", validators=[DataRequired()])
-    password2 = PasswordField(label="Password Repeat", validators=[DataRequired(), EqualTo('password')])
-    submit = SubmitField(label='Submit')
+    password = PasswordField(label="密碼", validators=[DataRequired()])
+    password2 = PasswordField(label="密碼確認", validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField(label='提交')

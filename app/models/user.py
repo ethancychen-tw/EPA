@@ -30,6 +30,12 @@ class Role(db.Model):
     name = db.Column(db.String(64))
     desc = db.Column(db.String(64))
     
+    can_request_review = db.Column(db.Boolean(), default=False) # can request a review
+    can_create_and_edit_review = db.Column(db.Boolean(), default=False) # can create, edit, del a review if reviewer
+
+    # manager, admin
+    is_manager = db.Column(db.Boolean(), default=False) # can do anything
+
     users = db.relationship('User', backref='role', lazy='dynamic')
 
 class User(UserMixin, db.Model):

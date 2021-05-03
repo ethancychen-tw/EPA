@@ -4,24 +4,26 @@
 
 <form action="" method="post">
     <div class="container">
-        <div class='row justify-content-center align-items-center'><h1>{{title}}</h1></div>
+        <div class='row'><div class="col col-12 d-flex justify-content-center"><h1>{{title}}</h1></div></div>
         {{ form.hidden_tag() }}
         {{ form.csrf_token }}
         {% for field in form if field.type in ['BooleanField', 'SelectField','SelectField','SelectMultipleField','TextAreaField', 'EmailField'] %}
-            <div class='row justify-content-center align-items-center'>
-                <div class=" col-lg-3 col-sm-2 col-md-12">
+            <div class='row'>
+                <div class="col col-12 col-md-6 d-flex justify-content-start justify-content-md-end">
                     {{ field.label.text }}
                 </div>
-                <div class="justify-content-left col-lg-4 col-sm-4 col-md-12">
-                    
+                <div class="col col-12 col-md-6 d-flex justify-content-start justify-content-md-start">
                     {% if field.label.text in ['Line帳號'] %}
-                        <div class="media justify-content-center align-items-center">
+                        <div class="media">
                             {%if line_user_profile %}
                                 <img src="{{ line_user_profile.picture_url }}" width="50" height="50">
                                 <div class="media-body">
-                                    line人名
+                                    {{line_user_profile.display_name}}
+                                    <div class="form-check form-switch"> 
+                                        維持綁定這個 line 帳號{{field(class="form-check-input")}}
+                                    </div>
                                 </div>
-                                {{field(type="button", value="解除綁定", class="btn btn-danger")}}
+                                
                             {% else %}
                                 <div class="meida-body">
                                     目前無綁定帳號
@@ -37,9 +39,9 @@
                 </div>
                 
             </div>
-            <div class='row justify-content-center align-items-center'>
-                <div class=" col-lg-3 col-sm-2 col-md-12"></div>
-                <div class="justify-content-left col-lg-4 col-sm-4 col-md-12">
+            <div class='row'>
+                <div class="col col-0 col-md-6 d-flex justify-content-start justify-content-md-end"></div>
+                <div class="col col-12 col-md-6 d-flex justify-content-start justify-content-md-start">
                     {% for error in field.errors %}
                         <span style="color: red;">[{{ error }}]</span>
                     {% endfor %}
@@ -47,11 +49,14 @@
             </div>
             
         {% endfor %}
-        <div class='row text-center justify-content-center align-items-center'>
-            {{ form.submit(title=form.submit.description, class="btn btn-outline-info")}}
-            <a href="{{url_for('reset_password_request')}}" class='btn btn-outline-danger'>重設密碼</a>
+        <div class='row justify-content-center'>
+            <div class="col col-12 col-md-3 d-flex justify-content-start justify-content-md-end">
+                {{ form.submit(title=form.submit.description, class="btn btn-outline-info")}}
+            </div>
+            <div class="col col-12 col-md-3 d-flex justify-content-start justify-content-md-start">
+                <a href="{{url_for('reset_password_request')}}" class='btn btn-outline-danger'>重設密碼</a>
+            </div>
         </div>
-        
     </div>
 
 </form>

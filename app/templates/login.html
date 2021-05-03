@@ -5,7 +5,7 @@
 <div class='row'>
     <div class="text-center col-lg-4"></div>
 <div class="text-center col-lg-4">
-    <h1 class="h3 mb-3 font-weight-normal">Please Login</h1>
+    <h1 class="h3 mb-3 font-weight-normal">登入EPA系統</h1>
     <form action="" method="post" class="form-signin">
         {{ form.csrf_token }}
         <p>
@@ -20,12 +20,12 @@
             {{ form.remember_me() }}
             {{ form.remember_me.label }}
         </p>
-        <button class="btn btn-lg btn-outline-primary" type="submit">Login</button>
+        {{ form.submit(class="btn btn-lg btn-outline-primary") }}
         <p>
-            <a href="{{ url_for('register') }}">New User?</a>or 
-            <a href="{{ url_for('reset_password_request') }}">Forgot Password?</a>
+            <a href="{{ url_for('register') }}">註冊新用戶</a>
+            <a href="{{ url_for('reset_password_request') }}">忘記密碼</a>
         </p>
-        <p class="mt-5 mb-3 text-muted">&copy; 2017-2019</p>
+        <p class="mt-5 mb-3 text-muted">&copy; 2021-2021</p>
     </form>
 </div>
 </div>
