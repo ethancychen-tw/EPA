@@ -21,7 +21,7 @@ def inspect_review(review_id):
     """
     prefilled_review = Review.query.get(review_id)
     if current_user.id not in [prefilled_review.reviewer.id, prefilled_review.reviewee.id]:
-        flash('您沒有權限存取這個評核')
+        flash('您沒有權限存取這個評核','alert-warning')
         return redirect(url_for('index'))
     
     # (1) form configuration
@@ -47,7 +47,7 @@ def inspect_review(review_id):
 def edit_review(review_id):
     prefilled_review = Review.query.get(review_id)
     if prefilled_review.reviewer.id != current_user.id:
-        flash('您沒有權限存取這個評核')
+        flash('您沒有權限存取這個評核','alert-warning')
         return redirect(url_for('index'))
     # (1) form configuration
     form = ReviewForm()
@@ -90,7 +90,7 @@ def remove_review(review_id):
         flash('review not found!')
         print(e)
 
-    if current_user.role.name in ["主治醫師", "住院醫師-R5(總醫師)", "admin", "manager"] or not review.complete:
+    if current_user.can_remove_review(review):
         try:
             db.session.delete(review)
             db.session.commit()
@@ -245,14 +245,14 @@ def register():
             if line_user_profile:
                 current_user.line_userId = line_userId
                 db.session.commit()
-                flash('已將你的帳號與line帳號綁定')
+                flash('已將你的帳號與line帳號綁定', 'alert-success')
                 return redirect(url_for('index'))
             else:
-                flash('綁定失敗，你的line帳號似乎出了點問題，請聯絡系統管理者')
+                flash('綁定失敗，你的line帳號似乎出了點問題，請聯絡系統管理者','alert-danger')
         return redirect(url_for('index'))
     # (1) form configuration
     form = RegisterForm()
-    registerable_roles = Role.query.filter(Role.name!="admin", Role.name!="manager").with_entities(Role.id, Role.name).all()
+    registerable_roles = Role.query.filter(Role.is_manager == False).with_entities(Role.id, Role.name).all()
     form.role.choices = [(str(role.id), role.name) for role in registerable_roles]
     form.bindline.data = True if line_user_profile else False
     all_groups = Group.query.all()
@@ -262,7 +262,7 @@ def register():
     # (2) on submit handling
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data)
-        user.role = Role.query.filter(Role.id == int(form.role.data), Role.name!= "admin", Role.name!="manager" ).first()
+        user.role = Role.query.filter(Role.id == int(form.role.data), Role.is_manager == False ).first()
         if line_user_profile and form.bindline.data:
             user.line_userId = line_userId
         user.internal_group = Group.query.get(int(form.internal_group.data))
@@ -280,8 +280,8 @@ def register():
 
 @login_required
 def user(username):
-    if current_user.role.name not in ['admin', 'manager']:
-        flash("This is a page accessable for admin/ manager. If you think this is an error, Please contact to get access")
+    if current_user.role.is_manager:
+        flash("This is a page accessable for 醫院管理者. If you think this is an error, Please contact to get access",'alert-danger')
         return redirect(url_for('index'))
     user = User.query.filter_by(username=username).first()
     if user is None:
@@ -300,7 +300,7 @@ def user(username):
             current_user.unfollow(u)
             db.session.commit()
         else:
-            flash("Send an email to your email address, please check!!!!")
+            flash("Send an email to your email address, please check!!!!",'alert-info')
             send_email_for_user_activate(current_user)
     return render_template(
         'user.html',
@@ -382,7 +382,7 @@ def edit_profile():
         current_user.internal_group = Group.query.get(int(form.internal_group.data))
         current_user.external_groups = [Group.query.get(int(group_id)) for group_id in form.external_groups.data]
         db.session.commit()
-        flash('資料更新成功')
+        flash('資料更新成功','alert-success')
         return redirect(url_for('edit_profile'))
     # (3) prefill
     form.bindline.data = True if current_user.line_userId else False
@@ -406,7 +406,7 @@ def reset_password_request():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
-            flash("已發送密碼重置連結到你的 line 或 email")
+            flash("已發送密碼重置連結到你的 line 或 email", 'alert-info')
             token = user.get_jwt()
             url_password_reset = url_for('password_reset',token=token,_external=True)
 
@@ -432,13 +432,13 @@ def password_reset(token):
     #     return redirect(url_for('index'))
     user = User.verify_jwt(token)
     if not user:
-        flash('你哪來這個 Token  是我給的嗎？')
+        flash('你哪來這個 Token  是我給的嗎？','alert-info')
         return redirect(url_for('login'))
     form = PasswdResetForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
         db.session.commit()
-        flash('密碼重設完成，記得下次用新密碼登入喔！')
+        flash('密碼重設完成，記得下次用新密碼登入喔！','alert-info')
         return redirect(url_for('login'))
     return render_template(
         'password_reset.html', title='Password Reset', form=form

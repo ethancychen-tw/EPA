@@ -111,10 +111,18 @@ class User(UserMixin, db.Model):
     
     # should refactor using role auth
     def can_remove_review(self, review=None):
-        return not review.complete or self.role.name in ["主治醫師", "住院醫師-R5(總醫師)", "admin", "manager"]
+        if self.role.is_manager:
+            return True
+        if review.reviewer==self or review.reviewee == self:
+            if review.complete:
+                return True
+            else:
+                # for now, those who can make a review could edit/del the review
+                return review.reviewer == self and self.role.can_create_and_edit_review 
+        return False
 
     def can_edit_review(self, review=None):
-        return self.role.name in ["主治醫師", "住院醫師-R5(總醫師)", "admin", "manager"]
+        return self.role.is_manager or ( review.reviewer == self and self.role.can_create_and_edit_review)
 
 
 @login_manager.user_loader
