@@ -4,61 +4,83 @@
 
 <form action="" method="post">
     <div class="container">
-        <div class='row'><div class="col col-12 d-flex justify-content-center"><h1>{{title}}</h1></div></div>
+        
         {{ form.hidden_tag() }}
         {{ form.csrf_token }}
-        {% for field in form if field.type in ['BooleanField', 'SelectField','SelectField','SelectMultipleField','TextAreaField', 'EmailField'] %}
-            <div class='row'>
-                <div class="col col-12 col-md-6 d-flex justify-content-start justify-content-md-end">
-                    {{ field.label.text }}
-                </div>
-                <div class="col col-12 col-md-6 d-flex justify-content-start justify-content-md-start">
-                    {% if field.label.text in ['Line帳號'] %}
-                        <div class="media">
-                            {%if line_user_profile %}
-                                <img src="{{ line_user_profile.picture_url }}" width="50" height="50">
-                                <div class="media-body">
-                                    {{line_user_profile.display_name}}
-                                    <div class="form-check form-switch"> 
-                                        維持綁定這個 line 帳號{{field(class="form-check-input")}}
-                                    </div>
+        
+        <div class='row'>
+            <div class="text-center col-md-2"></div>
+            <div class="text-center col-md-8">
+                
+                <div class="card mb-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <div class="w-100">
+                                <img src="{{ current_user.avatar() }}" class="rounded-circle w-75">
+                            </div>
+                            <div class="w-100"><p></p></div>
+                            <h3 class="card-title">{{current_user.username}}</h3>
+                            {% if current_user.line_userId %}
+                                <div class="w-100 form-check form-switch"> 
+                                    {{form.bindline(class="form-check-input")}} 綁定 line 帳號
                                 </div>
-                                
                             {% else %}
-                                <div class="meida-body">
-                                    目前無綁定帳號
-                                    <a class="btn btn-outline-primary" href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">前往綁定</a>
-                                </div>
+                                <div class="w-100"><small class="text-muted">尚未綁定line帳號</small></div>
+                                <a class="btn btn-sm btn-outline-dark" href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">前往綁定</a>
                             {% endif %}
                             
                         </div>
-                    {% else %}
-                        {{ field(class="form-control form-control-lg") }}
-                    {% endif %}
-                    
+                        <div class="col-md-4 card-body text-start">
+                            
+                            
+                            <div class="form-floating">
+                                {{ form.role(class="form-select") }}
+                                {{ form.role.label }}
+                                {% for error in form.role.errors %}
+                                    <span style="color: red;">[{{ error }}]</span>
+                                {% endfor %}
+                            </div>
+                            <div class="form-floating">
+                                {{ form.email(class="form-control") }}
+                                {{ form.email.label }}
+                                {% for error in form.email.errors %}
+                                    <span style="color: red;">[{{ error }}]</span>
+                                {% endfor %}
+                            </div>
+                            <div class="form-floating">
+                                {{ form.internal_group(class="form-select") }}
+                                {{ form.internal_group.label }}
+                                {% for error in form.internal_group.errors %}
+                                    <span style="color: red;">[{{ error }}]</span>
+                                {% endfor %}
+                            </div>
+                            <div class="form-floating">
+                                {{ form.external_groups(class="form-select h-50") }}
+                                {{ form.external_groups.label }}
+                                {% for error in form.external_groups.errors %}
+                                    <span style="color: red;">[{{ error }}]</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                    </div>
+                    <div class="row">
+                        <div class="col col-md-1"></div>
+                        <div class="col col-12 col-md-4">
+                            {{ form.submit(class="w-100 btn btn-outline-info") }}
+                        </div>
+                        <div class="col col-md-2"></div>
+                        <div class="col col-12 col-md-4">
+                            <a href="{{url_for('reset_password_request')}}" class='w-100 btn btn-outline-danger'>重設密碼</a>
+                        </div>
+                        <p></p>
+                    </div>
                 </div>
                 
+                
             </div>
-            <div class='row'>
-                <div class="col col-0 col-md-6 d-flex justify-content-start justify-content-md-end"></div>
-                <div class="col col-12 col-md-6 d-flex justify-content-start justify-content-md-start">
-                    {% for error in field.errors %}
-                        <span style="color: red;">[{{ error }}]</span>
-                    {% endfor %}
-                </div>
-            </div>
-            
-        {% endfor %}
-        <div class='row justify-content-center'>
-            <div class="col col-12 col-md-3 d-flex justify-content-start justify-content-md-end">
-                {{ form.submit(title=form.submit.description, class="btn btn-outline-info")}}
-            </div>
-            <div class="col col-12 col-md-3 d-flex justify-content-start justify-content-md-start">
-                <a href="{{url_for('reset_password_request')}}" class='btn btn-outline-danger'>重設密碼</a>
-            </div>
-        </div>
+        </div>  
     </div>
-
 </form>
 
 {% endblock %}

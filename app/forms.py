@@ -45,22 +45,22 @@ class RegisterForm(FlaskForm):
     username = StringField("姓名" ,validators=[DataRequired()])
     bindline = BooleanField(label="綁定我的line帳號", default=False)
     role = SelectField(label='身份/職級', validators=[DataRequired()])
-    internal_group = SelectField(label="所屬醫院/群組", validators=[DataRequired()])
+    internal_group = SelectField(label="所屬醫院/群組", validators=[DataRequired("至少要選一間醫院")])
     external_groups = SelectMultipleField(label="外派醫院/群組(可複選)")
-    email = EmailField(label="Email", validators=[DataRequired(), Email()])
-    password = PasswordField(label="密碼", validators=[DataRequired()])
-    password2 = PasswordField(label="密碼確認", validators=[DataRequired(), EqualTo('password')])
+    email = EmailField(label="Email", validators=[DataRequired("這是必填項目"), Email()])
+    password = PasswordField(label="密碼", validators=[DataRequired("這是必填項目")])
+    password2 = PasswordField(label="密碼確認", validators=[DataRequired("這是必填項目"), EqualTo('password', message='密碼兩次填寫不一致')])
     submit = SubmitField(label='送出')
 
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user is not None:
-            raise ValidationError('please use different username')
+            raise ValidationError('這個姓名已被使用')
     
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
         if user is not None:
-            raise ValidationError('please use different email address')
+            raise ValidationError('這個email已被使用')
 
 
 class EditProfileForm(FlaskForm):

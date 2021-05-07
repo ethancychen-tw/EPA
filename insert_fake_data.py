@@ -20,7 +20,7 @@ role = Role(name=f"醫院管理者", desc="醫院管理者 desc", can_request_re
 db.session.add(role)
 
 #EPA
-epa_desc = ["EPA1(Airway) 呼吸道評估與處置", "EPA2(FB) 耳鼻喉頭頸部異物評估與處置", "EPA3(Bleeding) 耳鼻喉頭頸部出血評估與處置", "EPA4(Vertigo) 眩暈評估與處置", "EPA5(Infection) 耳鼻喉頭頸部感染症評估與處置", "EPA6(H&N) 耳鼻喉頭頸部(含口腔)腫瘤評估與處置", "EPA7(Ear/Hearing) 耳部與聽力疾病評估與處置", "EPA8(Nose/Sinus) 鼻部與鼻竇疾病評估與處置", "EPA9(Larynx) 咽喉部(音聲、語言、吞嚥)疾病評估與處置", "EPA10(SDB) 睡眠呼吸障礙評估與處置", "EPA11(Plasty) 顏面整形重建評估與處"]
+epa_desc = ["EPA1(Airway) 呼吸道評估與處置", "EPA2(FB) 耳鼻喉頭頸部異物評估與處置", "EPA3(Bleeding) 耳鼻喉頭頸部出血評估與處置", "EPA4(Vertigo) 眩暈評估與處置", "EPA5(Infection) 耳鼻喉頭頸部感染症評估與處置", "EPA6(H&N) 耳鼻喉頭頸部(含口腔)腫瘤評估與處置", "EPA7(Ear/Hearing) 耳部與聽力疾病評估與處置", "EPA8(Nose/Sinus) 鼻部與鼻竇疾病評估與處置", "EPA9(Larynx) 咽喉部(音聲、語言、吞嚥)疾病評估與處置", "EPA10(SDB) 睡眠呼吸障礙評估與處置", "EPA11(Plasty) 顏面整形重建評估與處置"]
 for i in range(len(epa_desc)):
     db.session.add(EPA(name=f"EPA{i+1}", desc=epa_desc[i]))
 
@@ -130,16 +130,16 @@ db.session.commit()
 # ask review
 from datetime import date
 
-all_teachers = User.query.join(Role).filter(Role.name=='主治醫師').all()
+all_reviewers = User.query.join(Role).filter(Role.can_create_and_edit_review == True).all()
 all_users = User.query.all()
 import random
 all_locations = Location.query.all()
 all_epa = EPA.query.all()
-for i in range(1000):
+for i in range(20):
     review = Review()
     review.implement_date = date.fromisoformat('2019-12-04')
     review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
-    review.reviewer = all_teachers[int(random.random()*len(all_teachers))]
+    review.reviewer = all_reviewers[int(random.random()*len(all_reviewers))]
     review.reviewee = all_users[int(random.random()*len(all_users))]
     review.location = all_locations[int(random.random()*len(all_locations))]
     review.epa = all_epa[int(random.random()*len(all_epa))]

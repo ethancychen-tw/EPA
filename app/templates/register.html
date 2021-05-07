@@ -2,49 +2,81 @@
 
 {% block content %}
 
-
-
-
 <form action="" method="post">
-<div class="container">
-    <div class='row justify-content-center align-items-center'><h1>註冊我的帳號</h1></div>
-    {{ form.hidden_tag() }}
-    {{ form.csrf_token }}
-    {% for field in [form.username, form.bindline, form.role, form.internal_group, form.external_groups, form.email, form.password, form.password2] %}
-    <div class='row justify-content-center align-items-center'>
-        <div class=" col-lg-3 col-sm-2 col-md-12">
-            {{ field.label }}
-        </div>
-        <div class="justify-content-left col-lg-4 col-sm-4 col-md-12">
-            {% if 'line' in field.label|string %}
+    <div class="container">
+        
+        {{ form.hidden_tag() }}
+        {{ form.csrf_token }}
+        
+        <div class='row'>
+            <div class="text-center col-md-3"></div>
+            <div class="text-center col-md-6">
+                <h1>{{title}}</h1>
+
                 {% if line_user_profile %}
-                    <div class='row'>
-                        <img src="{{line_user_profile.picture_url}}" width="50" height="50">
-                        
-                            <p>{{ line_user_profile.display_name }}</p>
-                            <p>{{ field() }}</p>
+                    <div class="card mb-3">
+                        <div class="row align-items-center ">
+                            <div class="col-md-3 d-flex justify-content-center">
+                                <img src="{{ line_user_profile.picture_url }}" width="50" height="50" class="rounded-circle">    
+                            </div>
+                            <div class="col-md-4 card-body text-start">
+                                
+                                <h6 class="card-title">{{line_user_profile.display_name}}</h6>
+                                <div class="form-check form-switch"> 
+                                    {{form.bindline(class="form-check-input")}}綁定這個 line 帳號
+                                </div>
+                            </div>
+                            
+                        </div>
                     </div>
-                {% else %}
-                    <a class="btn btn-outline-dark" href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}"> 透過 Line註冊 </a></p>
+                    
                 {% endif %}
-            
-            {% else %}
-                {{ field(class="form-control form-control-lg") }}
-            {% endif %}
+                
+                <div class="form-floating">
+                    {{ form.username(class="form-control") }}
+                    {{ form.username.label }}
+                    {% for error in form.username.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                </div>
+                
+                <div class="form-floating">
+                    {{ form.role(class="form-select") }}
+                    {{ form.role.label }}
+                    {% for error in form.role.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                </div>
+                <div class="form-floating">
+                    {{ form.internal_group(class="form-select") }}
+                    {{ form.internal_group.label }}
+                    {% for error in form.internal_group.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                </div>
 
-            {% for error in field.errors %}
-                <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-            
-        </div>
+                <div class="form-floating">
+                    {{ form.external_groups(class="form-select h-50") }}
+                    {{ form.external_groups.label }}
+                    {% for error in form.external_groups.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                </div>
+                
+                {% for field in [form.email, form.password, form.password2]%}
+                    <div class="form-floating">
+                        {{ field(class="form-control") }}
+                        {{ field.label }}
+                        {% for error in field.errors %}
+                            <span style="color: red;">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                <p></p>
+                {{ form.submit(class="w-100 btn btn-lg btn-outline-primary") }}
+            </div>
+        </div>  
     </div>
-    {% endfor %}
 
-    <div class='row text-center justify-content-center align-items-center'>
-        {{ form.submit(title=form.submit.description, class="btn btn-lg btn-outline-primary")}}
-    </div>
-    
-</div>
 </form>
-
 {% endblock %}

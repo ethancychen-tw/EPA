@@ -3,7 +3,6 @@
 
 <form action="" method="post">
     <div class="container">
-        
         {{ form.hidden_tag() }}
         {{ form.csrf_token }}
         {% if review_type == "request" %}
@@ -25,12 +24,14 @@
                             <span style="color: red;">[{{ error }}]</span>
                         {% endfor %}
                     </div>
-                    
                 {% endfor %}
+                <p></p>
+                <div class='row text-center justify-content-center align-items-center'></div>
                 {% if review_type != "inspect" %}
-                    <div class='row text-center justify-content-center align-items-center'>
-                        {{ form.submit(title=form.submit.description, class="btn btn-lg btn-outline-primary")}}
-                    </div>
+                    
+                    {{ form.submit(title=form.submit.description, class="btn btn-outline-primary")}}
+                {% else %}
+                    <a href="{{url_for('view_reviews')}}" class="btn btn-outline-primary">回上一頁</a>
                 {% endif %}
             </div>
     </div>

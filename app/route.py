@@ -1,5 +1,5 @@
 from flask import render_template, redirect, url_for, request, \
-    abort, current_app, flash
+    abort, current_app, flash, Markup
 from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import or_
 from linebot.exceptions import InvalidSignatureError
@@ -158,7 +158,7 @@ def request_review():
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
 
     current_user_groups = set(current_user.external_groups.all() + [current_user.internal_group])
-    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.internal_users if user != current_user and user.can_edit_review()]))
+    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.internal_users if user != current_user and user.role.can_create_and_edit_review]))
     
     if form.is_submitted():
         review = Review()
@@ -273,10 +273,13 @@ def register():
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
+        flash('註冊成功，請以帳號密碼登入', 'alert-success')
         return redirect(url_for('login'))
     
+    if not line_user_profile:
+        flash(Markup('EPA系統可以透過 line 通知你，你可以考慮 <a href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">點此透過line註冊</a>'), 'alert-info')
     linebotinfo = line_bot_api.get_bot_info()
-    return render_template('register.html', title='Registration', form=form, line_user_profile=line_user_profile, linebotinfo=linebotinfo)
+    return render_template('register.html', title='註冊新帳號', form=form, line_user_profile=line_user_profile, linebotinfo=linebotinfo)
 
 @login_required
 def user(username):

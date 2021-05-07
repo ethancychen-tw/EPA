@@ -1,52 +1,44 @@
-<div class='row justify-content-center align-items-center'>
-    <div class=" col-lg-1 col-sm-2 col-md-2">來源</div>
-    <div class=" col-lg-1 col-sm-2 col-md-5">評核者</div>
-    <div class=" col-lg-1 col-sm-2 col-md-5">被評核者</div>
-    <div class=" col-lg-2 col-sm-2 col-md-4">實作時間</div>
-    <div class=" col-lg-3 col-sm-2 col-md-12">項目</div>
-    <div class=" col-lg-1 col-sm-2 col-md-2">地點</div>
-    <div class=" col-lg-1 col-sm-2 col-md-2">已完成</div>
-    <div class=" col-lg-2 col-sm-2 col-md-4"></div>
-    
-</div>
 
-{% for review in reviews %}
-        
-    <div class='row justify-content-center align-items-center'>
-        <div class=" col-lg-1 col-sm-2 col-md-2">
-            {{ review.review_source.desc }}
-        </div>
-        <div class=" col-lg-1 col-sm-2 col-md-5">
-            {{ review.reviewer.username }}
-        </div>
-        <div class=" col-lg-1 col-sm-2 col-md-5">
-            {{ review.reviewee.username }}
-        </div>
-        <div class=" col-lg-2 col-sm-2 col-md-4">
-            {{review.implement_date.strftime('%Y-%m-%d %-I%p') }}
-        </div>
-        <div class=" col-lg-3 col-sm-2 col-md-12">
-            {{ review.epa.desc }}
-        </div>
-        <div class=" col-lg-1 col-sm-2 col-md-2">
-            {{review.location.desc}}
-            
-        </div>
-        <div class=" col-lg-1 col-sm-2 col-md-2">
-            {% if review.complete %} 是 {% else %} 否 {% endif %}
-        </div>
-        
-        <div class=" col-lg-2 col-sm-2 col-md-4">
-            
-            {% if current_user.can_edit_review(review) %}
-                <a href="{{url_for('edit_review',review_id=review.id)}}"><button type="button" class="btn btn-outline-primary">查看並填寫/編輯</button></a>
-            {% else %}
-                <a href="{{url_for('inspect_review',review_id=review.id)}}"><button type="button" class="btn btn-outline-dark">查看</button></a>
-            {% endif %}
-            {% if current_user.can_remove_review(review) %}
-                <a href="{{url_for('remove_review',review_id=review.id)}}"><button type="button" class="btn btn-outline-danger">刪除</button></a>
-            {% endif %}
-        </div>
-        
+<main class="container">
+    <div class="row" data-masonry='{"percentPosition": true }'>
+        {% for review in reviews %}
+            <div class="col col-12 col-sm-6 col-lg-4 mb-4">
+                <div class="card">
+                    <h5 class="card-header">
+                        {% if review.complete %} <span class="badge bg-success">已完成</span> {% else %} <span class="badge bg-warning text-dark">未完成</span> {% endif %}
+                    </h5>
+                    <div class="card-body">
+                        {% if current_user.can_edit_review(review) %}
+                            <img src="{{review.reviewee.avatar()}}" class="w-25">
+                            <h5 class="card-title">
+                                評核 {{review.reviewee.username}}
+                            </h5>
+                            <p class="card-text">{{review.reviewee.username}} 實作的 {{review.epa.desc}}</p>
+                            <a href="{{url_for('edit_review',review_id=review.id)}}" class="btn btn-outline-primary">
+                                {% if review.complete %} 查看/編輯 {% else %} 前往填寫 {% endif %}
+                            </a>
+                        {% else %}
+                            <img src="{{review.reviewer.avatar()}}" class="w-25">
+                            <h5 class="card-title">
+                                {{review.reviewer.username}} {{review.reviewer.role.name}}
+                            </h5>
+                            <p class="card-text">{{review.reviewer.username}} 評核你實作的 {{review.epa.desc}}</p>
+                            <a href="{{url_for('inspect_review',review_id=review.id)}}" class="btn btn-outline-dark">查看</a>
+                        {% endif %}
+                        {% if current_user.can_remove_review(review) %}
+                            <a href="{{url_for('remove_review',review_id=review.id)}}" class="btn btn-outline-danger">刪除</a>
+                        {% endif %}
+                        
+                    </div>
+                    <div class="card-footer text-muted">
+                        {{review.implement_date.strftime('%Y-%m-%d')}} @{{review.location.desc}}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    
     </div>
-{% endfor %}
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>

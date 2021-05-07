@@ -114,7 +114,7 @@ class User(UserMixin, db.Model):
         if self.role.is_manager:
             return True
         if review.reviewer==self or review.reviewee == self:
-            if review.complete:
+            if not review.complete:
                 return True
             else:
                 # for now, those who can make a review could edit/del the review
