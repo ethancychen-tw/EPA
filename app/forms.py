@@ -32,16 +32,12 @@ class ReviewForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    class Meta:
-        csrf = False
     username = StringField("姓名" ,validators=[DataRequired()])
     password = PasswordField("密碼", validators=[DataRequired()])
     remember_me = BooleanField("記住我")
     submit = SubmitField('登入')
 
 class RegisterForm(FlaskForm):
-    class Meta:
-        csrf = False
     username = StringField("姓名" ,validators=[DataRequired()])
     bindline = BooleanField(label="綁定我的line帳號", default=False)
     role = SelectField(label='身份/職級', validators=[DataRequired()])
@@ -67,23 +63,22 @@ class EditProfileForm(FlaskForm):
     
     bindline = BooleanField(label="Line帳號")
     email = EmailField("Email", validators=[DataRequired(), Email()])
-    role = SelectField(label='職級', validators=[DataRequired()])
+    role = SelectField(label='職級', choices=[('', '')], default='')
     internal_group = SelectField(label="所屬醫院", validators=[DataRequired()])
-    external_groups = SelectMultipleField(label="外派醫院", validators=[DataRequired()])
+    external_groups = SelectMultipleField(label="外派醫院", choices=[('', '')], default='')
     submit = SubmitField(label='更新並儲存')
 
 class PasswdResetRequestForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired(), Email()])
-    submit = SubmitField('密碼重設')
+    submit = SubmitField('發送 email')
 
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
         if not user:
-            raise ValidationError(
-                'You do not have an account for this email address')
+            raise ValidationError('沒有帳號註冊此 Email')
 
 
 class PasswdResetForm(FlaskForm):
-    password = PasswordField(label="密碼", validators=[DataRequired()])
-    password2 = PasswordField(label="密碼確認", validators=[DataRequired(), EqualTo('password')])
+    password = PasswordField(label="新密碼", validators=[DataRequired()])
+    password2 = PasswordField(label="新密碼確認", validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField(label='提交')

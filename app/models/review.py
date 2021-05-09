@@ -1,22 +1,23 @@
 from datetime import datetime
-
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
 from app import db
 class Review(db.Model):
     __tablename__ = "reviews"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
     epa_id = db.Column(db.Integer, db.ForeignKey('epa.id'))
     implement_date = db.Column(db.DateTime)
     review_source_id = db.Column(db.Integer, db.ForeignKey('review_source.id'))
     review_difficulty_id = db.Column(db.Integer, db.ForeignKey('review_difficulty.id')) 
     review_score_id = db.Column(db.Integer, db.ForeignKey('review_score.id')) 
-    reviewee_id = db.Column(db.Integer, db.ForeignKey('users.id')) 
-    reviewer_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    reviewee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id')) 
+    reviewer_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'))
     review_compliment = db.Column(db.String(512))
     review_suggestion = db.Column(db.String(512))
     complete = db.Column(db.Boolean, default=False)
-    create_time = db.Column(db.DateTime, default=datetime.utcnow)
-    last_edited = db.Column(db.DateTime, default=datetime.utcnow)
+    create_time = db.Column(db.DateTime, default=datetime.now())
+    last_edited = db.Column(db.DateTime)
 
     def __repr__(self):
         return f"""review:  

@@ -2,6 +2,10 @@ from datetime import datetime
 from hashlib import md5
 import time
 
+
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
+    
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from flask import current_app
@@ -11,14 +15,15 @@ from app import db, login_manager, line_bot_api
 from app.models.review import Review
 
 user_externalgroup = db.Table('user_externalgroup',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
-    db.Column('group_id', db.Integer, db.ForeignKey('groups.id'))
+    db.Column('user_id', UUID(as_uuid=True), db.ForeignKey('users.id')),
+    db.Column('group_id', UUID(as_uuid=True), db.ForeignKey('groups.id'))
 )
 
 class Group(db.Model):
     __tablename__ = "groups"
     # https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html#many-to-many
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)   ## Be careful not to miss passing the callable uuid.uuid4 into the column definition, rather than calling the function itself with uuid.uuid4(). Otherwise, you will have the same scalar value for all instances of this class
+
     name = db.Column(db.String(64), unique=True, index=True)
     desc = db.Column(db.String(64))
 
@@ -26,7 +31,7 @@ class Group(db.Model):
 
 class Role(db.Model):
     __tablename__ = 'role'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  
     name = db.Column(db.String(64))
     desc = db.Column(db.String(64))
     
@@ -40,14 +45,15 @@ class Role(db.Model):
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    create_time = db.Column(db.DateTime, default=datetime.utcnow)  
     username = db.Column(db.String(64), unique=True, index=True)
     email = db.Column(db.String(64), unique=True, index=True)
     password_hash = db.Column(db.String(128))
     create_time = db.Column(db.DateTime, default=datetime.utcnow)
     is_activated = db.Column(db.Boolean, default=False)
-    internal_group_id = db.Column(db.Integer, db.ForeignKey('groups.id')) 
-    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    internal_group_id = db.Column(UUID(as_uuid=True), db.ForeignKey('groups.id')) 
+    role_id = db.Column(UUID(as_uuid=True), db.ForeignKey('role.id'))
     
     # If you use backref you don't need to declare the relationship on the second table.
     line_userId = db.Column(db.String(128))
@@ -124,6 +130,35 @@ class User(UserMixin, db.Model):
     def can_edit_review(self, review=None):
         return self.role.is_manager or ( review.reviewer == self and self.role.can_create_and_edit_review)
 
+class LineNewUser(db.Model):
+    __tablename__ = "line_new_users"
+    id = db.Column(db.Integer, primary_key=True)
+    line_userId = db.Column(db.String(64), unique=True)
+    create_time = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def get_jwt(self, expire=180):
+        return jwt.encode(
+            {
+                'line_userId': self.line_userId,
+                'exp': time.time() + expire
+            },
+            current_app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+
+    @staticmethod
+    def verify_jwt(token):
+        try:
+            pay_load = jwt.decode(
+                token,
+                current_app.config['SECRET_KEY'],
+                algorithms=['HS256']
+            )
+            line_userId = pay_load['line_userId']
+        except:
+            return
+        return LineNewUser.query.filter(LineNewUser.line_userId==line_userId).first()
+    
 
 @login_manager.user_loader
 def load_user(id):
@@ -131,4 +166,4 @@ def load_user(id):
     implement login_user method for flask_login
     this global function makes the login manager instance(in __init__.py) could get user instance in route
     """
-    return User.query.get(int(id))
+    return User.query.get(id)

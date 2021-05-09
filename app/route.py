@@ -1,3 +1,5 @@
+import datetime
+
 from flask import render_template, redirect, url_for, request, \
     abort, current_app, flash, Markup
 from flask_login import login_user, current_user, logout_user, login_required
@@ -6,7 +8,7 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from app.forms import LoginForm, RegisterForm, EditProfileForm, \
     PasswdResetRequestForm, PasswdResetForm, ReviewForm
-from app.models.user import User, load_user, Group, Role
+from app.models.user import User, load_user, Group, Role, LineNewUser
 from app.models.review import Review, EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
 from app import db
 from app import line_bot_api, handler
@@ -28,10 +30,10 @@ def inspect_review(review_id):
     form = ReviewForm()
     for field in form:
         field.render_kw = {'disabled': 'disabled'}
-    form.review_source.choices = [("",prefilled_review.review_source.desc)]
     
     # (2) on submit handle (not applicable here)
     # (3) prefill
+    form.review_source.choices = [("",prefilled_review.review_source.desc)]
     form.reviewer.choices = [( "" ,prefilled_review.reviewer.username)]
     form.reviewee.choices = [( "" ,prefilled_review.reviewee.username)]
     form.location.choices = [( "" ,prefilled_review.location.desc)]
@@ -41,7 +43,7 @@ def inspect_review(review_id):
     form.review_suggestion.data = prefilled_review.review_suggestion
     form.review_difficulty.choices = [("" ,prefilled_review.review_difficulty.desc if prefilled_review.review_score else "")]
     form.review_score.choices = [("", prefilled_review.review_score.desc if prefilled_review.review_score else "") ]
-    return render_template('make_review.html', title="查看評核", form=form, review_type="inspect")
+    return render_template('make_review.html', title="查看評核", form=form, review=prefilled_review, review_type="inspect")
 
 @login_required
 def edit_review(review_id):
@@ -53,6 +55,8 @@ def edit_review(review_id):
     form = ReviewForm()
     form.review_difficulty.choices = [(str(review_difficulty.id), review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
     form.review_score.choices = [(str(review_score.id), review_score.desc) for review_score in ReviewScore.query.all()]
+    for field in form.requesting_fields:
+        field.render_kw = {'disabled':'disabled'}
     # (2) on submit process
     if form.validate_on_submit():
         review = prefilled_review
@@ -60,14 +64,14 @@ def edit_review(review_id):
         review.review_suggestion = form.review_suggestion.data
         review.review_difficulty = ReviewDifficulty.query.get(int(form.review_difficulty.data))
         review.review_score = ReviewScore.query.get(int(form.review_score.data))
+        review.last_edited = datetime.datetime.now()
         review.complete = True
         db.session.add(review)
         db.session.commit()
         return redirect(url_for('index'))
     
     # (3) prefill (if have)
-    for field in form.requesting_fields:
-        field.render_kw = {'disabled':'disabled'}
+    
     form.reviewer.choices = [("" ,prefilled_review.reviewer.username)]
     form.reviewee.choices = [("" ,prefilled_review.reviewee.username)]
     form.location.choices = [("" ,prefilled_review.location.desc)]
@@ -80,7 +84,7 @@ def edit_review(review_id):
     if prefilled_review.review_score:
         form.review_score.data = str(prefilled_review.review_score.id)
     
-    return render_template('make_review.html', title="填寫/編輯評核", form=form, review_type="fill")
+    return render_template('make_review.html', title="填寫/編輯評核", form=form, review=prefilled_review, review_type="fill")
 
 @login_required
 def remove_review(review_id):
@@ -94,7 +98,7 @@ def remove_review(review_id):
         try:
             db.session.delete(review)
             db.session.commit()
-            flash('已成功刪除')
+            flash('已成功刪除', 'alert-info')
         except Exception as e:
             flash('未成功刪除，如果問題一直存在，請聯絡管理員')
             print(e)
@@ -111,6 +115,7 @@ def view_reviews():
 
 @login_required
 def new_review():
+    prefilled_review = Review()
     # (1) form configuration
     form = ReviewForm()
     form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
@@ -128,13 +133,14 @@ def new_review():
         review.implement_date = form.implement_date.data
         review.epa = EPA.query.get(form.epa.data)
         review.location = Location.query.get(int(form.location.data))
-        review.reviewee = User.query.get(int(form.reviewee.data))
+        review.reviewee = User.query.get(form.reviewee.data)
         review.reviewer = current_user
         review.review_score = ReviewScore.query.get(int(form.review_score.data))
         review.review_compliment = form.review_compliment.data
         review.review_suggestion = form.review_suggestion.data
         review.review_difficulty = ReviewDifficulty.query.get(int(form.review_difficulty.data))
         review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
+        review.last_edited = datetime.datetime.now()
         review.complete = True
         db.session.add(review)
         db.session.commit()
@@ -146,14 +152,15 @@ def new_review():
             send_email(subject="[EPA]通知", recipients=review.reviewee.email, text_body=msg_body, html_body=msg_body)
         return redirect(url_for('index'))
         
-    return render_template('make_review.html', title="新增評核", form=form, review_type="new")
+    return render_template('make_review.html', title="新增評核", form=form, review=prefilled_review, review_type="new")
 
 @login_required
 def request_review():
     # anyone could make a review request to any teacher
     # fill epa, location, reviewer
     form = ReviewForm()
-    form.reviewee.choices = [(current_user.id, current_user.username)]
+    form.reviewee.render_kw = {'disabled': 'disabled'}
+    form.reviewee.choices = [("", current_user.username)]
     form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
 
@@ -218,7 +225,7 @@ def login():
     if form.validate_on_submit():
         u = User.query.filter_by(username=form.username.data).first()
         if u is None or not u.check_password(form.password.data):
-            flash('invalid username or password', 'alert-danger')
+            flash('帳號或密碼錯誤', 'alert-danger')
             return redirect(url_for('login'))
         login_user(u, remember=form.remember_me.data)
         next_page = request.args.get('next')
@@ -233,17 +240,22 @@ def logout():
 
 
 def register():
-    line_userId = request.args.get("line_userId", None)
-    try:
-        line_user_profile = line_bot_api.get_profile(line_userId)
-    except Exception as e:
-        print(e)
+    line_new_user_token = request.args.get("line_new_user_token", None)
+    if line_new_user_token:
+        try:
+            line_new_user = LineNewUser.verify_jwt(line_new_user_token)
+            line_user_profile = line_bot_api.get_profile(line_new_user.line_userId)
+        except Exception as e:
+            flash('抱歉，無法辨識你的 Line 帳號，你還是可以繼續註冊，或退出後再次聯繫EPA Line官方帳號索取註冊連結', 'alert-warning')
+            print(e)
+            line_user_profile = None
+    else:
         line_user_profile = None
 
     if current_user.is_authenticated:
         if not current_user.line_userId:
             if line_user_profile:
-                current_user.line_userId = line_userId
+                current_user.line_userId = line_new_user.line_userId
                 db.session.commit()
                 flash('已將你的帳號與line帳號綁定', 'alert-success')
                 return redirect(url_for('index'))
@@ -253,22 +265,23 @@ def register():
     # (1) form configuration
     form = RegisterForm()
     registerable_roles = Role.query.filter(Role.is_manager == False).with_entities(Role.id, Role.name).all()
-    form.role.choices = [(str(role.id), role.name) for role in registerable_roles]
+    form.role.choices = [(role.id.hex, role.name) for role in registerable_roles]
     form.bindline.data = True if line_user_profile else False
     all_groups = Group.query.all()
-    form.internal_group.choices = [(str(group.id), group.name) for group in all_groups]
-    form.external_groups.choices = [(str(group.id), group.name) for group in all_groups]
+    form.internal_group.choices = [(group.id.hex, group.name) for group in all_groups]
+    form.external_groups.choices = [(group.id.hex, group.name) for group in all_groups]
 
     # (2) on submit handling
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data)
-        user.role = Role.query.filter(Role.id == int(form.role.data), Role.is_manager == False ).first()
+        user.role = Role.query.filter(Role.id == form.role.data, Role.is_manager == False ).first()
         if line_user_profile and form.bindline.data:
-            user.line_userId = line_userId
-        user.internal_group = Group.query.get(int(form.internal_group.data))
+            user.line_userId = line_user_profile.user_id
+            db.session.delete(line_new_user)
+        user.internal_group = Group.query.get(form.internal_group.data)
         
         for group_id in form.external_groups.data:
-            user.external_groups.append(Group.query.get(int(group_id)))
+            user.external_groups.append(Group.query.get(group_id))
 
         user.set_password(form.password.data)
         db.session.add(user)
@@ -358,43 +371,40 @@ def page_not_found(e):
 
 @login_required
 def edit_profile():
+    print("in edit_profile()")
     linebotinfo = line_bot_api.get_bot_info()
-    try:
-        if not current_user.line_userId:
-            raise ValueError("no line_userId")
-        line_user_profile = line_bot_api.get_profile(current_user.line_userId)
-    except Exception as e:
-        print(e)
-        print("can't get this line account info")
+    if current_user.line_userId:
+        try:
+            line_user_profile = line_bot_api.get_profile(current_user.line_userId)
+        except Exception as e:
+            print(e)
+    else:
+        print("no line_userId")
         line_user_profile = None
     
     # (1) form configuration
     form = EditProfileForm()
-    form.role.render_kw = {'disabled': 'disabled'}
-    form.role.choices = [(str(current_user.role.id), current_user.role.name)]
-    form.role.data = str(current_user.role.id)
     all_groups = Group.query.with_entities(Group.id, Group.name).all()
-    form.internal_group.choices = [(str(group.id), group.name) for group in all_groups]
-    form.external_groups.choices = [(str(group.id), group.name) for group in all_groups]
+    form.role.render_kw = {'disabled': 'disabled'}
+    form.internal_group.choices = [(group.id.hex, group.name) for group in all_groups]
+    form.external_groups.choices = [(group.id.hex, group.name) for group in all_groups]
 
     # (2) on submit handling
     if form.validate_on_submit():
         if not form.bindline.data:
             current_user.line_userId = None
         current_user.email = form.email.data
-        current_user.internal_group = Group.query.get(int(form.internal_group.data))
-        current_user.external_groups = [Group.query.get(int(group_id)) for group_id in form.external_groups.data]
+        current_user.internal_group = Group.query.get(form.internal_group.data)
+        current_user.external_groups = [Group.query.get(group_id) for group_id in form.external_groups.data]
         db.session.commit()
         flash('資料更新成功','alert-success')
         return redirect(url_for('edit_profile'))
     # (3) prefill
     form.bindline.data = True if current_user.line_userId else False
     form.email.data = current_user.email
-    form.role.data = str(current_user.role.id)
-    form.internal_group.data = str(current_user.internal_group.id)
-    form.external_groups.data = [str(ext_group.id) for ext_group in current_user.external_groups]
-
-
+    form.role.choices = [("", current_user.role.name)] # for dummy field, make sure you have default choice in form class definition
+    form.internal_group.data = current_user.internal_group.id.hex
+    form.external_groups.data = [ext_group.id.hex for ext_group in current_user.external_groups]
     
     return render_template('edit_profile.html',title=current_user.username, form=form, linebotinfo=linebotinfo, line_user_profile=line_user_profile)
 
@@ -448,19 +458,6 @@ def password_reset(token):
     )
 
 
-# @login_required
-# def explore():
-#     # get all user and sort by followers
-#     page_num = int(request.args.get('page') or 1)
-#     tweets = Tweet.query.order_by(Tweet.create_time.desc()).paginate(
-#         page=page_num, per_page=current_app.config['TWEET_PER_PAGE'], error_out=False)
-
-#     next_url = url_for('index', page=tweets.next_num) if tweets.has_next else None
-#     prev_url = url_for('index', page=tweets.prev_num) if tweets.has_prev else None
-#     return render_template(
-#         'explore.html', tweets=tweets.items, next_url=next_url, prev_url=prev_url
-#     )
-
 def callback():
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
@@ -481,17 +478,19 @@ def handle_message(event):
     print(f"event type: {event.type}")
     line_userId = event.source.user_id # The attribute is called user_id, surprise lol
     print(line_userId)
-    try:
-        user = User.query.filter(User.line_userId == line_userId).first()
-    except:
-        user = None
-    print(user)
+    
+    user = User.query.filter(User.line_userId == line_userId).first()
+    
     if not user:
         # I think this is not safe. But let use this for now
         # for more advanced link token see, https://developers.line.biz/en/docs/messaging-api/linking-accounts/#implement-account-link-feature
         # or alternatively, we could have our own token auth method
+        line_new_user = LineNewUser(line_userId=line_userId)
+        db.session.add(line_new_user)
+        db.session.commit()
+        line_new_user_token = line_new_user.get_jwt()
         app_webhook = current_app.config['WEBHOOK_URL']
-        line_bot_api.reply_message(event.reply_token,TextSendMessage(f'新用戶你好，請點此連結註冊: {app_webhook}/register?line_userId={line_userId}'))  
+        line_bot_api.reply_message(event.reply_token,TextSendMessage(f'新用戶你好，請點此連結註冊: {app_webhook}/register?line_new_user_token={line_new_user_token}'))  
     else:
         # if registered, issue a login URL with token
         login_token = user.get_jwt()
