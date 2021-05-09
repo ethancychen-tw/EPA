@@ -12,6 +12,8 @@ from flask import current_app
 import jwt
 
 from app import db, login_manager, line_bot_api
+from linebot.models import TextSendMessage
+from app.email import send_email
 from app.models.review import Review
 
 user_externalgroup = db.Table('user_externalgroup',
@@ -71,6 +73,22 @@ class User(UserMixin, db.Model):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def send_message(self,subject="", msg_body=""):
+        """
+        notify user via line and email
+        """
+        if self.line_userId:
+            try:
+                line_bot_api.push_message(self.line_userId, TextSendMessage(text=(subject + "\n" + msg_body)))
+            except Exception as e:
+                print(e)
+        if self.email:
+            try:
+                send_email(subject, self.email, msg_body)
+            except Exception as e:
+                print(e)
+        
 
     def avatar(self):
         img_src = None

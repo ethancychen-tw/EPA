@@ -2,7 +2,27 @@
 
 {% block content %}
 <div class="container">
-    <div class='row justify-content-center align-items-center'><h1>{{title}}</h1></div>
+    <div class='row'>
+        <div class="col-md-3"></div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{title}}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">你可以選擇排序規則</h6>
+                    
+                    <a href="{{url_for('view_reviews', sort_keys='EPA')}}" class="btn btn-sm btn-outline-dark">EPA</a>
+                    <a href="{{url_for('view_reviews', sort_keys='implement_date')}}" class="btn btn-sm btn-outline-dark">實作時間</a>
+                    <a href="{{url_for('view_reviews', sort_keys='create_time')}}" class="btn btn-sm btn-outline-dark">創建時間</a>
+                    <a href="{{url_for('view_reviews', sort_keys='complete')}}" class="btn btn-sm btn-outline-dark">是否完成</a>
+                </div>
+            </div>
+        </div>
+
+        <p></p>
+        <div class="w-100"></div>
+    </div>
+
+
     {% include "_reviews.html" %}     
     <div class='row'>
         <div class='col-lg-6 text-center'>

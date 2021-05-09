@@ -66,6 +66,13 @@ def edit_review(review_id):
         review.review_score = ReviewScore.query.get(int(form.review_score.data))
         review.last_edited = datetime.datetime.now()
         review.complete = True
+        subject = "[EPA通知]您已被評核"
+        msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
+        try:
+            review.reviewee.send_message(subject=subject, msg_body=msg_body)
+        except Exception as e:
+            print(e)
+        return redirect(url_for('index'))
         db.session.add(review)
         db.session.commit()
         return redirect(url_for('index'))
@@ -106,11 +113,28 @@ def remove_review(review_id):
 
 @login_required
 def view_reviews():
+    sort_keys = request.args.get("sort_keys", "") # EPA, implement_date, create_time, complete
+    sort_keys_list = sort_keys.split(",")
+    sort_entity_list = []
+    for key in sort_keys_list:
+        if key == "EPA":
+            sort_entity_list.append(Review.epa_id)
+        elif key == "implement_date":
+            sort_entity_list.append(Review.implement_date.desc())
+        elif key == "create_time":
+            sort_entity_list.append(Review.create_time.desc())
+        elif key == "complete":
+            sort_entity_list.append(Review.complete)
+    if len(sort_keys_list) == 0:
+        sort_entity_list.append(Review.complete)
+
     cur_page_num = int(request.args.get('page') or 1)
-    all_user_related_reviews = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user)).order_by(Review.last_edited.desc())\
-                    .paginate(page=cur_page_num, per_page=int(current_app.config['REVIEW_PER_PAGE']), error_out=False)
-    next_url = url_for('view_reviews', page=all_user_related_reviews.next_num) if all_user_related_reviews.has_next else None
-    prev_url = url_for('view_reviews', page=all_user_related_reviews.prev_num) if all_user_related_reviews.has_prev else None
+    all_user_related_reviews_q = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user))
+    
+    all_user_related_reviews_q = all_user_related_reviews_q.order_by(*sort_entity_list)
+    all_user_related_reviews = all_user_related_reviews_q.paginate(page=cur_page_num, per_page=int(current_app.config['REVIEW_PER_PAGE']), error_out=False)
+    next_url = url_for('view_reviews', page=all_user_related_reviews.next_num, sort_keys=sort_keys) if all_user_related_reviews.has_next else None
+    prev_url = url_for('view_reviews', page=all_user_related_reviews.prev_num, sort_keys=sort_keys) if all_user_related_reviews.has_prev else None
     return render_template('view_reviews.html', title="查看所有評核", reviews=all_user_related_reviews.items, next_url=next_url, prev_url=prev_url)
 
 @login_required
@@ -145,11 +169,12 @@ def new_review():
         db.session.add(review)
         db.session.commit()
 
-        msg_body = f"[EPA通知]{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date}實作的{review.epa.desc}，你可前往系統查看"
+        subject = "[EPA通知]您已被評核"
+        msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
         try:
-            line_bot_api.push_message(review.reviewee.line_userId, TextSendMessage(text=msg_body))
-        except:
-            send_email(subject="[EPA]通知", recipients=review.reviewee.email, text_body=msg_body, html_body=msg_body)
+            review.reviewee.send_message(subject=subject, msg_body=msg_body)
+        except Exception as e:
+            print(e)
         return redirect(url_for('index'))
         
     return render_template('make_review.html', title="新增評核", form=form, review=prefilled_review, review_type="new")
@@ -179,12 +204,13 @@ def request_review():
         db.session.add(review)
         db.session.commit()
 
-        flash(f'提交成功，已透過 Line 或 email 通知 {review.reviewer.username} 評核')
-        msg_body = f"[EPA通知]{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可前往系統查看"
+        flash(f'提交成功，已透過 Line 或 email 通知 {review.reviewer.username} 評核', "alert-success")
+        subject = f"[EPA通知]請評核{review.reviewee.username}"
+        msg_body = f"{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可前往系統填寫"
         try:
-            line_bot_api.push_message(review.reviewer.line_userId, TextSendMessage(text=msg_body))
-        except:
-            send_email(subject="[EPA]通知", recipients=review.reviewer.email, text_body=msg_body, html_body=msg_body)
+            review.reviewer.send_message(subject, msg_body)
+        except Exception as e:
+            print(e)
 
         return redirect(url_for('index'))
     return render_template('make_review.html', title="請求評核", form=form, review_type="request")
@@ -215,12 +241,6 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
 
-    
-    # user = User.query.get(6)
-    # login_user(user)
-    # flash(' direct login for now', 'error')
-    # return redirect(url_for('index'))
-
     form = LoginForm()
     if form.validate_on_submit():
         u = User.query.filter_by(username=form.username.data).first()
@@ -232,7 +252,7 @@ def login():
         if next_page:
             return redirect(next_page)
         return redirect(url_for('index'))
-    return render_template('login.html', title="Sign In", form=form)
+    return render_template('login.html', title="登入", form=form)
 
 def logout():
     logout_user()
@@ -286,7 +306,7 @@ def register():
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('註冊成功，請以帳號密碼登入', 'alert-success')
+        flash(Markup('註冊成功，請以帳號密碼登入<br>如果你有綁定Line帳號，歡迎透過 <a href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">Line官方帳號</a>使用快速登入功能'), 'alert-success')
         return redirect(url_for('login'))
     
     if not line_user_profile:
@@ -422,20 +442,14 @@ def reset_password_request():
             flash("已發送密碼重置連結到你的 line 或 email", 'alert-info')
             token = user.get_jwt()
             url_password_reset = url_for('password_reset',token=token,_external=True)
-
+            subject = "[EPA]密碼重設"
+            msg_body = f'{user.username}你好，\n你的密碼重設連結為{url_password_reset}'
             try:
-                if not user.line_userId:
-                    raise ValueError("the user don't have a line account")
-                line_bot_api.push_message(user.line_userId, TextSendMessage(text=f'[EPA密碼重設]{user.username}你好，\n你的密碼重設連結為{url_password_reset}'))
-            except LineBotApiError as e:
-                print("can't send line msg")
+                user.send_message(subject, msg_body)
+            except Exception as e:
                 print(e)
-            send_email(
-                subject=current_app.config['MAIL_SUBJECT_RESET_PASSWORD'],
-                recipients=[user.email],
-                text_body= render_template('email/passwd_reset.txt',url_password_reset=url_password_reset),
-                html_body=render_template( 'email/passwd_reset.html',url_password_reset=url_password_reset)
-            )
+        else:
+            flash('找不到這個這個email註冊的使用者', 'alert-warning')
         return redirect(url_for('login'))
     return render_template('password_reset_request.html', form=form)
 
@@ -452,6 +466,9 @@ def password_reset(token):
         user.set_password(form.password.data)
         db.session.commit()
         flash('密碼重設完成，記得下次用新密碼登入喔！','alert-info')
+        subject = "[EPA通知]密碼已重設"
+        msg_body = f'{user.username}你好，你的EPA密碼已重設，如果您並未發出重設密碼請求，請立即聯絡管理員'
+        user.send_message()
         return redirect(url_for('login'))
     return render_template(
         'password_reset.html', title='Password Reset', form=form
