@@ -1,0 +1,58 @@
+<form action="" method="post">
+    {{ filter_form.hidden_tag() }}
+    {{ filter_form.csrf_token }}
+    <div class="d-none d-sm-none d-md-none d-lg-block d-xl-block">
+        <div class="row">
+            {% for field in filter_form if field.type not in ["CSRFTokenField", "SubmitField"] %}
+                <div class="col-3 text-end">{{ field.label }}</div>
+                <div class="col-9">
+                    {% if field.type in ["SelectMultipleField", "MultiCheckboxField"] %}
+                        <div class="row">
+                        {% for choice in field %}
+                            {% if choice.label.text | string | length > 20 %}
+                                <div class="col-12">
+                                    {{ choice(class="form-check-input")}}
+                                    {{ choice.label(class="form-check-label") }}
+                                </div>
+                            {% else %}
+                                <div class="col-4">
+                                    {{ choice(class="form-check-input")}}
+                                    {{ choice.label(class="form-check-label") }}
+                                </div>
+                            {% endif %}
+                            
+                        {% endfor %}
+                        </div>
+                    {% elif field.type in ["DateField"] %}
+                        <div class="row"><div class="col-6">{{ field(class="form-control") }}</div></div>
+                        
+                    {% elif field.type in ["RadioField"] %}
+                        <div class="row">
+                            {% for choice in field %}
+                                
+                                <div class="col-4">
+                                    {{ choice(class="form-check-input")}}
+                                    {{ choice.label(class="form-check-label") }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <span class="text-danger" style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                </div>
+                
+            {% endfor %}
+            <div class="col-3"></div>
+            <div class="col-2"><a class="w-100 btn btn-outline-secondary" href="{{url_for('view_reviews')}}">清除條件</a></div>
+            <div class="col-1"></div>
+            <div class="col-2">{{ filter_form.submit(class="w-100 btn btn-outline-primary") }}</div>
+            
+            
+            
+        </div>
+    </div>  
+</form>
+

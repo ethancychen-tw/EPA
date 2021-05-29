@@ -52,7 +52,6 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, index=True)
     email = db.Column(db.String(64), unique=True, index=True)
     password_hash = db.Column(db.String(128))
-    create_time = db.Column(db.DateTime, default=datetime.utcnow)
     is_activated = db.Column(db.Boolean, default=False)
     internal_group_id = db.Column(UUID(as_uuid=True), db.ForeignKey('groups.id')) 
     role_id = db.Column(UUID(as_uuid=True), db.ForeignKey('role.id'))
@@ -133,7 +132,6 @@ class User(UserMixin, db.Model):
             return
         return User.query.filter(User.email==email).first()
     
-    # should refactor using role auth
     def can_remove_review(self, review=None):
         if self.role.is_manager:
             return True
@@ -147,6 +145,18 @@ class User(UserMixin, db.Model):
 
     def can_edit_review(self, review=None):
         return self.role.is_manager or ( review.reviewer == self and self.role.can_create_and_edit_review)
+    
+    def get_potential_reviewees(self):
+        if self.role.can_create_and_edit_review:
+            return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user !=self and user.role.can_request_review]))
+        else:
+            return []
+    
+    def get_potential_reviewers(self):
+        if self.role.can_request_review:
+            return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user != self and user.role.can_create_and_edit_review]))
+        else:
+            return []
 
 class LineNewUser(db.Model):
     __tablename__ = "line_new_users"

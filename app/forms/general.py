@@ -1,15 +1,18 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, \
-    TextAreaField, SelectField, SelectMultipleField
-from wtforms.fields.html5 import DateField, EmailField
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, \
-    Length
+    TextAreaField, SelectField, SelectMultipleField, RadioField, widgets
+from wtforms.fields.html5 import DateField, EmailField, DateTimeLocalField
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
 
 from app.models.user import User
 
 import datetime
+
+class MultiCheckboxField(SelectMultipleField):
+    widget = widgets.ListWidget(prefix_label=False)
+    option_widget = widgets.CheckboxInput()
+
 class ReviewForm(FlaskForm):
-    review_source = SelectField(label='來源', choices=[('', '')], default='')
     implement_date = DateField(label="實作時間", validators=[DataRequired()], default=datetime.date.today())
     location = SelectField(label='實作地點', choices=[('', '')], default='')
     epa = SelectField(label='EPA', choices=[('', '')], default='')
@@ -21,15 +24,23 @@ class ReviewForm(FlaskForm):
     review_score = SelectField(label='(4) 如果下次再遇到類似情形，我對你的信賴等級為')
     submit = SubmitField('提交')
 
+    review_source = SelectField(label='來源', choices=[('', '')], default='')
+    complete = SelectField(label="已完成", choices=[('True', '是'),('False','否')], default='False')
+    create_time = DateTimeLocalField(label='創建時間', format='%Y-%m-%dT%H:%M')
+    last_edited = DateTimeLocalField(label='最近更新時間',format='%Y-%m-%dT%H:%M')
+
+    
     @property
     def requesting_fields(self):
-        return [self.implement_date, self.location, self.epa, self.reviewee, self.reviewer]
+        return [self.reviewee, self.reviewer, self.epa, self.location, self.implement_date ]
     
     @property
     def scoring_fields(self):
-        return [self.implement_date, self.location, self.epa, self.reviewee, self.reviewer]
+        return [self.review_difficulty, self.review_compliment, self.review_suggestion, self.review_score]
     
-
+    @property
+    def meta_fields(self):
+        return [self.review_source, self.complete, self.create_time, self.last_edited]    
 
 class LoginForm(FlaskForm):
     username = StringField("姓名" ,validators=[DataRequired()])
@@ -82,3 +93,20 @@ class PasswdResetForm(FlaskForm):
     password = PasswordField(label="新密碼", validators=[DataRequired()])
     password2 = PasswordField(label="新密碼確認", validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField(label='提交')
+
+
+    
+class UserFilterForm(FlaskForm):
+    groups = SelectMultipleField()
+    show_user_tpyes = SelectMultipleField(label='成員類型', choices=[('internal_users', '所屬醫院')])
+    role = SelectMultipleField(label='職級/角色', choices=[('', '')], default=[''])
+class ReviewFilterForm(FlaskForm):
+    reviewees = MultiCheckboxField(label='被評核者', choices=[('', '')],  default=[''])
+    reviewers = MultiCheckboxField(label='評核者', choices=[('', '')], default=[''])
+    groups = MultiCheckboxField(label='群組',choices=[('', '')], default=['']) # only available for manager
+    create_time_start = DateField(label='創建時間開始', default=datetime.datetime.now()-datetime.timedelta(days=360))
+    create_time_end = DateField(label='創建時間結束', default=datetime.datetime.now())
+    complete = MultiCheckboxField(label='已完成', choices=[('True', '是'),('False','否')], default=['True','False'])
+    epas = MultiCheckboxField(label='EPA', choices=[('', '')], default=[''])
+    sort_key = RadioField(label="排序", choices=[('EPA','EPA'),('implement_date','實作時間'), ('create_time','創建時間')], validators=[DataRequired()], default='EPA')
+    submit = SubmitField(label='篩選')

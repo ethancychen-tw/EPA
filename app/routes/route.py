@@ -1,19 +1,41 @@
 import datetime
-
+import json
 from flask import render_template, redirect, url_for, request, \
     abort, current_app, flash, Markup
 from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import or_
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
-from app.forms import LoginForm, RegisterForm, EditProfileForm, \
-    PasswdResetRequestForm, PasswdResetForm, ReviewForm
+from app.forms.general import LoginForm, RegisterForm, EditProfileForm, PasswdResetRequestForm, PasswdResetForm, ReviewForm, ReviewFilterForm
+# from app.forms import AdminEditGroupForm, AdminEditReviewForm, AdminEditProfileForm
 from app.models.user import User, load_user, Group, Role, LineNewUser
 from app.models.review import Review, EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
 from app import db
 from app import line_bot_api, handler
 from app.email import send_email
 
+
+def auto_create_review():
+    """
+    find 
+    """
+
+def inform_incomplete_reviews():
+    reviewer_unfin_review_cnt_list = Review.query.filter(Review.complete==False).group_by(Review.reviewer_id).with_entities(Review.reviewer_id, func.count(Review.id).label('unfin_review_cnt')).all()
+
+    for reviewer_unfin_review_cnt in reviewer_unfin_review_cnt_list:
+        try:
+            # TODO: change to async send using Thread
+            reviewer = User.query.get(reviewer_unfin_review_cnt.reviewer_id)
+            subject = f"[EPA通知]尚未完成的評核"
+            msg_body = f"{reviewer.username}你好，你尚有{reviewer_unfin_review_cnt.unfin_review_cnt}個評核未完成，你可前往系統填寫"
+            reviewer_unfin_review_cnt.reviewer.send_message(subject=subject, msg_body=msg_body)
+        except Exception as e:
+            print(e)
+
+@login_required
+def admin_view_users():
+    pass
 
 @login_required
 def inspect_review(review_id):
@@ -22,12 +44,13 @@ def inspect_review(review_id):
     only reviewer or reviewee could see
     """
     prefilled_review = Review.query.get(review_id)
-    if current_user.id not in [prefilled_review.reviewer.id, prefilled_review.reviewee.id]:
+    if (not current_user.role.is_manager) and (current_user.id not in [prefilled_review.reviewer.id, prefilled_review.reviewee.id]):
         flash('您沒有權限存取這個評核','alert-warning')
         return redirect(url_for('index'))
     
     # (1) form configuration
     form = ReviewForm()
+    
     for field in form:
         field.render_kw = {'disabled': 'disabled'}
     
@@ -48,50 +71,95 @@ def inspect_review(review_id):
 @login_required
 def edit_review(review_id):
     prefilled_review = Review.query.get(review_id)
-    if prefilled_review.reviewer.id != current_user.id:
+    if (not current_user.role.is_manager) and (not current_user.can_edit_review(prefilled_review)):
         flash('您沒有權限存取這個評核','alert-warning')
         return redirect(url_for('index'))
     # (1) form configuration
     form = ReviewForm()
     form.review_difficulty.choices = [(str(review_difficulty.id), review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
     form.review_score.choices = [(str(review_score.id), review_score.desc) for review_score in ReviewScore.query.all()]
-    for field in form.requesting_fields:
-        field.render_kw = {'disabled':'disabled'}
+    if current_user.role.is_manager:
+        review_type = 'admin_edit'
+        all_users = User.query.join(Role).filter(Role.is_manager == False).all()
+        all_reviewers = [user for user in all_users if user.role.can_create_and_edit_review]
+        all_reviewees = [user for user in all_users if user.role.can_request_review]
+        form.reviewer.choices = [(user.id, user.username) for user in all_reviewers]
+        form.reviewee.choices = [(user.id, user.username) for user in all_reviewees]
+        form.location.choices = [(str(location.id) ,location.desc) for location in Location.query.all()]
+        form.epa.choices = [(str(epa.id) ,epa.desc) for epa in EPA.query.all()]
+        form.review_source.choices = [(str(review_source.id), review_source.desc) for review_source in ReviewSource.query.all()]
+        form.create_time.render_kw = {'disabled':'disabled'}
+        form.last_edited.render_kw = {'disabled':'disabled'}
+    else:
+        review_type = 'user_edit'
+        form.reviewer.choices = [("" ,prefilled_review.reviewer.username)]
+        form.reviewee.choices = [("" ,prefilled_review.reviewee.username)]
+        form.location.choices = [("" ,prefilled_review.location.desc)]
+        form.epa.choices = [("" ,prefilled_review.epa.desc)]
+        for field in form.requesting_fields + form.meta_fields:
+            field.render_kw = {'disabled':'disabled'}
+    
     # (2) on submit process
     if form.validate_on_submit():
         review = prefilled_review
+        # scoring
         review.review_compliment = form.review_compliment.data
         review.review_suggestion = form.review_suggestion.data
         review.review_difficulty = ReviewDifficulty.query.get(int(form.review_difficulty.data))
         review.review_score = ReviewScore.query.get(int(form.review_score.data))
+        # meta
         review.last_edited = datetime.datetime.now()
-        review.complete = True
-        subject = "[EPA通知]您已被評核"
-        msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
-        try:
-            review.reviewee.send_message(subject=subject, msg_body=msg_body)
-        except Exception as e:
-            print(e)
-        return redirect(url_for('index'))
-        db.session.add(review)
-        db.session.commit()
-        return redirect(url_for('index'))
+        
+        if current_user.role.is_manager:
+            # requesting field
+            review.reviewer = User.query.get(form.reviewer.data)
+            review.reviewee = User.query.get(form.reviewee.data)
+            review.epa = EPA.query.get(int(form.epa.data))
+            review.location = Location.query.get(int(form.location.data))
+            # meta
+            review.review_source = ReviewSource.query.get(int(form.review_source.data))
+            review.complete = (form.complete.data == 'True')
+            try:
+                db.session.commit()
+                flash('編輯成功', 'alert-success')
+            except Exception as e:
+                print(e)
+        else:
+            review.complete = True
+            subject = "[EPA通知]您已被評核"
+            msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
+            try:
+                db.session.commit()
+                review.reviewee.send_message(subject=subject, msg_body=msg_body)
+                flash('編輯成功，已通知被評核者', 'alert-success')
+            except Exception as e:
+                print(e)
+        return redirect(url_for('edit_review',review_id=review_id))
     
     # (3) prefill (if have)
-    
-    form.reviewer.choices = [("" ,prefilled_review.reviewer.username)]
-    form.reviewee.choices = [("" ,prefilled_review.reviewee.username)]
-    form.location.choices = [("" ,prefilled_review.location.desc)]
-    form.epa.choices = [("" ,prefilled_review.epa.desc)]
+    # requesting fields
+    form.reviewer.data = prefilled_review.reviewer.id
+    form.reviewee.data = prefilled_review.reviewee.id
+    form.epa.data = str(prefilled_review.epa.id)
+    form.location.data = str(prefilled_review.location.id)
     form.implement_date.data = prefilled_review.implement_date
+
+    # scoring field
     form.review_compliment.data = prefilled_review.review_compliment
     form.review_suggestion.data = prefilled_review.review_suggestion
     if prefilled_review.review_difficulty:
         form.review_difficulty.data = str(prefilled_review.review_difficulty.id)
     if prefilled_review.review_score:
         form.review_score.data = str(prefilled_review.review_score.id)
+
+    # meta field
+    form.review_source.data = str(prefilled_review.review_source.id)
+    form.create_time.data = prefilled_review.create_time # prefilled_review.create_time
+    if prefilled_review.last_edited:
+        form.last_edited.data = prefilled_review.last_edited # prefilled_review.last_edited
+    form.complete.data = str(prefilled_review.complete)
     
-    return render_template('make_review.html', title="填寫/編輯評核", form=form, review=prefilled_review, review_type="fill")
+    return render_template('make_review.html', title="填寫/編輯評核", form=form, review=prefilled_review, review_type=review_type)
 
 @login_required
 def remove_review(review_id):
@@ -113,29 +181,84 @@ def remove_review(review_id):
 
 @login_required
 def view_reviews():
-    sort_keys = request.args.get("sort_keys", "") # EPA, implement_date, create_time, complete
-    sort_keys_list = sort_keys.split(",")
-    sort_entity_list = []
-    for key in sort_keys_list:
-        if key == "EPA":
-            sort_entity_list.append(Review.epa_id)
-        elif key == "implement_date":
-            sort_entity_list.append(Review.implement_date.desc())
-        elif key == "create_time":
-            sort_entity_list.append(Review.create_time.desc())
-        elif key == "complete":
-            sort_entity_list.append(Review.complete)
-    if len(sort_keys_list) == 0:
-        sort_entity_list.append(Review.complete)
+    filter_form = ReviewFilterForm()
+    # (1) form configuration
+    if current_user.role.is_manager:
+        filter_form.reviewees.choices = [(user_id.hex, user_name) for user_id, user_name in User.query.join(Role).filter(Role.can_request_review==True).with_entities(User.id, User.username).all()]
+        filter_form.reviewers.choices = [(user_id.hex, user_name) for user_id, user_name in User.query.join(Role).filter(Role.can_create_and_edit_review==True).with_entities(User.id, User.username).all()]
+        filter_form.groups.choices = [(group_id.hex, group_name) for group_id, group_name in Group.query.with_entities(Group.id, Group.name).all()]
+    else:
+        filter_form.reviewers.choices = [(user.id.hex, user.username) for user in current_user.get_potential_reviewers()]
+        filter_form.reviewees.choices = [(user.id.hex, user.username) for user in current_user.get_potential_reviewees()]
+        filter_form.groups.choices = [(group_id.hex, group_name) for group_id, group_name in Group.query.with_entities(Group.id, Group.name).all()]
+        
+    filter_form.epas.choices = [(str(epa_id), epa_desc) for epa_id, epa_desc in EPA.query.with_entities(EPA.id, EPA.desc).all()]
+
+    if filter_form.validate_on_submit():
+        filters_json = json.dumps({field.name: field.data for field in filter_form if field.type not in ['SubmitField','CSRFTokenField']}, default=lambda x: f"{x.year}-{x.month}-{x.day}" if isinstance(x, datetime.datetime) else "")
+        print(filters_json)
+        return redirect(url_for('view_reviews', filters_json=filters_json))
+
+    # default
+    sort_entity = Review.complete
+    filtering_clause = []
+
+    # filters handling. Should pull into a function
+    filters_json = request.args.get("filters_json", None)
+    if filters_json:
+        filters = json.loads(filters_json)
+        
+        reviewees = filters['reviewees']
+        reviewers = filters['reviewers']
+        groups = filters['groups']
+        create_time_start = filters['create_time_start']
+        create_time_end = filters['create_time_end']
+        complete = filters['complete']
+        epas = filters['epas']
+        sort_key = filters['sort_key']
+        # could refactor this in factory
+        if len(reviewees):
+            filtering_clause.append(Review.reviewee_id.in_(reviewees))
+        if len(reviewers):
+            filtering_clause.append(Review.reviewer_id.in_(reviewers))
+        if len(groups):
+            filtering_clause.append(or_(
+                Review.reviewer.internal_group.id.in_(groups), 
+                Review.reviewer.external_group.id.in_(groups), 
+                Review.reviewee.internal_group.id.in_(groups), 
+                Review.reviewee.external_group.id.in_(groups),
+            ))
+        if len(create_time_start):
+            filtering_clause.append(Review.create_time >= datetime.date.fromisoformat(create_time_start))
+        if len(create_time_end):
+            filtering_clause.append(Review.create_time < datetime.date.fromisoformat(create_time_end))
+        if len(complete):
+            filtering_clause.append(Review.complete.in_(complete))
+        if len(epas):
+            filtering_clause.append(Review.epa_id.in_(epas)) # if this don't work, could prefetch epa ids
+
+        if sort_key == "EPA":
+            sort_entity = Review.epa_id
+        elif sort_key == "implement_date":
+            sort_entity = Review.implement_date.desc()
+        elif sort_key == "create_time":
+            sort_entity = Review.create_time.desc()
+        elif sort_key == "complete":
+            sort_entity = Review.complete
+        # TODO: prefill filter form according to current filtering options
 
     cur_page_num = int(request.args.get('page') or 1)
-    all_user_related_reviews_q = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user))
-    
-    all_user_related_reviews_q = all_user_related_reviews_q.order_by(*sort_entity_list)
+
+    if current_user.role.is_manager:
+        all_user_related_reviews_q = Review.query
+    else:
+        all_user_related_reviews_q = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user))
+
+    all_user_related_reviews_q = all_user_related_reviews_q.filter(*filtering_clause).order_by(sort_entity)
     all_user_related_reviews = all_user_related_reviews_q.paginate(page=cur_page_num, per_page=int(current_app.config['REVIEW_PER_PAGE']), error_out=False)
-    next_url = url_for('view_reviews', page=all_user_related_reviews.next_num, sort_keys=sort_keys) if all_user_related_reviews.has_next else None
-    prev_url = url_for('view_reviews', page=all_user_related_reviews.prev_num, sort_keys=sort_keys) if all_user_related_reviews.has_prev else None
-    return render_template('view_reviews.html', title="查看所有評核", reviews=all_user_related_reviews.items, next_url=next_url, prev_url=prev_url)
+    next_url = url_for('view_reviews', page=all_user_related_reviews.next_num, filters_json=filters_json) if all_user_related_reviews.has_next else None
+    prev_url = url_for('view_reviews', page=all_user_related_reviews.prev_num, filters_json=filters_json) if all_user_related_reviews.has_prev else None
+    return render_template('view_reviews.html', title="查看所有評核", reviews=all_user_related_reviews.items,filter_form=filter_form, next_url=next_url, prev_url=prev_url)
 
 @login_required
 def new_review():
@@ -144,10 +267,9 @@ def new_review():
     form = ReviewForm()
     form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
-
-    user_options = list(set(current_user.internal_group.internal_users.all() + current_user.internal_group.external_users))
-    form.reviewee.choices = [(user.id, user.username) for user in user_options if user!=current_user]
-    form.reviewer.choices = [(current_user.id, current_user.username)]
+    form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees]
+    form.reviewer.choices = [("", current_user.username)]
+    form.reviewer.render_kw = {'disabled':'disabled'}
 
     form.review_difficulty.choices = [(review_difficulty.id, review_difficulty.desc) for review_difficulty in ReviewDifficulty.query.all()]
     form.review_score.choices = [(review_score.id, review_score.desc) for review_score in ReviewScore.query.all()]
@@ -172,6 +294,7 @@ def new_review():
         subject = "[EPA通知]您已被評核"
         msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
         try:
+            flash('提交成功','alert-success')
             review.reviewee.send_message(subject=subject, msg_body=msg_body)
         except Exception as e:
             print(e)
@@ -189,8 +312,7 @@ def request_review():
     form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
 
-    current_user_groups = set(current_user.external_groups.all() + [current_user.internal_group])
-    form.reviewer.choices = list(set([(user.id, user.username) for group in current_user_groups for user in group.internal_users if user != current_user and user.role.can_create_and_edit_review]))
+    form.reviewer.choices = [(user.id.hex,user.username) for user in current_user.get_potential_reviewers()]
     
     if form.is_submitted():
         review = Review()
@@ -324,7 +446,7 @@ def user(username):
         abort(404)
     current_page_num = int(request.args.get('page') or 1)
     all_user_related_reviews = Review.query.filter(or_(Review.reviewer==current_user, Review.reviewee==current_user)).order_by(Review.last_edited.desc())\
-                    .paginate(page=cur_page_num, per_page=int(current_app.config['REVIEW_PER_PAGE']), error_out=False)
+                    .paginate(page=current_page_num, per_page=int(current_app.config['REVIEW_PER_PAGE']), error_out=False)
     next_url = url_for('user',page=all_user_related_reviews.next_num) if all_user_related_reviews.has_next else None
     prev_url = url_for('user', page=all_user_related_reviews.prev_num) if all_user_related_reviews.has_prev else None
     
@@ -391,11 +513,17 @@ def page_not_found(e):
 
 @login_required
 def edit_profile():
-    print("in edit_profile()")
     linebotinfo = line_bot_api.get_bot_info()
-    if current_user.line_userId:
+    query_user_id = request.args.get('query_user_id', None)
+
+    if current_user.role.is_manager and query_user_id:
+        user = User.query.get(query_user_id)
+    else:
+        user = current_user
+    
+    if user.line_userId:
         try:
-            line_user_profile = line_bot_api.get_profile(current_user.line_userId)
+            line_user_profile = line_bot_api.get_profile(user.line_userId)
         except Exception as e:
             print(e)
     else:
@@ -412,21 +540,21 @@ def edit_profile():
     # (2) on submit handling
     if form.validate_on_submit():
         if not form.bindline.data:
-            current_user.line_userId = None
-        current_user.email = form.email.data
-        current_user.internal_group = Group.query.get(form.internal_group.data)
-        current_user.external_groups = [Group.query.get(group_id) for group_id in form.external_groups.data]
+            user.line_userId = None
+        user.email = form.email.data
+        user.internal_group = Group.query.get(form.internal_group.data)
+        user.external_groups = [Group.query.get(group_id) for group_id in form.external_groups.data]
         db.session.commit()
         flash('資料更新成功','alert-success')
         return redirect(url_for('edit_profile'))
     # (3) prefill
-    form.bindline.data = True if current_user.line_userId else False
-    form.email.data = current_user.email
-    form.role.choices = [("", current_user.role.name)] # for dummy field, make sure you have default choice in form class definition
-    form.internal_group.data = current_user.internal_group.id.hex
-    form.external_groups.data = [ext_group.id.hex for ext_group in current_user.external_groups]
+    form.bindline.data = True if user.line_userId else False
+    form.email.data = user.email
+    form.role.choices = [("", user.role.name)] # for dummy field, make sure you have default choice in form class definition
+    form.internal_group.data = user.internal_group.id.hex
+    form.external_groups.data = [ext_group.id.hex for ext_group in user.external_groups]
     
-    return render_template('edit_profile.html',title=current_user.username, form=form, linebotinfo=linebotinfo, line_user_profile=line_user_profile)
+    return render_template('edit_profile.html',title=user.username, user=user, form=form, linebotinfo=linebotinfo, line_user_profile=line_user_profile)
 
 
 def reset_password_request():
