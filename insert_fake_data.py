@@ -1,3 +1,5 @@
+import datetime
+
 from app import db, create_app  # 此時db仍沒有連上engine，因為app在  __init__.py 中只有初始化SQLAlchemy空物件而已
 app = create_app() # 這裏db也還是沒有連上，只是創造出app 環境而已
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
@@ -71,22 +73,43 @@ user.internal_group = Group.query.filter(Group.name=="第一間醫院").first()
 user.external_groups.append(Group.query.filter(Group.name=="第二間醫院").first())
 db.session.add(user)
 
-user = User(username="R1", email="R1@epa.com")
-user.set_password("R1")
+#group1
+user = User(username="G1R1", email="G1R1@epa.com")
+user.set_password("G1R1")
 user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
 user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
 db.session.add(user)
 
-user = User(username="R5",email="R5@epa.com")
-user.set_password("R5")
+user = User(username="G1R5",email="G1R5@epa.com")
+user.set_password("G1R5")
 user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
 user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
 db.session.add(user)
 
-user = User(username="R6", email="R6@epa.com")
-user.set_password("R6")
+user = User(username="G1R6", email="G1R6@epa.com")
+user.set_password("G1R6")
 user.role = Role.query.filter(Role.name=="主治醫師").first()
 user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
+user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
+db.session.add(user)
+
+# group2
+user = User(username="G2R1", email="G2R1@epa.com")
+user.set_password("G2R1")
+user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
+user.internal_group = Group.query.filter(Group.name == "第二間醫院").first()
+db.session.add(user)
+
+user = User(username="G2R5",email="G2R5@epa.com")
+user.set_password("G2R5")
+user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
+user.internal_group = Group.query.filter(Group.name == "第二間醫院").first()
+db.session.add(user)
+
+user = User(username="G2R6", email="G2R6@epa.com")
+user.set_password("G2R6")
+user.role = Role.query.filter(Role.name=="主治醫師").first()
+user.internal_group = Group.query.filter(Group.name == "第二間醫院").first()
 user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
 db.session.add(user)
 
@@ -94,53 +117,23 @@ db.session.commit()
 
 # # use "append" to resolve bridging table
 
-# std_name = ["R1卓筱茜", "R2陳佩欣", "R3廖晨竹", "R4謝易達", "R5余瑞彬"]
-# for name in std_name:
-#     user = User(username=name, line_userId=f"line {name}")
-#     user.role = Role.query.filter(Role.name=="住院醫師").first()
-#     user.groups.append(Group.query.filter(Group.name=="第一間醫院").first())
-#     db.session.add(user)
-
-
-# tea_name = ["林凱南", "劉嘉銘", "梁家光", "陳正文", "王守仁", "林世倉", "張淳翔", "李嘉欣", "蘇家弘", "陳一嘉", "余瑞彬"]
-# for name in tea_name:
-#     user = User(username=name, line_userId=f"line {name}")
-#     user.role = Role.query.filter(Role.name=="主治醫師").first()
-#     user.groups.append(Group.query.filter(Group.name=="第一間醫院").first())
-#     user.groups.append(Group.query.filter(Group.name=="第二間醫院").first())
-#     db.session.add(user)
-
-
-# for name in ["only2"+name for name in std_name]:
-#     user = User(username=name, line_userId=f"line {name}")
-#     user.role = Role.query.filter(Role.name=="住院醫師").first()
-#     user.groups.append(Group.query.filter(Group.name=="第二間醫院").first())
-#     db.session.add(user)
-
-
-# for name in ["only2"+name for name in tea_name]:
-#     user = User(username=name, line_userId=f"line {name}")
-#     user.role = Role.query.filter(Role.name=="主治醫師").first()
-#     user.groups.append(Group.query.filter(Group.name=="第二間醫院").first())
-#     db.session.add(user)
-
-# db.session.commit()
 
 
 # ask review
 from datetime import date
 
-all_reviewers = User.query.join(Role).filter(Role.can_create_and_edit_review == True).all()
-all_users = User.query.all()
+all_reviewers = User.query.join(Role).filter(Role.can_create_and_edit_review == True, Role.is_manager == False).all()
+all_reviewees = User.query.join(Role).filter(Role.can_request_review == True, Role.is_manager == False).all()
 import random
 all_locations = Location.query.all()
 all_epa = EPA.query.all()
 for i in range(20):
     review = Review()
-    review.implement_date = date.fromisoformat('2019-12-04')
+    review.implement_date = date.fromisoformat('2019-12-04') + datetime.timedelta(days=int(random.random()*(1-random.random())*1000))
     review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
     review.reviewer = all_reviewers[int(random.random()*len(all_reviewers))]
-    review.reviewee = all_users[int(random.random()*len(all_users))]
+    reviewee_options = [user for user in all_reviewees if user != review.reviewer ]
+    review.reviewee = reviewee_options[int(random.random()*len(reviewee_options))]
     review.location = all_locations[int(random.random()*len(all_locations))]
     review.epa = all_epa[int(random.random()*len(all_epa))]
     db.session.add(review)
