@@ -195,8 +195,7 @@ def view_reviews():
     filter_form.epas.choices = [(str(epa_id), epa_desc) for epa_id, epa_desc in EPA.query.with_entities(EPA.id, EPA.desc).all()]
 
     if filter_form.validate_on_submit():
-        filters_json = json.dumps({field.name: field.data for field in filter_form if field.type not in ['SubmitField','CSRFTokenField']}, default=lambda x: f"{x.year}-{x.month}-{x.day}" if isinstance(x, datetime.datetime) else "")
-        print(filters_json)
+        filters_json = json.dumps({field.name: field.data for field in filter_form if field.type not in ['SubmitField','CSRFTokenField']}, default=lambda x: str(x) if isinstance(x, datetime.date) else "")
         return redirect(url_for('view_reviews', filters_json=filters_json))
 
     # default
@@ -216,26 +215,35 @@ def view_reviews():
         complete = filters['complete']
         epas = filters['epas']
         sort_key = filters['sort_key']
+
         # could refactor this in factory
         if len(reviewees):
             filtering_clause.append(Review.reviewee_id.in_(reviewees))
+            filter_form.reviewees.data = reviewees
+
         if len(reviewers):
             filtering_clause.append(Review.reviewer_id.in_(reviewers))
+            filter_form.reviewers.data = reviewers
         if len(groups):
+            selected_groups = Group.query.filter(Group.id.in_(groups)).all()
+            selected_user_ids = list(set([user.id.hex for group in selected_groups for user in group.internal_users.all() + group.external_users]))
             filtering_clause.append(or_(
-                Review.reviewer.internal_group.id.in_(groups), 
-                Review.reviewer.external_group.id.in_(groups), 
-                Review.reviewee.internal_group.id.in_(groups), 
-                Review.reviewee.external_group.id.in_(groups),
+                Review.reviewer_id.in_(selected_user_ids), 
+                Review.reviewee_id.in_(selected_user_ids),
             ))
+            filter_form.groups.data = groups
         if len(create_time_start):
             filtering_clause.append(Review.create_time >= datetime.date.fromisoformat(create_time_start))
+            filter_form.create_time_start.data = datetime.date.fromisoformat(create_time_start)
         if len(create_time_end):
             filtering_clause.append(Review.create_time < datetime.date.fromisoformat(create_time_end))
+            filter_form.create_time_end.data = datetime.date.fromisoformat(create_time_end)
         if len(complete):
             filtering_clause.append(Review.complete.in_(complete))
+            filter_form.complete.data = complete
         if len(epas):
             filtering_clause.append(Review.epa_id.in_(epas)) # if this don't work, could prefetch epa ids
+            filter_form.epas.data = epas
 
         if sort_key == "EPA":
             sort_entity = Review.epa_id
@@ -245,7 +253,7 @@ def view_reviews():
             sort_entity = Review.create_time.desc()
         elif sort_key == "complete":
             sort_entity = Review.complete
-        # TODO: prefill filter form according to current filtering options
+        filter_form.sort_key.data = sort_key
 
     cur_page_num = int(request.args.get('page') or 1)
 
