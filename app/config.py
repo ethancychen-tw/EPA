@@ -17,7 +17,7 @@ class Config:
     else:
         SECRET_KEY = 'SECRET_KEY_ENV_VAR_NOT_SET'
         print('SECRET KEY ENV VAR NOT SET! SHOULD NOT SEE IN PRODUCTION')
-
+    DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(config_path, 'epa.db'))
     WEBHOOK_URL = os.environ.get('WEBHOOK_URL')
     LINEBOT_MSG_CHANNEL_ACCESS_TOKEN = os.environ.get('LINEBOT_MSG_CHANNEL_ACCESS_TOKEN')
     LINEBOT_MSG_CHANNEL_SECRET = os.environ.get('LINEBOT_MSG_CHANNEL_SECRET')
@@ -46,7 +46,7 @@ class Config:
 
 
 class DevelopmentConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(config_path, 'twittor.db'))
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(config_path, 'epa.db'))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     STATIC_FOLDER = "static"
     

@@ -206,7 +206,6 @@ def view_reviews():
     filters_json = request.args.get("filters_json", None)
     if filters_json:
         filters = json.loads(filters_json)
-        
         reviewees = filters['reviewees']
         reviewers = filters['reviewers']
         groups = filters['groups']
