@@ -1,0 +1,35 @@
+{
+    "dev": {
+        "app_function": "run.app",
+        "aws_region": "ap-northeast-1",
+        "profile_name": "epa-zappa",
+        "project_name": "epa",
+        "runtime": "python3.8",
+        "s3_bucket": "zappa-bqh1h6ox3",
+        "exclude": [
+            "__pycache__",
+            "_cache",
+            ".ipynb_checkpoints",
+            ".vscode",
+            "node_modules",
+            "prod_venv",
+            "venv",
+            ".git",
+            ".gitignore",
+            "config.env",
+            "config-*",
+            "Dockerfile",
+            "README.md",
+            "flake8*",
+            "poetry*",
+            "boto3", 
+            "boto3-*", 
+            "botocore*",
+            ".python-version"
+        ],
+        "vpc_config": { 
+            "SubnetIds": [ "subnet-02490a538b8b8b4aa", "subnet-0f431b95222687098", "subnet-00b2c4fbabdde1141" ],
+            "SecurityGroupIds": [ "sg-00030d903bf34638a" ]
+        }
+    }
+}

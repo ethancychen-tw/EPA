@@ -274,7 +274,7 @@ def new_review():
     form = ReviewForm()
     form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
     form.location.choices = [(location.id, location.desc) for location in Location.query.all()]
-    form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees]
+    form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees()]
     form.reviewer.choices = [("", current_user.username)]
     form.reviewer.render_kw = {'disabled':'disabled'}
 
