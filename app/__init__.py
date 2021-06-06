@@ -18,8 +18,9 @@ line_bot_api = LineBotApi(config['production'].LINEBOT_MSG_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(config['production'].LINEBOT_MSG_CHANNEL_SECRET)
 
 from app.routes.route import index, login, logout, register, user, page_not_found, \
-    edit_profile, reset_password_request, password_reset, user_activate, new_review, request_review, edit_review, view_reviews, callback, login_token, inspect_review, remove_review
+    edit_profile, reset_password_request, password_reset, user_activate, new_review, request_review, edit_review, view_reviews, inspect_review, remove_review
 from app.routes.route import admin_view_users
+from app.callbacks.linebot import linebot_callback
 
 def create_app(config_name='development'):
     app = Flask(__name__)
@@ -33,7 +34,6 @@ def create_app(config_name='development'):
     app.add_url_rule('/index', 'index', methods=['GET', 'POST'])
     app.add_url_rule('/', 'index', index, methods=['GET', 'POST'])
     app.add_url_rule('/login', 'login', login, methods=['GET', 'POST'])
-    app.add_url_rule('/login_token', 'login_token', login_token, methods=['GET', 'POST'])
     app.add_url_rule('/logout', 'logout', logout)
     app.add_url_rule('/register', 'register', register, methods=['GET', 'POST'])
     app.add_url_rule('/<username>', 'profile', user, methods=['GET', 'POST'])
@@ -63,7 +63,7 @@ def create_app(config_name='development'):
     
     app.add_url_rule('/admin/view_users','admin_view_users', admin_view_users, methods=['GET', 'POST'])
 
-    app.add_url_rule('/callback', 'callback', callback, methods=['POST'])
+    app.add_url_rule('/linebot_callback', 'linebot_callback', linebot_callback, methods=['POST'])
     return app
 
 # app/__init__

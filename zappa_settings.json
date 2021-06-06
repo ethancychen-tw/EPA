@@ -28,7 +28,7 @@
             ".python-version"
         ],
         "vpc_config": { 
-            "SubnetIds": [ "subnet-02490a538b8b8b4aa", "subnet-0f431b95222687098", "subnet-00b2c4fbabdde1141" ],
+            "SubnetIds": [ "subnet-00b2c4fbabdde1141", "subnet-02490a538b8b8b4aa", "subnet-0f431b95222687098"],
             "SecurityGroupIds": [ "sg-00030d903bf34638a" ]
         }
     }

@@ -4,22 +4,24 @@ from flask import render_template, redirect, url_for, request, \
     abort, current_app, flash, Markup
 from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import or_
-from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+
 from app.forms.general import LoginForm, RegisterForm, EditProfileForm, PasswdResetRequestForm, PasswdResetForm, ReviewForm, ReviewFilterForm
 # from app.forms import AdminEditGroupForm, AdminEditReviewForm, AdminEditProfileForm
 from app.models.user import User, load_user, Group, Role, LineNewUser
 from app.models.review import Review, EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
-from app import db
-from app import line_bot_api, handler
+from app import db, line_bot_api
 from app.email import send_email
 
+from app import line_bot_api, handler
 
+
+# should refactor this into etl_
 def auto_create_review():
     """
     find 
     """
 
+# should refactor this into etl_
 def inform_incomplete_reviews():
     reviewer_unfin_review_cnt_list = Review.query.filter(Review.complete==False).group_by(Review.reviewer_id).with_entities(Review.reviewer_id, func.count(Review.id).label('unfin_review_cnt')).all()
 
@@ -354,16 +356,6 @@ def index():
         'index.html', title="首頁", unfin_being_reviews=unfin_being_reviews, unfin_make_reviews=unfin_make_reviews
     )
 
-def login_token():
-    login_token = request.args.get("login_token", None)
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    user = User.verify_jwt(login_token)
-    if not user:
-        flash('連結已過期，請以帳號密碼登入，或透過Line對話筐重新索取登入連結')
-        return redirect(url_for('login'))
-    login_user(user)
-    return redirect(url_for('index'))
 
 def login():
     # already login
@@ -610,43 +602,6 @@ def password_reset(token):
     )
 
 
-def callback():
-    # get X-Line-Signature header value
-    signature = request.headers['X-Line-Signature']
-    # get request body as text
-    body = request.get_data(as_text=True)
-    # handle webhook body
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        print("Invalid signature. Please check your channel access token/channel secret.")
-        abort(400)
-    return 'OK'
 
-
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    # if registered, reply login link(using token)
-    print(f"event type: {event.type}")
-    line_userId = event.source.user_id # The attribute is called user_id, surprise lol
-    print(line_userId)
-    
-    user = User.query.filter(User.line_userId == line_userId).first()
-    
-    if not user:
-        # I think this is not safe. But let use this for now
-        # for more advanced link token see, https://developers.line.biz/en/docs/messaging-api/linking-accounts/#implement-account-link-feature
-        # or alternatively, we could have our own token auth method
-        line_new_user = LineNewUser(line_userId=line_userId)
-        db.session.add(line_new_user)
-        db.session.commit()
-        line_new_user_token = line_new_user.get_jwt()
-        app_webhook = current_app.config['WEBHOOK_URL']
-        line_bot_api.reply_message(event.reply_token,TextSendMessage(f'新用戶你好，請點此連結註冊: {app_webhook}/register?line_new_user_token={line_new_user_token}'))  
-    else:
-        # if registered, issue a login URL with token
-        login_token = user.get_jwt()
-        url_index = url_for('login_token',login_token=login_token, _external=True)
-        line_bot_api.reply_message(event.reply_token,TextSendMessage(f'嗨，{user.username}，請點此連結進入EPA系統 {url_index}'))  
 
     
