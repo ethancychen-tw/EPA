@@ -30,7 +30,6 @@ def create_app(config_name='development'):
     login_manager.init_app(app)
     mail.init_app(app)
 
-
     app.add_url_rule('/index', 'index', methods=['GET', 'POST'])
     app.add_url_rule('/', 'index', index, methods=['GET', 'POST'])
     app.add_url_rule('/login', 'login', login, methods=['GET', 'POST'])

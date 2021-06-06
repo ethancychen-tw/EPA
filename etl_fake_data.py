@@ -78,6 +78,7 @@ user = User(username="G1R1", email="G1R1@epa.com")
 user.set_password("G1R1")
 user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
 user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
+user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
 db.session.add(user)
 
 user = User(username="G1R5",email="G1R5@epa.com")
@@ -90,7 +91,6 @@ user = User(username="G1R6", email="G1R6@epa.com")
 user.set_password("G1R6")
 user.role = Role.query.filter(Role.name=="主治醫師").first()
 user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
-user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
 db.session.add(user)
 
 # group2
