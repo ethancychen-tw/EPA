@@ -4,10 +4,10 @@ from app import db, create_app  # 此時db仍沒有連上engine，因為app在  
 app = create_app() # 這裏db也還是沒有連上，只是創造出app 環境而已
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
 
-from app.models.review import Review, Location, EPA, ReviewDifficulty, ReviewScore, ReviewSource
+from app.models.review import Review, Location, EPA, ReviewDifficulty, ReviewScore, ReviewSource, Milestone, CoreCompetence
 from app.models.user import User, Group, user_externalgroup, Role
 
-for table_name in ["epa", "role","location",  "review_source", "review_score", "review_difficulty", "users", "groups", "user_externalgroup", "reviews"]:
+for table_name in ["epa", "role","location",  "review_source", "review_score", "review_difficulty", "users", "groups", "user_externalgroup", "reviews", "corecompetence", 'epa_milestone','milestone']:
     db.session.execute(f"TRUNCATE TABLE \"{table_name}\" RESTART IDENTITY CASCADE ;")# RESTART IDENTITY would reset id starting from 1, cascade would del related rows in other tables
 
 # Role
@@ -21,11 +21,44 @@ db.session.add(role)
 role = Role(name=f"醫院管理者", desc="醫院管理者 desc", can_request_review=True, can_create_and_edit_review=True, is_manager=True)
 db.session.add(role)
 
+
+# corecompetence
+corecompetence_names = ['PC','MK','PROF','ICS','PBLI','SBP']
+for corecompetence in corecompetence_names:
+    db.session.add(CoreCompetence(name=corecompetence, desc=f"desc for {corecompetence}"))
+db.session.commit()
+
+# milestone
+milestone_names = ['PC1', 'PC2', 'PC3','PC5', 'PC6', 'PC7','PC8','PCA1','MK1','MK2','MK3','MK4','MKA1','SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2']
+for milestone in milestone_names:
+    c = CoreCompetence.query.filter(CoreCompetence.name.like(milestone[:2]+"%")).first()
+    m = Milestone(name=milestone, desc=f"desc for {milestone}")
+    m.corecompetence = c
+    db.session.add(m)
+db.session.commit()
+
 #EPA
 epa_desc = ["EPA1(Airway) 呼吸道評估與處置", "EPA2(FB) 耳鼻喉頭頸部異物評估與處置", "EPA3(Bleeding) 耳鼻喉頭頸部出血評估與處置", "EPA4(Vertigo) 眩暈評估與處置", "EPA5(Infection) 耳鼻喉頭頸部感染症評估與處置", "EPA6(H&N) 耳鼻喉頭頸部(含口腔)腫瘤評估與處置", "EPA7(Ear/Hearing) 耳部與聽力疾病評估與處置", "EPA8(Nose/Sinus) 鼻部與鼻竇疾病評估與處置", "EPA9(Larynx) 咽喉部(音聲、語言、吞嚥)疾病評估與處置", "EPA10(SDB) 睡眠呼吸障礙評估與處置", "EPA11(Plasty) 顏面整形重建評估與處置"]
-for i in range(len(epa_desc)):
-    db.session.add(EPA(name=f"EPA{i+1}", desc=epa_desc[i]))
+epa_milestones = [
+    ["PC2","PC3","PC5","MK1","MK3","MK4",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#1
+    ["PC2","PC5","MK1","MK3",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#2
+    ["PC2","PC5","MK1",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#3
+    ["PC7","MK2","MKA1",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#4
+    ["PC1","PC2","PC8","PCA1","MK1","MK3",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#5
+    ["PC1",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#6
+    ['SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#7
+    ["PC2","PC5","PC6","MK1","MK4",'SBP1','PBLI1','PBLIN2','PROF','ICS1','ICSN2'],#8
+    ["PC2", "MK1", "MK3",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#9
+    ["PC3","MK4",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#10
+    ["PC2","PC5","PC6",'SBP1','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#11
 
+]
+for i in range(len(epa_desc)):
+    epa = EPA(name=f"EPA{i+1}", desc=epa_desc[i])
+    for ms in epa_milestones[i]:
+        epa.milestones.append(Milestone.query.filter(Milestone.name==ms).first())
+    db.session.add(epa)
+    db.session.commit()
 
 #location
 location_name = ["outpatient", "emergency", "consultation", "ward", "surgery room"]
@@ -66,7 +99,7 @@ db.session.commit()
 
 # User
 # admin
-user = User(username="admin", email="admin@epa.com")
+user = User(username="admin", email="epataiwan.official@gmail.com")
 user.set_password("admin")
 user.role = Role.query.filter(Role.name=="醫院管理者").first()
 user.internal_group = Group.query.filter(Group.name=="第一間醫院").first()

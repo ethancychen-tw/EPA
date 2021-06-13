@@ -2,6 +2,13 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from app import db
+
+
+epa_milestone= db.Table('epa_milestone',
+    db.Column('epa_id', db.ForeignKey('epa.id')),
+    db.Column('milestone_id', db.ForeignKey('milestone.id'))
+)
+
 class Review(db.Model):
     __tablename__ = "reviews"
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  
@@ -42,13 +49,34 @@ class Location(db.Model):
     def __repr__(self):
         return f"location: id={self.id}, name={self.name},desc={self.desc}"
 
+
+
+class Milestone(db.Model):
+    __tablename__ = 'milestone'
+    id = db.Column(db.Integer, primary_key=True)
+    corecompetence_id = db.Column(db.Integer, db.ForeignKey('corecompetence.id'))
+    name = db.Column(db.String(64))
+    desc = db.Column(db.String(64))
+    level_1_options = db.Column(db.String(1024))
+    level_2_options = db.Column(db.String(1024))
+    level_3_options = db.Column(db.String(1024))
+    level_4_options = db.Column(db.String(1024))
+    level_5_options = db.Column(db.String(1024))
+
+class CoreCompetence(db.Model):
+    __tablename__  = 'corecompetence'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    desc = db.Column(db.String(64))
+    milestones = db.relationship('Milestone', backref='corecompetence', lazy='dynamic')
+    
 class EPA(db.Model):
     __tablename__ = 'epa'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
     desc = db.Column(db.String(64))
-
     reviews = db.relationship('Review', backref='epa', lazy='dynamic')
+    milestones = db.relationship('Milestone', secondary=epa_milestone, backref="epas", lazy='dynamic') # first specify the target
     def __repr__(self):
         return f"epa: id={self.id}, name={self.name},desc={self.desc}"
 
