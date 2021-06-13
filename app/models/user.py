@@ -11,9 +11,8 @@ from flask_login import UserMixin
 from flask import current_app
 import jwt
 
-from app import db, login_manager, line_bot_api
-from linebot.models import TextSendMessage
-from app.email import send_email
+from app import db, login_manager
+from app.channels import linebot, gmail
 from app.models.review import Review
 
 user_externalgroup = db.Table('user_externalgroup',
@@ -73,27 +72,30 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def send_message(self,subject="", msg_body=""):
+    def send_message(self,channels=None, subject="", msg_body=""):
         """
         notify user via line and email
         """
-        if self.line_userId:
-            try:
-                line_bot_api.push_message(self.line_userId, TextSendMessage(text=(subject + "\n" + msg_body)))
-            except Exception as e:
-                print(e)
-        if self.email:
-            try:
-                send_email(subject, self.email, msg_body)
-            except Exception as e:
-                print(e)
+        if not channels:
+            channels = ['email']
+        for channel in channels:
+            if channel == 'line' and self.line_userId:
+                try:
+                    linebot.send_line(self.line_userId, subject, msg_body)
+                except Exception as e:
+                    print(e)
+            if channel == 'email' and self.email:
+                try:
+                    gmail.send_email(recipients=[self.email], subject=subject, text_body=msg_body)
+                except Exception as e:
+                    print(e)
         
 
     def avatar(self):
         img_src = None
         if not img_src and self.line_userId:
             try:
-                line_user_profile = line_bot_api.get_profile(self.line_userId)
+                line_user_profile = linebot.line_bot_api.get_profile(self.line_userId)
                 img_src = line_user_profile.picture_url
             except Exception as e:
                 print("can't get line profile")

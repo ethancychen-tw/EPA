@@ -9,11 +9,8 @@ from app.forms.general import LoginForm, RegisterForm, EditProfileForm, PasswdRe
 # from app.forms import AdminEditGroupForm, AdminEditReviewForm, AdminEditProfileForm
 from app.models.user import User, load_user, Group, Role, LineNewUser
 from app.models.review import Review, EPA, Location, ReviewDifficulty, ReviewScore, ReviewSource
-from app import db, line_bot_api
-from app.email import send_email
-
-from app import line_bot_api, handler
-
+from app import db
+from app.channels.linebot import linebotinfo, line_bot_api
 
 # should refactor this into etl_
 def auto_create_review():
@@ -432,7 +429,6 @@ def register():
     
     if not line_user_profile:
         flash(Markup('EPA系統可以透過 line 通知你，你可以考慮 <a href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">點此透過line註冊</a>'), 'alert-info')
-    linebotinfo = line_bot_api.get_bot_info()
     return render_template('register.html', title='註冊新帳號', form=form, line_user_profile=line_user_profile, linebotinfo=linebotinfo)
 
 @login_required
@@ -512,7 +508,6 @@ def page_not_found(e):
 
 @login_required
 def edit_profile():
-    linebotinfo = line_bot_api.get_bot_info()
     query_user_id = request.args.get('query_user_id', None)
 
     if current_user.role.is_manager and query_user_id:
@@ -595,7 +590,7 @@ def password_reset(token):
         flash('密碼重設完成，記得下次用新密碼登入喔！','alert-info')
         subject = "[EPA通知]密碼已重設"
         msg_body = f'{user.username}你好，你的EPA密碼已重設，如果您並未發出重設密碼請求，請立即聯絡管理員'
-        user.send_message()
+        user.send_message(subject=subject, msg_body=msg_body)
         return redirect(url_for('login'))
     return render_template(
         'password_reset.html', title='Password Reset', form=form

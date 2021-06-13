@@ -10,14 +10,13 @@ def send_async_email(app, msg):
         mail.send(msg)
 
 
-def send_email(subject, recipients, text_body, html_body):
+def send_email(recipients,subject,  text_body):
     msg = Message(
+        sender=('EPA',current_app.config.get("MAIL_USERNAME")),
         subject=subject,
         recipients=recipients,
-        reply_to='noreply@twittor.com'
+        body=text_body
     )
-    msg.body = text_body
-    msg.html = html_body
     Thread(
         target=send_async_email,
         args=(current_app._get_current_object(), msg)).start()

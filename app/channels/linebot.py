@@ -1,10 +1,11 @@
 from flask import request, abort, url_for
 from app import db, line_bot_api, handler
-from app.models.user import User, LineNewUser
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from linebot.exceptions import InvalidSignatureError
 
-def linebot_callback():
+linebotinfo = line_bot_api.get_bot_info()
+
+def callback():
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
     # get request body as text
@@ -21,6 +22,7 @@ def linebot_callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    from app.models.user import User, LineNewUser
     # if registered, reply login link(using token)
     print(f"event type: {event.type}")
     line_userId = event.source.user_id # The attribute is called user_id, surprise lol
@@ -40,3 +42,6 @@ def handle_message(event):
     else:
         # if registered, reply with greeting msg
         line_bot_api.reply_message(event.reply_token,TextSendMessage(f'嗨，{user.username}，請點此連結登入EPA系統 {url_for("index", _external=True)}'))
+
+def send_line(to, subject, msg_body):
+    line_bot_api.push_message(to, TextSendMessage(text=(subject + "\n" + msg_body)))

@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate 
 from flask_login import LoginManager
 from flask_mail import Mail
-
 from linebot import LineBotApi, WebhookHandler
 from app.config import config
 
@@ -20,7 +19,7 @@ handler = WebhookHandler(config['production'].LINEBOT_MSG_CHANNEL_SECRET)
 from app.routes.route import index, login, logout, register, user, page_not_found, \
     edit_profile, reset_password_request, password_reset, user_activate, new_review, request_review, edit_review, view_reviews, inspect_review, remove_review
 from app.routes.route import admin_view_users
-from app.callbacks.linebot import linebot_callback
+from app.channels import linebot
 
 def create_app(config_name='development'):
     app = Flask(__name__)
@@ -62,7 +61,7 @@ def create_app(config_name='development'):
     
     app.add_url_rule('/admin/view_users','admin_view_users', admin_view_users, methods=['GET', 'POST'])
 
-    app.add_url_rule('/linebot_callback', 'linebot_callback', linebot_callback, methods=['POST'])
+    app.add_url_rule('/linebot_callback', 'linebot_callback', linebot.callback, methods=['POST'])
     return app
 
 # app/__init__

@@ -11,34 +11,41 @@ if os.path.exists('config.env'):
 
 
 class Config:
+    # app
     APP_NAME = os.environ.get('APP_NAME')
     if os.environ.get('SECRET_KEY'):
         SECRET_KEY = os.environ.get('SECRET_KEY')
     else:
         SECRET_KEY = 'SECRET_KEY_ENV_VAR_NOT_SET'
         print('SECRET KEY ENV VAR NOT SET! SHOULD NOT SEE IN PRODUCTION')
-    DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(config_path, 'epa.db'))
-    WEBHOOK_URL = os.environ.get('WEBHOOK_URL')
+
+    # db
+    SQLALCHEMY_COMMIT_ON_TEARDOWN = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # linebot
     LINEBOT_MSG_CHANNEL_ACCESS_TOKEN = os.environ.get('LINEBOT_MSG_CHANNEL_ACCESS_TOKEN')
     LINEBOT_MSG_CHANNEL_SECRET = os.environ.get('LINEBOT_MSG_CHANNEL_SECRET')
     if not LINEBOT_MSG_CHANNEL_ACCESS_TOKEN or not LINEBOT_MSG_CHANNEL_SECRET:
         print("line bot not set!!! ")
 
-    SQLALCHEMY_COMMIT_ON_TEARDOWN = False
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    TWEET_PER_PAGE = os.environ.get('TWEET_PER_PAGE', 20)  # should remove
-    REVIEW_PER_PAGE = int(os.environ.get('REVIEW_PER_PAGE', 20))
+    
 
-    # twittor
+    # email
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@epa.org')
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.mail.yahoo.com')
-    MAIL_PORT = os.environ.get('MAIL_PORT', 587)
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 1)
+    MAIL_PORT = os.environ.get('MAIL_PORT', 465)
+    MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', True)
+    if MAIL_USE_SSL == 'True':
+        MAIL_USE_SSL = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'username')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'password')
     MAIL_SUBJECT_RESET_PASSWORD = '[EPA] Please Reset Your Password'
-    MAIN_SUBJECT_USER_ACTIVATE = '[EPA] Please Activate Your Accout'
+    MAIN_SUBJECT_USER_ACTIVATE = '[EPA] Please Activate Your Accout'    
+
+    # some other configs
+    REVIEW_PER_PAGE = int(os.environ.get('REVIEW_PER_PAGE', 20))
 
     @staticmethod
     def init_app(app):
@@ -57,6 +64,8 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 
+    DEBUG = False
+    SQLALCHEMY_ECHO = False
     @staticmethod
     def init_app(app):
         Config.init_app(app)
