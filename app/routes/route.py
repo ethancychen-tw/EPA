@@ -731,38 +731,4 @@ def password_reset(token):
         user.send_message(subject=subject, msg_body=msg_body)
         return redirect(url_for("login"))
     return render_template("password_reset.html", title="Password Reset", form=form)
-
-def send_email_for_user_activate(user):
-    token = user.get_jwt()
-    url_user_activate = url_for(
-        "user_activate",
-        token=token,
-        _external=True,  # external make the url universaly aviable
-    )
-    send_email(
-        subject=current_app.config["MAIN_SUBJECT_USER_ACTIVATE"],
-        recipients=[user.email],
-        text_body=render_template(
-            "email/user_activate.txt",
-            username=user.username,
-            url_user_activate=url_user_activate,
-        ),
-        html_body=render_template(
-            "email/user_activate.html",
-            username=user.username,
-            url_user_activate=url_user_activate,
-        ),
-    )
-
-
-def user_activate(token):
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
-    user = User.verify_jwt(token)
-    if not user:
-        msg = "Token has expired, please try to re-send email"
-    else:
-        user.is_activated = True
-        db.session.commit()
-        msg = "User has been activated!"
-    return render_template("user_activate.html", msg=msg)
+    
