@@ -36,42 +36,6 @@ from app.models.review import (
 from app import db
 from app.channels.linebot import linebotinfo, line_bot_api
 
-# should refactor this into etl_
-def auto_create_review():
-    """
-    find
-    """
-
-
-# should refactor this into etl_
-def inform_incomplete_reviews():
-    reviewer_unfin_review_cnt_list = (
-        Review.query.filter(Review.complete == False)
-        .group_by(Review.reviewer_id)
-        .with_entities(
-            Review.reviewer_id, func.count(Review.id).label("unfin_review_cnt")
-        )
-        .all()
-    )
-
-    for reviewer_unfin_review_cnt in reviewer_unfin_review_cnt_list:
-        try:
-            # TODO: change to async send using Thread
-            reviewer = User.query.get(reviewer_unfin_review_cnt.reviewer_id)
-            subject = f"[EPA通知]尚未完成的評核"
-            msg_body = f"{reviewer.username}你好，你尚有{reviewer_unfin_review_cnt.unfin_review_cnt}個評核未完成，你可前往系統填寫"
-            reviewer_unfin_review_cnt.reviewer.send_message(
-                subject=subject, msg_body=msg_body
-            )
-        except Exception as e:
-            print(e)
-
-
-@login_required
-def admin_view_users():
-    pass
-
-
 @login_required
 def inspect_review(review_id):
     """
@@ -266,7 +230,7 @@ def remove_review(review_id):
 @login_required
 def view_reviews():
     filter_form = ReviewFilterForm()
-    # (1) form configuration
+    # (1) filter form configuration
     if current_user.role.is_manager:
         filter_form.reviewees.choices = [
             (user_id.hex, user_name)
@@ -289,26 +253,27 @@ def view_reviews():
             ).all()
         ]
     else:
-        filter_form.reviewers.choices = [
+        filter_form.reviewers.choices = sorted([
             (user.id.hex, user.username)
             for user in current_user.get_potential_reviewers()
-        ]
-        filter_form.reviewees.choices = [
+        ],key=lambda x:x[0])
+        filter_form.reviewees.choices = sorted([
             (user.id.hex, user.username)
             for user in current_user.get_potential_reviewees()
-        ]
-        filter_form.groups.choices = [
+        ], key=lambda x:x[0])
+        filter_form.groups.choices = sorted([
             (group_id.hex, group_name)
             for group_id, group_name in Group.query.with_entities(
                 Group.id, Group.name
             ).all()
-        ]
+        ],key=lambda x:x[0])
 
     filter_form.epas.choices = [
         (str(epa_id), epa_desc)
         for epa_id, epa_desc in EPA.query.with_entities(EPA.id, EPA.desc).all()
     ]
 
+    # (2) fitler form on submit
     if filter_form.validate_on_submit():
         filters_json = json.dumps(
             {
@@ -319,8 +284,7 @@ def view_reviews():
             default=lambda x: str(x) if isinstance(x, datetime.date) else "",
         )
         return redirect(url_for("view_reviews", filters_json=filters_json))
-
-    # default
+    
     sort_entity = Review.complete
     filtering_clause = []
 
@@ -337,15 +301,22 @@ def view_reviews():
         epas = filters["epas"]
         sort_key = filters["sort_key"]
 
+        filter_form.reviewees.data = reviewees
+        filter_form.reviewers.data = reviewers
+        filter_form.groups.data = groups
+        filter_form.create_time_start.data = datetime.date.fromisoformat(create_time_start)
+        filter_form.create_time_end.data = datetime.date.fromisoformat(create_time_end)
+        filter_form.complete.data = complete
+        filter_form.epas.data = epas
+        filter_form.sort_key.data = sort_key
         # could refactor this in factory
-        if len(reviewees):
+        if len(reviewees) < len(filter_form.reviewees.choices) :
             filtering_clause.append(Review.reviewee_id.in_(reviewees))
-            filter_form.reviewees.data = reviewees
 
-        if len(reviewers):
+        if len(reviewers) < len(filter_form.reviewers.choices):
             filtering_clause.append(Review.reviewer_id.in_(reviewers))
-            filter_form.reviewers.data = reviewers
-        if len(groups):
+            
+        if len(groups) < len(filter_form.groups.choices):
             selected_groups = Group.query.filter(Group.id.in_(groups)).all()
             selected_user_ids = list(
                 set(
@@ -362,29 +333,25 @@ def view_reviews():
                     Review.reviewee_id.in_(selected_user_ids),
                 )
             )
-            filter_form.groups.data = groups
+            
         if len(create_time_start):
             filtering_clause.append(
                 Review.create_time >= datetime.date.fromisoformat(create_time_start)
             )
-            filter_form.create_time_start.data = datetime.date.fromisoformat(
-                create_time_start
-            )
+            
         if len(create_time_end):
             filtering_clause.append(
                 Review.create_time < datetime.date.fromisoformat(create_time_end)
             )
-            filter_form.create_time_end.data = datetime.date.fromisoformat(
-                create_time_end
-            )
-        if len(complete):
+            
+        if len(complete) < len(filter_form.complete.choices):
             filtering_clause.append(Review.complete.in_(complete))
-            filter_form.complete.data = complete
-        if len(epas):
+            
+        if len(epas) < len(filter_form.epas.choices):
             filtering_clause.append(
                 Review.epa_id.in_(epas)
             )  # if this don't work, could prefetch epa ids
-            filter_form.epas.data = epas
+            
 
         if sort_key == "EPA":
             sort_entity = Review.epa_id
@@ -394,7 +361,14 @@ def view_reviews():
             sort_entity = Review.create_time.desc()
         elif sort_key == "complete":
             sort_entity = Review.complete
-        filter_form.sort_key.data = sort_key
+    else:
+        # if not filter json, prefill all the options in filtering form
+        filter_form.reviewees.data = [choice[0] for choice in filter_form.reviewees.choices]
+        filter_form.reviewers.data = [choice[0] for choice in filter_form.reviewers.choices]
+        filter_form.groups.data = [choice[0] for choice in filter_form.groups.choices]
+        filter_form.complete.data = [choice[0] for choice in filter_form.complete.choices]
+        filter_form.epas.data = [choice[0] for choice in filter_form.epas.choices]
+        filter_form.sort_key.data = filter_form.sort_key.choices[0][0]
 
     cur_page_num = int(request.args.get("page") or 1)
 
@@ -482,16 +456,12 @@ def new_review():
         ).first()
         review.last_edited = datetime.datetime.now()
         review.complete = True
-        db.session.add(review)
-        db.session.commit()
-
-        subject = "[EPA通知]您已被評核"
-        msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
         try:
+            db.session.add(review)
+            db.session.commit()
             flash("提交成功", "alert-success")
-            review.reviewee.send_message(subject=subject, msg_body=msg_body)
-        except Exception as e:
-            print(e)
+        except:
+            flash("提交失敗，請重新嘗試", "alert-warning")
         return redirect(url_for("index"))
 
     return render_template(
@@ -533,15 +503,7 @@ def request_review():
         db.session.add(review)
         db.session.commit()
 
-        flash(
-            f"提交成功，已透過 Line 或 email 通知 {review.reviewer.username} 評核", "alert-success"
-        )
-        subject = f"[EPA通知]請評核{review.reviewee.username}"
-        msg_body = f"{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可前往系統填寫"
-        try:
-            review.reviewer.send_message(subject, msg_body)
-        except Exception as e:
-            print(e)
+        flash(f"提交成功，系統將透過 Line 或 email 通知 {review.reviewer.username} 前往評核", "alert-success")
 
         return redirect(url_for("index"))
     return render_template(
@@ -668,101 +630,8 @@ def register():
         linebotinfo=linebotinfo,
     )
 
-
-@login_required
-def user(username):
-    if current_user.role.is_manager:
-        flash(
-            "This is a page accessable for 醫院管理者. If you think this is an error, Please contact to get access",
-            "alert-danger",
-        )
-        return redirect(url_for("index"))
-    user = User.query.filter_by(username=username).first()
-    if user is None:
-        abort(404)
-    current_page_num = int(request.args.get("page") or 1)
-    all_user_related_reviews = (
-        Review.query.filter(
-            or_(Review.reviewer == current_user, Review.reviewee == current_user)
-        )
-        .order_by(Review.last_edited.desc())
-        .paginate(
-            page=current_page_num,
-            per_page=int(current_app.config["REVIEW_PER_PAGE"]),
-            error_out=False,
-        )
-    )
-    next_url = (
-        url_for("user", page=all_user_related_reviews.next_num)
-        if all_user_related_reviews.has_next
-        else None
-    )
-    prev_url = (
-        url_for("user", page=all_user_related_reviews.prev_num)
-        if all_user_related_reviews.has_prev
-        else None
-    )
-
-    if request.method == "POST":
-        if request.form["request_button"] == "Follow":
-            current_user.follow(u)
-            db.session.commit()
-        elif request.form["request_button"] == "Unfollow":
-            current_user.unfollow(u)
-            db.session.commit()
-        else:
-            flash("Send an email to your email address, please check!!!!", "alert-info")
-            send_email_for_user_activate(current_user)
-    return render_template(
-        "user.html",
-        title="Profile",
-        tweets=tweets.items,
-        user=u,
-        next_url=next_url,
-        prev_url=prev_url,
-    )
-
-
-def send_email_for_user_activate(user):
-
-    token = user.get_jwt()
-    url_user_activate = url_for(
-        "user_activate",
-        token=token,
-        _external=True,  # external make the url universaly aviable
-    )
-    send_email(
-        subject=current_app.config["MAIN_SUBJECT_USER_ACTIVATE"],
-        recipients=[user.email],
-        text_body=render_template(
-            "email/user_activate.txt",
-            username=user.username,
-            url_user_activate=url_user_activate,
-        ),
-        html_body=render_template(
-            "email/user_activate.html",
-            username=user.username,
-            url_user_activate=url_user_activate,
-        ),
-    )
-
-
-def user_activate(token):
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
-    user = User.verify_jwt(token)
-    if not user:
-        msg = "Token has expired, please try to re-send email"
-    else:
-        user.is_activated = True
-        db.session.commit()
-        msg = "User has been activated!"
-    return render_template("user_activate.html", msg=msg)
-
-
 def page_not_found(e):
     return render_template("404.html"), 404
-
 
 @login_required
 def edit_profile():
@@ -862,3 +731,38 @@ def password_reset(token):
         user.send_message(subject=subject, msg_body=msg_body)
         return redirect(url_for("login"))
     return render_template("password_reset.html", title="Password Reset", form=form)
+
+def send_email_for_user_activate(user):
+    token = user.get_jwt()
+    url_user_activate = url_for(
+        "user_activate",
+        token=token,
+        _external=True,  # external make the url universaly aviable
+    )
+    send_email(
+        subject=current_app.config["MAIN_SUBJECT_USER_ACTIVATE"],
+        recipients=[user.email],
+        text_body=render_template(
+            "email/user_activate.txt",
+            username=user.username,
+            url_user_activate=url_user_activate,
+        ),
+        html_body=render_template(
+            "email/user_activate.html",
+            username=user.username,
+            url_user_activate=url_user_activate,
+        ),
+    )
+
+
+def user_activate(token):
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    user = User.verify_jwt(token)
+    if not user:
+        msg = "Token has expired, please try to re-send email"
+    else:
+        user.is_activated = True
+        db.session.commit()
+        msg = "User has been activated!"
+    return render_template("user_activate.html", msg=msg)

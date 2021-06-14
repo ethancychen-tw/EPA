@@ -104,7 +104,7 @@ class ReviewFilterForm(FlaskForm):
     reviewers = MultiCheckboxField(label='老師', choices=[('', '')], default=[''])
     groups = MultiCheckboxField(label='群組',choices=[('', '')], default=['']) # only available for manager
     create_time_start = DateField(label='創建時間開始', default=datetime.datetime.now()-datetime.timedelta(days=360))
-    create_time_end = DateField(label='創建時間結束', default=datetime.datetime.now())
+    create_time_end = DateField(label='創建時間結束', default=datetime.datetime.now()+datetime.timedelta(days=1))
     complete = MultiCheckboxField(label='已完成', choices=[('True', '是'),('False','否')])
     epas = MultiCheckboxField(label='EPA', choices=[('', '')], default=[''])
     sort_key = RadioField(label="排序", choices=[('EPA','EPA'),('implement_date','實作時間'), ('create_time','創建時間')], validators=[DataRequired()], default='EPA')
