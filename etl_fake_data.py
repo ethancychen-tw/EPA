@@ -1,4 +1,5 @@
 import datetime
+import random
 
 from app import db, create_app  # 此時db仍沒有連上engine，因為app在  __init__.py 中只有初始化SQLAlchemy空物件而已
 app = create_app() # 這裏db也還是沒有連上，只是創造出app 環境而已
@@ -150,19 +151,16 @@ db.session.commit()
 
 # # use "append" to resolve bridging table
 
-
-
 # ask review
-from datetime import date
 
 all_reviewers = User.query.join(Role).filter(Role.can_create_and_edit_review == True, Role.is_manager == False).all()
 all_reviewees = User.query.join(Role).filter(Role.can_request_review == True, Role.is_manager == False).all()
-import random
+
 all_locations = Location.query.all()
 all_epa = EPA.query.all()
 for i in range(20):
     review = Review()
-    review.implement_date = date.fromisoformat('2019-12-04') + datetime.timedelta(days=int(random.random()*(1-random.random())*1000))
+    review.implement_date = datetime.date.fromisoformat('2019-12-04') + datetime.timedelta(days=int(random.random()*(1-random.random())*1000))
     review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
     review.reviewer = all_reviewers[int(random.random()*len(all_reviewers))]
     reviewee_options = [user for user in all_reviewees if user != review.reviewer ]
