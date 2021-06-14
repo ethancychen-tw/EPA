@@ -59,6 +59,7 @@ class User(UserMixin, db.Model):
     make_reviews = db.relationship('Review', primaryjoin=Review.reviewer_id==id, backref='reviewer', lazy='dynamic') # need to specify primary join, cuz there are more than one ways to join users and review
     being_reviews = db.relationship('Review' ,primaryjoin=Review.reviewee_id==id, backref='reviewee', lazy='dynamic') 
     external_groups = db.relationship('Group', secondary=user_externalgroup, backref="external_users", lazy='dynamic') # first specify the target
+    notifications = db.relationship('Notification', backref="user", lazy='dynamic') # first specify the target
 
     def __repr__(self):
         return 'id={}, username={}, email={}, password_hash={}'.format(
@@ -158,6 +159,14 @@ class User(UserMixin, db.Model):
             return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user != self and user.role.can_create_and_edit_review]))
         else:
             return []
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'))
+    subject = db.Column(db.String(64))
+    msg_body = db.Column(db.String(256))
+    
 
 class LineNewUser(db.Model):
     __tablename__ = "line_new_users"

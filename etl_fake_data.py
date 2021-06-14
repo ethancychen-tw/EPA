@@ -6,9 +6,9 @@ app = create_app() # 這裏db也還是沒有連上，只是創造出app 環境�
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
 
 from app.models.review import Review, Location, EPA, ReviewDifficulty, ReviewScore, ReviewSource, Milestone, CoreCompetence
-from app.models.user import User, Group, user_externalgroup, Role
+from app.models.user import User, Group, Role, Notification
 
-for table_name in ["epa", "role","location",  "review_source", "review_score", "review_difficulty", "users", "groups", "user_externalgroup", "reviews", "corecompetence", 'epa_milestone','milestone']:
+for table_name in ["epa", "role","location",  "review_source", "review_score", "review_difficulty", "users", "groups", "user_externalgroup", "reviews", "corecompetence", 'epa_milestone','milestone', 'notifications']:
     db.session.execute(f"TRUNCATE TABLE \"{table_name}\" RESTART IDENTITY CASCADE ;")# RESTART IDENTITY would reset id starting from 1, cascade would del related rows in other tables
 
 # Role
@@ -150,6 +150,13 @@ db.session.add(user)
 db.session.commit()
 
 # # use "append" to resolve bridging table
+
+# notifications
+for i in range(3):
+    notification = Notification(subject=f"test note {i}",msg_body=f'test note body {i}')
+    notification.user = User.query.filter(User.username == "admin").first()
+    db.session.add(notification)
+db.session.commit()
 
 # ask review
 

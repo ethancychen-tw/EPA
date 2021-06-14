@@ -24,7 +24,7 @@ from app.forms.general import (
 )
 
 # from app.forms import AdminEditGroupForm, AdminEditReviewForm, AdminEditProfileForm
-from app.models.user import User, load_user, Group, Role, LineNewUser
+from app.models.user import User, load_user, Group, Role, LineNewUser, Notification
 from app.models.review import (
     Review,
     EPA,
@@ -460,6 +460,12 @@ def new_review():
             db.session.add(review)
             db.session.commit()
             flash("提交成功", "alert-success")
+            
+            subject = "[EPA通知]您已被評核"
+            msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可點此<a href="{url_for("inspect_review",review_id=review.id,_external=True)}">查看</a>'
+            notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
+            db.session.add(notification)
+            db.session.commit()
         except:
             flash("提交失敗，請重新嘗試", "alert-warning")
         return redirect(url_for("index"))
@@ -505,6 +511,11 @@ def request_review():
 
         flash(f"提交成功，系統將透過 Line 或 email 通知 {review.reviewer.username} 前往評核", "alert-success")
 
+        subject = f"[EPA通知]請評核{review.reviewee.username}"
+        msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可點此<a href="{url_for("inspect_review",review_id=review.id,_external=True)}">查看</a>'
+        notification = Notification(user_id=review.reviewer.id, subject=subject, msg_body=msg_body)
+        db.session.add(notification)
+        db.session.commit()
         return redirect(url_for("index"))
     return render_template(
         "make_review.html", title="請求評核", form=form, review_type="request"
@@ -519,6 +530,13 @@ def index():
     unfin_make_reviews = current_user.make_reviews.filter(
         Review.complete == False
     ).all()
+
+    # show notification and del notification
+    for notification in current_user.notifications:
+        flash( Markup(f'{notification.subject}: {notification.msg_body}') , 'alert-info',)
+        db.session.delete(notification)
+    db.session.commit()
+
     return render_template(
         "index.html",
         title="首頁",
