@@ -16,8 +16,8 @@ class ReviewForm(FlaskForm):
     implement_date = DateField(label="實作時間", validators=[DataRequired()], default=datetime.date.today())
     location = SelectField(label='實作地點', choices=[('', '')], default='')
     epa = SelectField(label='EPA', choices=[('', '')], default='')
-    reviewee = SelectField(label="被評核者", choices=[('', '')], default='')
-    reviewer = SelectField(label='評核者', choices=[('', '')], default='')
+    reviewee = SelectField(label="學生", choices=[('', '')], default='')
+    reviewer = SelectField(label='老師', choices=[('', '')], default='')
     review_difficulty = SelectField(label='(1) 這項工作的複雜程度為')
     review_compliment = TextAreaField(label="(2) 我覺得你表現不錯的地方在" ,validators=[DataRequired()])
     review_suggestion = TextAreaField(label="(3) 如果你能做到以下建議，就可以獲得老師或病人更高的信任" , validators=[DataRequired()])
@@ -93,16 +93,15 @@ class PasswdResetForm(FlaskForm):
     password = PasswordField(label="新密碼", validators=[DataRequired()])
     password2 = PasswordField(label="新密碼確認", validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField(label='提交')
-
-
     
 class UserFilterForm(FlaskForm):
     groups = SelectMultipleField()
     show_user_tpyes = SelectMultipleField(label='成員類型', choices=[('internal_users', '所屬醫院')])
     role = SelectMultipleField(label='職級/角色', choices=[('', '')], default=[''])
+
 class ReviewFilterForm(FlaskForm):
-    reviewees = MultiCheckboxField(label='被評核者', choices=[('', '')],  default=[''])
-    reviewers = MultiCheckboxField(label='評核者', choices=[('', '')], default=[''])
+    reviewees = MultiCheckboxField(label='學生', choices=[('', '')],  default=[''])
+    reviewers = MultiCheckboxField(label='老師', choices=[('', '')], default=[''])
     groups = MultiCheckboxField(label='群組',choices=[('', '')], default=['']) # only available for manager
     create_time_start = DateField(label='創建時間開始', default=datetime.datetime.now()-datetime.timedelta(days=360))
     create_time_end = DateField(label='創建時間結束', default=datetime.datetime.now())
