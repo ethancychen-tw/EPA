@@ -88,134 +88,134 @@ db.session.commit()
 # ]
 
 
-# #location
-# location_name = ["outpatient", "emergency", "consultation", "ward", "surgery room"]
-# location_desc = ["門診", "急診", "會診時", "病房(含加護病房)", "手術室"]
-# for name, desc in zip(location_name, location_desc):
-#     db.session.add(Location(name=name, desc=desc))
+#location
+location_name = ["outpatient", "emergency", "consultation", "ward", "surgery room"]
+location_desc = ["門診", "急診", "會診時", "病房(含加護病房)", "手術室"]
+for name, desc in zip(location_name, location_desc):
+    db.session.add(Location(name=name, desc=desc))
 
 
-# #ReviewSource
-# review_source_name = ["request", "new"]
-# review_source_desc = ["請求評核", "直接評核"]
-# for name, desc in zip(review_source_name, review_source_desc):
-#     db.session.add(ReviewSource(name=name, desc=desc))
+#ReviewSource
+review_source_name = ["request", "new"]
+review_source_desc = ["請求評核", "直接評核"]
+for name, desc in zip(review_source_name, review_source_desc):
+    db.session.add(ReviewSource(name=name, desc=desc))
 
 
-# #Reviewdifficulty
-# review_difficulty_name = ["basic", "advanced"]
-# review_difficulty_desc = ["基本(常規)", "進階(非常規)"]
-# for i in range(len(review_difficulty_name)):
-#     db.session.add(ReviewDifficulty(value=i+1, name=review_difficulty_name[i], desc=review_difficulty_desc[i]))
+#Reviewdifficulty
+review_difficulty_name = ["basic", "advanced"]
+review_difficulty_desc = ["基本(常規)", "進階(非常規)"]
+for i in range(len(review_difficulty_name)):
+    db.session.add(ReviewDifficulty(value=i+1, name=review_difficulty_name[i], desc=review_difficulty_desc[i]))
 
 
-# #ReviewScore
-# review_score_name = ["viewonly", "direct supervision", "indirect supervision", "distance/no supervision", "supervise others"]
-# review_score_desc = ["只能觀察，不能操作", "須在教師直接指導下執行(direct supervision)", "需協助時立即找得到教師指導(indirect supervision)", "可獨立執行，僅需事後督導(distance/no supervision)", "可指導別人(supervise others)"]
-# for i in range(len(review_score_name)):
-#     db.session.add(ReviewScore(value=i+1, name=review_score_name[i], desc=review_score_desc[i]))
+#ReviewScore
+review_score_name = ["viewonly", "direct supervision", "indirect supervision", "distance/no supervision", "supervise others"]
+review_score_desc = ["只能觀察，不能操作", "須在教師直接指導下執行(direct supervision)", "需協助時立即找得到教師指導(indirect supervision)", "可獨立執行，僅需事後督導(distance/no supervision)", "可指導別人(supervise others)"]
+for i in range(len(review_score_name)):
+    db.session.add(ReviewScore(value=i+1, name=review_score_name[i], desc=review_score_desc[i]))
 
+db.session.commit()
+
+
+#Group
+group_name = ["第一間醫院", "第二間醫院"]
+group_desc = ["第一間醫院的描述", "第二間醫院的描述"]
+for name, desc in zip(group_name, group_desc):
+    db.session.add(Group(name=name, desc=desc))
+db.session.commit()
+
+# User
+# admin
+user = User(username="admin", email="epataiwan.official@gmail.com")
+user.set_password("admin")
+user.role = Role.query.filter(Role.name=="醫院管理者").first()
+user.internal_group = Group.query.filter(Group.name=="第一間醫院").first()
+user.external_groups.append(Group.query.filter(Group.name=="第二間醫院").first())
+db.session.add(user)
+
+#group1
+user = User(username="G1R1", email="G1R1@epa.com")
+user.set_password("G1R1")
+user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
+user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
+user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
+db.session.add(user)
+
+user = User(username="G1R5",email="G1R5@epa.com")
+user.set_password("G1R5")
+user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
+user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
+db.session.add(user)
+
+user = User(username="G1R6", email="G1R6@epa.com")
+user.set_password("G1R6")
+user.role = Role.query.filter(Role.name=="主治醫師").first()
+user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
+db.session.add(user)
+
+# group2
+user = User(username="G2R1", email="G2R1@epa.com")
+user.set_password("G2R1")
+user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
+user.internal_group = Group.query.filter(Group.name == "第二間醫院").first()
+db.session.add(user)
+
+user = User(username="G2R5",email="G2R5@epa.com")
+user.set_password("G2R5")
+user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
+user.internal_group = Group.query.filter(Group.name == "第二間醫院").first()
+db.session.add(user)
+
+user = User(username="G2R6", email="G2R6@epa.com")
+user.set_password("G2R6")
+user.role = Role.query.filter(Role.name=="主治醫師").first()
+user.internal_group = Group.query.filter(Group.name == "第二間醫院").first()
+user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
+db.session.add(user)
+
+db.session.commit()
+
+# # use "append" to resolve bridging table
+
+# notifications
+for i in range(3):
+    notification = Notification(subject=f"test note {i}",msg_body=f'test note body {i}')
+    notification.user = User.query.filter(User.username == "admin").first()
+    db.session.add(notification)
+db.session.commit()
+
+# ask review
+
+all_reviewers = User.query.join(Role).filter(Role.can_create_and_edit_review == True, Role.is_manager == False).all()
+all_reviewees = User.query.join(Role).filter(Role.can_request_review == True, Role.is_manager == False).all()
+
+all_locations = Location.query.all()
+all_epa = EPA.query.all()
+for i in range(20):
+    review = Review()
+    review.implement_date = datetime.date.fromisoformat('2019-12-04') + datetime.timedelta(days=int(random.random()*(1-random.random())*1000))
+    review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
+    review.reviewer = all_reviewers[int(random.random()*len(all_reviewers))]
+    reviewee_options = [user for user in all_reviewees if user != review.reviewer ]
+    review.reviewee = reviewee_options[int(random.random()*len(reviewee_options))]
+    review.location = all_locations[int(random.random()*len(all_locations))]
+    review.epa = all_epa[int(random.random()*len(all_epa))]
+    db.session.add(review)
+db.session.commit()
+
+# # finished review
+# review = Review()
+# review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
+# review.reviewer = User.query.join(Role).filter(Role.name=='主治醫師').first()
+# review.reviewee = User.query.get(2)
+# review.location = Location.query.get(2)
+# review.epa = EPA.query.get(3)
+# review.review_compliment = "good job"
+# review.review_suggestion = "next time you should..."
+# review.review_difficulty = ReviewDifficulty.query.get(2)
+# review.review_score = ReviewScore.query.get(4)
+# review.complete = True
+
+# db.session.add(review)
 # db.session.commit()
-
-
-# #Group
-# group_name = ["第一間醫院", "第二間醫院"]
-# group_desc = ["第一間醫院的描述", "第二間醫院的描述"]
-# for name, desc in zip(group_name, group_desc):
-#     db.session.add(Group(name=name, desc=desc))
-# db.session.commit()
-
-# # User
-# # admin
-# user = User(username="admin", email="epataiwan.official@gmail.com")
-# user.set_password("admin")
-# user.role = Role.query.filter(Role.name=="醫院管理者").first()
-# user.internal_group = Group.query.filter(Group.name=="第一間醫院").first()
-# user.external_groups.append(Group.query.filter(Group.name=="第二間醫院").first())
-# db.session.add(user)
-
-# #group1
-# user = User(username="G1R1", email="G1R1@epa.com")
-# user.set_password("G1R1")
-# user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
-# user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
-# user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
-# db.session.add(user)
-
-# user = User(username="G1R5",email="G1R5@epa.com")
-# user.set_password("G1R5")
-# user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
-# user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
-# db.session.add(user)
-
-# user = User(username="G1R6", email="G1R6@epa.com")
-# user.set_password("G1R6")
-# user.role = Role.query.filter(Role.name=="主治醫師").first()
-# user.internal_group = Group.query.filter(Group.name == "第一間醫院").first()
-# db.session.add(user)
-
-# # group2
-# user = User(username="G2R1", email="G2R1@epa.com")
-# user.set_password("G2R1")
-# user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
-# user.internal_group = Group.query.filter(Group.name == "第二間醫院").first()
-# db.session.add(user)
-
-# user = User(username="G2R5",email="G2R5@epa.com")
-# user.set_password("G2R5")
-# user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
-# user.internal_group = Group.query.filter(Group.name == "第二間醫院").first()
-# db.session.add(user)
-
-# user = User(username="G2R6", email="G2R6@epa.com")
-# user.set_password("G2R6")
-# user.role = Role.query.filter(Role.name=="主治醫師").first()
-# user.internal_group = Group.query.filter(Group.name == "第二間醫院").first()
-# user.external_groups.append(Group.query.filter(Group.name == "第二間醫院").first())
-# db.session.add(user)
-
-# db.session.commit()
-
-# # # use "append" to resolve bridging table
-
-# # notifications
-# for i in range(3):
-#     notification = Notification(subject=f"test note {i}",msg_body=f'test note body {i}')
-#     notification.user = User.query.filter(User.username == "admin").first()
-#     db.session.add(notification)
-# db.session.commit()
-
-# # ask review
-
-# all_reviewers = User.query.join(Role).filter(Role.can_create_and_edit_review == True, Role.is_manager == False).all()
-# all_reviewees = User.query.join(Role).filter(Role.can_request_review == True, Role.is_manager == False).all()
-
-# all_locations = Location.query.all()
-# all_epa = EPA.query.all()
-# for i in range(20):
-#     review = Review()
-#     review.implement_date = datetime.date.fromisoformat('2019-12-04') + datetime.timedelta(days=int(random.random()*(1-random.random())*1000))
-#     review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
-#     review.reviewer = all_reviewers[int(random.random()*len(all_reviewers))]
-#     reviewee_options = [user for user in all_reviewees if user != review.reviewer ]
-#     review.reviewee = reviewee_options[int(random.random()*len(reviewee_options))]
-#     review.location = all_locations[int(random.random()*len(all_locations))]
-#     review.epa = all_epa[int(random.random()*len(all_epa))]
-#     db.session.add(review)
-# db.session.commit()
-
-# # # finished review
-# # review = Review()
-# # review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
-# # review.reviewer = User.query.join(Role).filter(Role.name=='主治醫師').first()
-# # review.reviewee = User.query.get(2)
-# # review.location = Location.query.get(2)
-# # review.epa = EPA.query.get(3)
-# # review.review_compliment = "good job"
-# # review.review_suggestion = "next time you should..."
-# # review.review_difficulty = ReviewDifficulty.query.get(2)
-# # review.review_score = ReviewScore.query.get(4)
-# # review.complete = True
-
-# # db.session.add(review)
-# # db.session.commit()
