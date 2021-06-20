@@ -2,13 +2,6 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from app import db
-
-
-epa_milestone= db.Table('epa_milestone',
-    db.Column('epa_id', db.ForeignKey('epa.id')),
-    db.Column('milestone_id', db.ForeignKey('milestone.id'))
-)
-
 class Review(db.Model):
     __tablename__ = "reviews"
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  
@@ -49,7 +42,32 @@ class Location(db.Model):
     def __repr__(self):
         return f"location: id={self.id}, name={self.name},desc={self.desc}"
 
+class MilestoneItemEPA(db.Model):
+    # see association object example in here:
+    # https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html#association-object
+    __tablename__ = 'milestone_item_epa'
+    milestoneitem_id = db.Column(db.Integer, db.ForeignKey('milestone_item.id'), primary_key=True)
+    epa_id = db.Column(db.Integer, db.ForeignKey('epa.id'), primary_key=True)
+    min_epa_level = db.Column(db.Integer)
+    epa = db.relationship("EPA", back_populates="milestone_items")
+    milestone_item = db.relationship("MilestoneItem", back_populates="epas")
 
+class EPA(db.Model):
+    __tablename__ = 'epa'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    desc = db.Column(db.String(64))
+    reviews = db.relationship('Review', backref='epa', lazy='dynamic')
+    milestone_items = db.relationship('MilestoneItemEPA', back_populates="epa")
+class MilestoneItem(db.Model):
+    __tablename__ = 'milestone_item'
+    id = db.Column(db.Integer, primary_key=True)
+    milestone_id = db.Column(db.Integer, db.ForeignKey('milestone.id'))
+    code = db.String(db.String(16))
+    level = db.Column(db.Integer)
+    content = db.Column(db.String(256))
+    epas = db.relationship("MilestoneItemEPA", back_populates="milestone_item")
+    milestone = db.relationship("Milestone", backref="milestone_items")
 
 class Milestone(db.Model):
     __tablename__ = 'milestone'
@@ -57,11 +75,6 @@ class Milestone(db.Model):
     corecompetence_id = db.Column(db.Integer, db.ForeignKey('corecompetence.id'))
     name = db.Column(db.String(64))
     desc = db.Column(db.String(64))
-    level_1_options = db.Column(db.String(1024))
-    level_2_options = db.Column(db.String(1024))
-    level_3_options = db.Column(db.String(1024))
-    level_4_options = db.Column(db.String(1024))
-    level_5_options = db.Column(db.String(1024))
 
 class CoreCompetence(db.Model):
     __tablename__  = 'corecompetence'
@@ -70,15 +83,7 @@ class CoreCompetence(db.Model):
     desc = db.Column(db.String(64))
     milestones = db.relationship('Milestone', backref='corecompetence', lazy='dynamic')
     
-class EPA(db.Model):
-    __tablename__ = 'epa'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64))
-    desc = db.Column(db.String(64))
-    reviews = db.relationship('Review', backref='epa', lazy='dynamic')
-    milestones = db.relationship('Milestone', secondary=epa_milestone, backref="epas", lazy='dynamic') # first specify the target
-    def __repr__(self):
-        return f"epa: id={self.id}, name={self.name},desc={self.desc}"
+
 
 class ReviewScore(db.Model):
     __tablename__ = 'review_score'

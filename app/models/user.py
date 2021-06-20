@@ -1,10 +1,10 @@
 from datetime import datetime
 from hashlib import md5
 import time
-
+import uuid
 
 from sqlalchemy.dialects.postgresql import UUID
-import uuid
+from sqlalchemy import UniqueConstraint
     
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -166,8 +166,7 @@ class Notification(db.Model):
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'))
     subject = db.Column(db.String(64))
     msg_body = db.Column(db.String(256))
-    
-
+    UniqueConstraint('user_id', 'subject', 'msg_body', name='unique_notification')
 class LineNewUser(db.Model):
     __tablename__ = "line_new_users"
     id = db.Column(db.Integer, primary_key=True)
