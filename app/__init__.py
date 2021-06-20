@@ -18,7 +18,7 @@ handler = WebhookHandler(config['production'].LINEBOT_MSG_CHANNEL_SECRET)
 
 from app.routes.route import index, login, logout, register, page_not_found, \
     edit_profile, reset_password_request, password_reset, new_review, request_review, edit_review, view_reviews, inspect_review, remove_review
-from app.routes.admin_routes import admin_view_users, user
+from app.routes.admin_routes import admin_view_users, user, create_notifications_fill_review_wrapper
 from app.channels import linebot
 
 def create_app(config_name='development'):
@@ -55,11 +55,17 @@ def create_app(config_name='development'):
     app.add_url_rule('/review/edit/<review_id>', 'edit_review', edit_review, methods=['GET', 'POST'])
     app.add_url_rule('/review/remove/<review_id>', 'remove_review', remove_review, methods=['GET', 'POST'])
     app.add_url_rule('/review/inspect/<review_id>', 'inspect_review', inspect_review, methods=['GET'])
+    
     app.add_url_rule('/view_reviews', 'view_reviews', view_reviews, methods=['GET', 'POST'])
     
+    # admin
     app.add_url_rule('/admin/view_users','admin_view_users', admin_view_users, methods=['GET', 'POST'])
+    app.add_url_rule('/admin/create_notifications_fill_review','create_notifications_fill_review', create_notifications_fill_review_wrapper, methods=['GET', 'POST'])
 
+    # channels
     app.add_url_rule('/linebot_callback', 'linebot_callback', linebot.callback, methods=['POST'])
+
+    
     return app
 
 # app/__init__
