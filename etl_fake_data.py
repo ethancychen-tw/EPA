@@ -48,45 +48,34 @@ for milestone in milestone_names:
     db.session.add(m)
 db.session.commit()
 
-# milestone items
-epas = EPA.query.all()
-
-
-from itertools import combinations
 # assume we have these PC1.level.item
-for m in milestone_names:
-    for level in range(1,6):
-        for item_ind in range(1,7):
-            milestone_item_code = f'{m}.{level}.{item_ind}'
-            mi = MilestoneItem(code=milestone_item_code, level=level, content=milestone_item_code+'_content')
-            mi.milestone = Milestone.query.filter(Milestone.name==m).first()
-            
-
-            belong_epa_inds = list(set([random.randrange(len(epas)) for i in range(5) ]))
-            belong_epa_min_levels = [random.randrange(1,6) for i in belong_epa_inds]
-
-            for belong_epa_ind, min_level in zip(belong_epa_inds, belong_epa_min_levels):
-                miepa = MilestoneItemEPA()
-                miepa.epa = epas[belong_epa_ind]
-                miepa.min_epa_level = min_level
-                mi.epas.append(miepa)
-            db.session.add(mi)
+milestone_items_lines = open("../temp/milestone_items.csv").readlines()
+for line in milestone_items_lines:
+    if len(line)<2:
+        continue
+    li = line.split(",")
+    code = li[0].strip()
+    level = int(code.split(".")[1])
+    content = li[1].replace("\n","")
+    milestone = Milestone.query.filter(Milestone.name==code.split(".")[0]).first()
+    mi = MilestoneItem(code=code,level=level,content=content,milestone=milestone)
+    db.session.add(mi)
 db.session.commit()
 
-# epa_linkages = [
-#     ["PC2","PC3","PC5","MK1","MK3","MK4",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#1
-#     ["PC2","PC5","MK1","MK3",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#2
-#     ["PC2","PC5","MK1",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#3
-#     ["PC7","MK2","MKA1",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#4
-#     ["PC1","PC2","PC8","PCA1","MK1","MK3",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#5
-#     ["PC1",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#6
-#     ['SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#7
-#     ["PC2","PC5","PC6","MK1","MK4",'SBP1','PBLI1','PBLIN2','PROF','ICS1','ICSN2'],#8
-#     ["PC2", "MK1", "MK3",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#9
-#     ["PC3","MK4",'SBP1','SBP2','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#10
-#     ["PC2","PC5","PC6",'SBP1','PBLI1','PBLIN2','PROF','ICS1','ICSN1','ICSN2'],#11
-# ]
-
+# milestone_item_epa
+milestone_items_epa_lines = open("../temp/milestone_item_epa.csv").readlines()
+for line in milestone_items_epa_lines:
+    if len(line)<2:
+        continue
+    li = line.split(",")
+    milestone_item_code = li[0].strip()
+    milestone_item = MilestoneItem.query.filter(MilestoneItem.code==milestone_item_code).first()
+    epa_name = li[1].split(".")[0]
+    epa = EPA.query.filter(EPA.name==epa_name).first()
+    min_epa_level = int(li[1].split(".")[1])
+    mie = MilestoneItemEPA(min_epa_level=min_epa_level,epa=epa,milestone_item=milestone_item)
+    db.session.add(mie)
+db.session.commit()
 
 #location
 location_name = ["outpatient", "emergency", "consultation", "ward", "surgery room"]
@@ -204,18 +193,18 @@ for i in range(20):
     db.session.add(review)
 db.session.commit()
 
-# # finished review
-# review = Review()
-# review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
-# review.reviewer = User.query.join(Role).filter(Role.name=='主治醫師').first()
-# review.reviewee = User.query.get(2)
-# review.location = Location.query.get(2)
-# review.epa = EPA.query.get(3)
-# review.review_compliment = "good job"
-# review.review_suggestion = "next time you should..."
-# review.review_difficulty = ReviewDifficulty.query.get(2)
-# review.review_score = ReviewScore.query.get(4)
-# review.complete = True
+# finished review
+review = Review()
+review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
+review.reviewer = User.query.join(Role).filter(Role.name=='主治醫師').first()
+review.reviewee = User.query.get(2)
+review.location = Location.query.get(2)
+review.epa = EPA.query.get(3)
+review.review_compliment = "good job"
+review.review_suggestion = "next time you should..."
+review.review_difficulty = ReviewDifficulty.query.get(2)
+review.review_score = ReviewScore.query.get(4)
+review.complete = True
 
-# db.session.add(review)
-# db.session.commit()
+db.session.add(review)
+db.session.commit()

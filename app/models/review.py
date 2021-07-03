@@ -59,11 +59,12 @@ class EPA(db.Model):
     desc = db.Column(db.String(64))
     reviews = db.relationship('Review', backref='epa', lazy='dynamic')
     milestone_items = db.relationship('MilestoneItemEPA', back_populates="epa")
+
 class MilestoneItem(db.Model):
     __tablename__ = 'milestone_item'
     id = db.Column(db.Integer, primary_key=True)
     milestone_id = db.Column(db.Integer, db.ForeignKey('milestone.id'))
-    code = db.String(db.String(16))
+    code = db.Column(db.String(16)) # E.g. PC1.1.1
     level = db.Column(db.Integer)
     content = db.Column(db.String(256))
     epas = db.relationship("MilestoneItemEPA", back_populates="milestone_item")
