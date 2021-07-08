@@ -32,7 +32,7 @@ class ReviewForm(FlaskForm):
     
     @property
     def requesting_fields(self):
-        return [self.reviewee, self.reviewer, self.epa, self.location, self.implement_date ]
+        return [self.epa, self.reviewer, self.reviewee, self.location, self.implement_date ]
     
     @property
     def scoring_fields(self):
