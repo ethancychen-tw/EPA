@@ -51,7 +51,6 @@ class MilestoneItemEPA(db.Model):
     min_epa_level = db.Column(db.Integer)
     epa = db.relationship("EPA", back_populates="milestone_items")
     milestone_item = db.relationship("MilestoneItem", back_populates="epas")
-
 class EPA(db.Model):
     __tablename__ = 'epa'
     id = db.Column(db.Integer, primary_key=True)

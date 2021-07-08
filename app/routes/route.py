@@ -11,7 +11,7 @@ from flask import (
     Markup,
 )
 from flask_login import login_user, current_user, logout_user, login_required
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from app.forms.general import (
     LoginForm,
@@ -28,6 +28,10 @@ from app.models.user import User, load_user, Group, Role, LineNewUser, Notificat
 from app.models.review import (
     Review,
     EPA,
+    MilestoneItemEPA,
+    MilestoneItem,
+    Milestone,
+    CoreCompetence,
     Location,
     ReviewDifficulty,
     ReviewScore,
@@ -35,6 +39,7 @@ from app.models.review import (
 )
 from app import db
 from app.channels.linebot import linebotinfo, line_bot_api
+from app.routes.admin_routes import flush_channel_notifications # temploraily make the notification imediate
 
 @login_required
 def inspect_review(review_id):
@@ -168,7 +173,10 @@ def edit_review(review_id):
             msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
             try:
                 db.session.commit()
-                review.reviewee.send_message(subject=subject, msg_body=msg_body)
+                notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
+                db.session.add(notification)
+                db.session.commit()
+                flush_channel_notifications() # for demo purpose
                 flash("編輯成功，已通知被評核者", "alert-success")
             except Exception as e:
                 print(e)
@@ -198,11 +206,13 @@ def edit_review(review_id):
             prefilled_review.last_edited
         )  # prefilled_review.last_edited
     form.complete.data = str(prefilled_review.complete)
-
+    mies, mis = get_epa_linkages()
     return render_template(
         "make_review.html",
         title="填寫/編輯評核",
         form=form,
+        mies=mies,
+        mis=mis,
         review=prefilled_review,
         review_type=review_type,
     )
@@ -414,6 +424,24 @@ def view_reviews():
         prev_url=prev_url,
     )
 
+def get_epa_linkages():
+    entities = [
+        EPA.name.label('epa'),
+        MilestoneItemEPA.min_epa_level,
+        MilestoneItem.code.label('milestone_item_code')
+    ]
+    mies = MilestoneItemEPA.query.join(EPA).join(MilestoneItem).with_entities(*entities).order_by(MilestoneItemEPA.min_epa_level).all()
+    mies_dict = dict()
+    for mie in mies:
+        if not mie.epa in mies_dict.keys():
+            mies_dict[mie.epa] = {'milestone_item_codes':[mie.milestone_item_code], 'min_epa_level':[mie.min_epa_level]}
+        else:
+            mies_dict[mie.epa]['milestone_item_codes'].append(mie.milestone_item_code)
+            mies_dict[mie.epa]['min_epa_level'].append(mie.min_epa_level)
+    mies_json = json.dumps(mies_dict)
+    mis = MilestoneItem.query.with_entities(MilestoneItem.code.label('milestone_item_code'), MilestoneItem.content.label('milestone_item_content')).all()
+    mis_json = json.dumps({mi['milestone_item_code']:mi['milestone_item_content']  for mi in mis})
+    return mies_json, mis_json
 
 @login_required
 def new_review():
@@ -462,17 +490,20 @@ def new_review():
             flash("提交成功", "alert-success")
             
             subject = "[EPA通知]您已被評核"
-            msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可點此<a href="{url_for("inspect_review",review_id=review.id,_external=True)}">查看</a>'
+            msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可點此連結查看 {url_for("inspect_review",review_id=review.id,_external=True)} '
             notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
             db.session.add(notification)
             db.session.commit()
+            flush_channel_notifications() # for demo purpose
         except:
             flash("提交失敗，請重新嘗試", "alert-warning")
         return redirect(url_for("index"))
-
+    mies, mis = get_epa_linkages()
     return render_template(
         "make_review.html",
         title="新增評核",
+        mies=mies,
+        mis=mis,
         form=form,
         review=prefilled_review,
         review_type="new",
@@ -512,14 +543,18 @@ def request_review():
         flash(f"提交成功，系統將透過 Line 或 email 通知 {review.reviewer.username} 前往評核", "alert-success")
 
         subject = f"[EPA通知]請評核{review.reviewee.username}"
-        msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可點此<a href="{url_for("inspect_review",review_id=review.id,_external=True)}">查看</a>'
+        msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可點此連結查看 {url_for("edit_review",review_id=review.id,_external=True)}'
         notification = Notification(user_id=review.reviewer.id, subject=subject, msg_body=msg_body)
         db.session.add(notification)
         db.session.commit()
+        flush_channel_notifications() # for demo purpuse
         return redirect(url_for("index"))
+
+    mies, mis = get_epa_linkages()
     return render_template(
-        "make_review.html", title="請求評核", form=form, review_type="request"
+        "make_review.html", title="請求評核", mies=mies, mis=mis, form=form, review_type="request"
     )
+
 
 
 @login_required
@@ -567,6 +602,8 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for("login"))
+
+
 
 
 def register():
@@ -627,7 +664,7 @@ def register():
         db.session.commit()
         flash(
             Markup(
-                '註冊成功，請以帳號密碼登入<br>如果你有綁定Line帳號，歡迎透過 <a href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">Line官方帳號</a>使用快速登入功能'
+                f'註冊成功，請以帳號密碼登入<br>如果你有綁定Line帳號，歡迎透過 <a href="https://line.me/R/ti/p/{linebotinfo.basic_id}">Line官方帳號</a>使用快速登入功能'
             ),
             "alert-success",
         )
@@ -636,7 +673,7 @@ def register():
     if not line_user_profile:
         flash(
             Markup(
-                'EPA系統可以透過 line 通知你，你可以考慮 <a href="https://line.me/R/ti/p/{{linebotinfo.basic_id}}">點此透過line註冊</a>'
+                f'EPA系統可以透過 line 通知你，你可以考慮 <a href="https://line.me/R/ti/p/{linebotinfo.basic_id}">點此透過line註冊</a>'
             ),
             "alert-info",
         )
@@ -650,6 +687,107 @@ def register():
 
 def page_not_found(e):
     return render_template("404.html"), 404
+
+def get_stats_by_user(user):
+    entities = [ Review.epa_id, ReviewScore.value.label('score')]
+    user_reviews = Review.query.join(EPA).join(ReviewScore).filter(Review.reviewee_id == "76e9e534-8332-4047-97a9-51c567aa8279").with_entities(*entities).all()
+    re_dict = {'epa_stats':None, 'corecompetence_stats':None, 'milestone_stats':None}
+    if len(user_reviews) == 0:
+        return re_dict
+
+    import pandas as pd
+    review_df = pd.DataFrame(user_reviews,columns=user_reviews[0].keys())
+
+    epas = EPA.query.with_entities(EPA.id.label('epa_id'), EPA.name, EPA.desc).all()
+    milestones = Milestone.query.with_entities(Milestone.name, Milestone.id.label('milestone_id'), Milestone.desc).all()
+    corecompetences = CoreCompetence.query.with_entities(CoreCompetence.name, CoreCompetence.id.label('corecompetence_id'),CoreCompetence.desc).all()
+    epa_df = pd.DataFrame(epas, columns=epas[0].keys())
+    milestone_df = pd.DataFrame(milestones, columns=milestones[0].keys())
+    corecompetence_df = pd.DataFrame(corecompetences, columns=corecompetences[0].keys())
+    linkage_entites = [
+        EPA.id.label('epa_id'),
+        MilestoneItem.level.label('milestone_item_level'),
+        MilestoneItemEPA.min_epa_level,
+        Milestone.id.label('milestone_id'),
+        CoreCompetence.id.label('corecompetence_id')
+        ]
+    linkage = MilestoneItemEPA.query.join(EPA).join(MilestoneItem).join(Milestone).join(CoreCompetence).with_entities(*linkage_entites).all()
+    linkage_df = pd.DataFrame(linkage, columns=linkage[0].keys())
+
+    # epa
+    grouped = review_df.groupby('epa_id')
+    epa_stats_df = pd.concat([
+        grouped['score'].max().rename('score'),
+        grouped['score'].count().rename('review_cnt')
+        ],axis='columns')
+    epa_stats_df = pd.merge(epa_stats_df,epa_df, on='epa_id', how='outer').fillna(0)
+    epa_stats = epa_stats_df.drop(['epa_id'],axis='columns').set_index('name').T.to_dict()
+
+    milestoneitem_stats_df = pd.merge(epa_stats_df[['epa_id','score']], linkage_df, on='epa_id')
+    milestoneitem_stats_df['checked'] = milestoneitem_stats_df['score'] > milestoneitem_stats_df['min_epa_level']
+    grouped = milestoneitem_stats_df.groupby(['milestone_id','milestone_item_level'])
+    milestone_level_stats_df = pd.concat([
+        grouped['checked'].all().rename('all'),
+        grouped['checked'].any().rename('any'),
+    ],axis='columns').unstack(-1)
+    milestone_level_stats_df.columns = [f'{col[0]}_{col[1]}' for col in milestone_level_stats_df.columns.values]
+    def cal_milestone_score(milestone_ser):
+        score = 0
+        for i in range(1,6):
+            if milestone_ser[f'all_{i}']:
+                score+=1
+            else:
+                if milestone_ser[f'any_{i}']:
+                    score+=0.5
+                break
+        if score == 0 and any([f'any_{i}' for i in range(1,6)]):
+            score = 0.5
+        return score
+        
+    milestone_stats_df = milestone_level_stats_df.apply(cal_milestone_score,axis='columns').rename('score').reset_index()
+    ms2cc = linkage_df[['milestone_id','corecompetence_id']].drop_duplicates().set_index('milestone_id')['corecompetence_id']
+    milestone_stats_df['corecompetence_id'] = milestone_stats_df['milestone_id'].map(ms2cc)
+
+    milestone_stats = milestone_stats_df[['milestone_id','score']]
+    corecompetence_stats = milestone_stats_df.groupby('corecompetence_id')['score'].mean().reset_index()
+
+    milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id').drop(['milestone_id'],axis='columns').set_index('name').T.to_dict()
+    corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df).drop(['corecompetence_id'],axis='columns').set_index('name').T.to_dict()
+
+    re_dict['epa_stats'] = epa_stats
+    re_dict['milestone_stats'] = milestone_stats
+    re_dict['corecompetence_stats'] = corecompetence_stats
+
+    return re_dict
+
+def get_corecompetence_stats_by_user(user):
+    pass
+
+@login_required
+def progress_stat():
+    query_user_id = request.args.get("username", None)
+    if current_user.role.is_manager and query_user_id:
+        user = User.query.filter(User.username == "username").first()
+    else:
+        user = current_user
+    
+    user_stats = get_stats_by_user(user)
+    
+    epa_stats = user_stats['epa_stats']
+    corecompetence_stats_json = json.dumps(user_stats['corecompetence_stats'])
+    milestone_stats_json = json.dumps(user_stats['milestone_stats'])
+    
+    for key in epa_stats:
+        epa_stats[key].update({'img_src':f'{key[3:].zfill(2)}.svg'})
+
+    return render_template(
+        "progress_stat.html",
+        title=user.username,
+        user=user,
+        epa_stats=epa_stats,
+        corecompetence_stats_json=corecompetence_stats_json,
+        milestone_stats_json=milestone_stats_json
+    )
 
 @login_required
 def edit_profile():

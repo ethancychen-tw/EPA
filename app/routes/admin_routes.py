@@ -87,8 +87,29 @@ def create_notifications_fill_review(flush=False):
         db.session.add(notification)
     db.session.commit()
     if flush:
-        flush_notifications()
+        flush_channel_notifications()
 
-def flush_notifications():
+def flush_channel_notifications():
     notifications = Notification.query.all()
+    if len(notifications) == 0:
+        print("No notification to send via channels")
+        return "No unsent notification"
+    notification_dict = dict()
+    for nf in notifications:
+        if nf.user_id not in notification_dict.keys():
+            notification_dict[nf.user_id] = {"subject": [nf.subject], "msg_body":[nf.msg_body]}
+        else:
+            notification_dict[nf.user_id]["subject"].append(nf.subject)
+            notification_dict[nf.user_id]["msg_body"].append(nf.msg_body)
+        db.session.delete(nf)
+    db.session.commit()
+    for user_id, user_noti_dict in notification_dict.items():
+        user = User.query.filter(User.id == user_id).first()
+        if len(user_noti_dict["subject"]) > 1:
+            subject = "[EPA通知]"
+        else:
+            subject = user_noti_dict["subject"][0]
+        msg_body = "\n".join(user_noti_dict["msg_body"])
+        user.send_message(channels=["email","line"], subject=subject, msg_body=msg_body)
+
     
