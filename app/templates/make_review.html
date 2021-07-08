@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
 
+<meta id="meta_linkages" data-mies="{{ mies }}" data-mis="{{mis}}">
+
 <form action="" method="post">
     <div class="container">
         {{ form.hidden_tag() }}
@@ -49,6 +51,13 @@
                         <h5 class="card-title">{{title}}</h5>
                         <h6 class="card-subtitle mb-2 text-muted">{{card_subtitle}}</h6>
                         <p class="card-text">{{card_desc}}</p>
+                        {% if review_type in ["new", "user_edit"]%}
+                            <div class="row">
+                                <div class="col-5 col-md-8"></div>
+                                <div id="btn_epa_linkage" class="col-6 col-md-2 btn btn-outline-dark">查看EPA</div>
+                                <div class="col-1 col-md-2"></div>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -76,16 +85,14 @@
                         
                     </div>
                     
-                    
-                    
                 {% endfor %}
                 <p></p>
             </div>
             
             <p></p>
             <div class="w-100"></div>
-            <div class="col-md-3"></div>
-            <div class="col-md-6">
+            <div class="col-3 col-md-5"></div>
+            <div class="col-6 col-md-2">
                 {% if review_type != "inspect" %}
                     {{ form.submit(title=form.submit.description, class="w-100 btn btn-outline-primary")}}
                 {% else %}
@@ -94,7 +101,50 @@
             </div>
             
     </div>
-
 </form>
+<div class="modal fade" id="epa_linkage_modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">title</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<script src="https://code.jquery.com/jquery-3.6.0.slim.js"  integrity="sha256-HwWONEZrpuoh951cQD1ov2HUK5zA5DwJ1DNUXaM6FsY="  crossorigin="anonymous"></script>
+
+<script>
+$("#btn_epa_linkage").on("click", (e) => {
+    var selectedText = $('#epa :selected').text();
+    var selected_epa_code = selectedText.split("(")[0]
+    console.log(selected_epa_code)
+    var epa_linkage = find_epa_linkage(selected_epa_code)
+    var htmltext = "<ul>"
+    for(var i = 0;i<epa_linkage['milestone_item_codes'].length;i++){
+        htmltext+=`<li>(${epa_linkage['min_epa_level'][i]}) ${epa_linkage['milestone_item_codes'][i]}: ${epa_linkage['contents'][i]}</li>`
+    }
+    htmltext += "</ul>"
+    var $epa_modal = $('#epa_linkage_modal')
+    $epa_modal.find(".modal-body").html(htmltext)
+    $epa_modal.find(".modal-title").html(selectedText)
+    $epa_modal.modal('show');
+      
+});
+
+function find_epa_linkage(epa){
+    var linkages = $("#meta_linkages")
+    var mies = linkages.data("mies") //would be json automatically
+    var mis = linkages.data("mis")
+    var re = mies[epa]
+    re['contents'] = re['milestone_item_codes'].map(x=>mis[x])
+    return re
+}
+</script>
 
 {% endblock %}
