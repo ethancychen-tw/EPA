@@ -72,7 +72,7 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def send_message(self,channels=None, subject="", msg_body=""):
+    def send_message(self,subject="", msg_body="",channels=None):
         """
         notify user via line and email
         """

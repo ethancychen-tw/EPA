@@ -110,6 +110,6 @@ def flush_channel_notifications():
         else:
             subject = user_noti_dict["subject"][0]
         msg_body = "\n".join(user_noti_dict["msg_body"])
-        user.send_message(channels=["email","line"], subject=subject, msg_body=msg_body)
+        user.send_message(subject=subject, msg_body=msg_body, channels=["email","line"])
 
     

@@ -861,7 +861,7 @@ def reset_password_request():
             subject = "[EPA]密碼重設"
             msg_body = f"{user.username}你好，\n你的密碼重設連結為{url_password_reset}"
             try:
-                user.send_message(subject, msg_body)
+                user.send_message(subject=subject, msg_body=msg_body,channels=["email"])
             except Exception as e:
                 print(e)
         else:
@@ -884,7 +884,7 @@ def password_reset(token):
         flash("密碼重設完成，記得下次用新密碼登入喔！", "alert-info")
         subject = "[EPA通知]密碼已重設"
         msg_body = f"{user.username}你好，你的EPA密碼已重設，如果您並未發出重設密碼請求，請立即聯絡管理員"
-        user.send_message(subject=subject, msg_body=msg_body)
+        user.send_message(subject=subject, msg_body=msg_body,channel=['email','line'])
         return redirect(url_for("login"))
     return render_template("password_reset.html", title="Password Reset", form=form)
     
