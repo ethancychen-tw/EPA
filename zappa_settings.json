@@ -5,7 +5,8 @@
         "profile_name": "epa-zappa",
         "project_name": "epa",
         "runtime": "python3.8",
-        "s3_bucket": "zappa-bqh1h6ox3",
+        "s3_bucket": "epa-bucket",
+        "role_name":"epa-dev-ZappaLambdaExecutionRole",
         "exclude": [
             "__pycache__",
             "_cache",
@@ -26,10 +27,6 @@
             "boto3-*", 
             "botocore*",
             ".python-version"
-        ],
-        "vpc_config": { 
-            "SubnetIds": [ "subnet-00b2c4fbabdde1141", "subnet-02490a538b8b8b4aa", "subnet-0f431b95222687098"],
-            "SecurityGroupIds": [ "sg-00030d903bf34638a" ]
-        }
+        ]
     }
 }
