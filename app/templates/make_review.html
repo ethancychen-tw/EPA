@@ -43,6 +43,8 @@
             {% set card_desc = "此項紀錄於"+review.create_time.strftime("%Y-%m-%d %H時")+"創立，"+("評核完成時間為"+review.last_edited.strftime("%Y-%m-%d %H時") if review.complete else "尚未完成評核") %}
             
         {% endif %}
+
+          
         <div class='row'>
             <div class="col-md-3"></div>
             <div class="col-md-6">
@@ -65,6 +67,8 @@
             <p></p>
             <div class="w-100"></div>
 
+              
+
 
             <div class="text-center col-md-3"></div>
             <div class="text-center col-md-6">
@@ -72,7 +76,7 @@
                 {% for field in showing_fields %}
                     <div class="form-floating">
                         {% if field.type in ["SelectField"] %}
-                            {{ field(class="form-select") }}
+                            {{ field(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
                         {% elif field.type == "TextAreaField"%}
                             {{ field(class="form-control", style="height: 100px") }}
                         {% else %}
@@ -88,6 +92,7 @@
                 {% endfor %}
                 <p></p>
             </div>
+            
             
             <p></p>
             <div class="w-100"></div>
@@ -117,8 +122,7 @@
       </div>
     </div>
   </div>
-<script src="https://code.jquery.com/jquery-3.6.0.slim.js"  integrity="sha256-HwWONEZrpuoh951cQD1ov2HUK5zA5DwJ1DNUXaM6FsY="  crossorigin="anonymous"></script>
-
+  
 <script>
 $("#btn_epa_linkage").on("click", (e) => {
     var selectedText = $('#epa :selected').text();
@@ -145,6 +149,12 @@ function find_epa_linkage(epa){
     re['contents'] = re['milestone_item_codes'].map(x=>mis[x])
     return re
 }
+
+const $name_list = $("#name_list")
+const reviewer_list = $name_list.data('reviewer')
+const reviewee_list = $name_list.data('reviewee')
+console.log(reviewee_list)
 </script>
+
 
 {% endblock %}

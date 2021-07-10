@@ -48,7 +48,7 @@
                     {% endfor %}
                 </div>
                 <div class="form-floating">
-                    {{ form.internal_group(class="form-select") }}
+                    {{ form.internal_group(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
                     {{ form.internal_group.label }}
                     {% for error in form.internal_group.errors %}
                         <span style="color: red;">[{{ error }}]</span>
@@ -56,7 +56,7 @@
                 </div>
 
                 <div class="form-floating">
-                    {{ form.external_groups(class="form-select h-50") }}
+                    {{ form.external_groups(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
                     {{ form.external_groups.label }}
                     {% for error in form.external_groups.errors %}
                         <span style="color: red;">[{{ error }}]</span>

@@ -7,34 +7,24 @@
         <div class="row" data-masonry='{"percentPosition": true }'>
             {% for epa_name, epa_stat in epa_stats.items() %}
                 <div class="card col col-12 col-md-4 border-warning">
-                    
-                    
                     <div class="card-body">
                         <div class="row">
-                            
-                            
                             <div class="col-9 col-md-8">
-                                
-                                <p class="card-title card-title pricing-card-title"><h3>{{epa_name}}</h3></p>
+                                <p class="card-title card-title pricing-card-title"><a href='{{url_for("view_reviews")}}?filters_json={"epas":[{{epa_stat["id"]}}]}'><h3>{{epa_name}}</h3></a></p>
                                 <p class="card-text">{{epa_stat['desc']}}</p>
                             </div>
                             <div class="col-3 col-md-4">
                               <img src="static/img/epa_icon/{{epa_stat['img_src']}}" class="w-100">
                             </div>
-
                             <div class="col-2 col-md-2">
                               <span class=" badge bg-warning text-dark">完成度</span>
                             </div>
-
                             <div class="col-4 col-md-5">
-                              {{epa_stat['score']|int }}/5 ({{epa_stat['score'] * 20 |int}}%)
+                              {{epa_stat['score']|int }}/5 ({{epa_stat['score'] * 20 | int}}%)
                             </div>
-                      
                         </div>
-                        
-                        
                     </div>
-                    <h5 class="card-header text-center">Level {{ epa_stat['score'] |int}}</h5>
+                    <h5 class="card-header text-center">Level {{ epa_stat['score'] | int}}</h5>
                     <p></p>
                 </div>
                 
@@ -57,11 +47,11 @@
     </main>
 
 </div>
-<script src="https://code.jquery.com/jquery-3.6.0.slim.js"  integrity="sha256-HwWONEZrpuoh951cQD1ov2HUK5zA5DwJ1DNUXaM6FsY="  crossorigin="anonymous"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
 
+<script>
 const data_corecompetence = $("#meta_stats").data("corecompetence")
 const data_milestone = $("#meta_stats").data("milestone")
 

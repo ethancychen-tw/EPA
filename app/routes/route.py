@@ -168,11 +168,12 @@ def edit_review(review_id):
             except Exception as e:
                 print(e)
         else:
-            review.complete = True
-            subject = "[EPA通知]您已被評核"
-            msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
             try:
                 db.session.commit()
+
+                review.complete = True
+                subject = "[EPA通知]您已被評核"
+                msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
                 notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
                 db.session.add(notification)
                 db.session.commit()
@@ -302,31 +303,26 @@ def view_reviews():
     filters_json = request.args.get("filters_json", None)
     if filters_json:
         filters = json.loads(filters_json)
-        reviewees = filters["reviewees"]
-        reviewers = filters["reviewers"]
-        groups = filters["groups"]
-        create_time_start = filters["create_time_start"]
-        create_time_end = filters["create_time_end"]
-        complete = filters["complete"]
-        epas = filters["epas"]
-        sort_key = filters["sort_key"]
+        reviewees = filters.get("reviewees", None)
+        reviewers = filters.get("reviewers", None)
+        groups = filters.get("groups", None)
+        create_time_start = filters.get("create_time_start", None)
+        create_time_end = filters.get("create_time_end", None)
+        complete = filters.get("complete", None)
+        epas = filters.get("epas",None)
+        sort_key = filters.get("sort_key", None)
 
-        filter_form.reviewees.data = reviewees
-        filter_form.reviewers.data = reviewers
-        filter_form.groups.data = groups
-        filter_form.create_time_start.data = datetime.date.fromisoformat(create_time_start)
-        filter_form.create_time_end.data = datetime.date.fromisoformat(create_time_end)
-        filter_form.complete.data = complete
-        filter_form.epas.data = epas
-        filter_form.sort_key.data = sort_key
         # could refactor this in factory
-        if len(reviewees) < len(filter_form.reviewees.choices) :
+        if reviewees and len(reviewees) < len(filter_form.reviewees.choices) :
+            filter_form.reviewees.data = reviewees
             filtering_clause.append(Review.reviewee_id.in_(reviewees))
 
-        if len(reviewers) < len(filter_form.reviewers.choices):
+        if reviewers and len(reviewers) and len(reviewers) < len(filter_form.reviewers.choices):
+            filter_form.reviewers.data = reviewers
             filtering_clause.append(Review.reviewer_id.in_(reviewers))
             
-        if len(groups) < len(filter_form.groups.choices):
+        if groups and len(groups) < len(filter_form.groups.choices):
+            filter_form.groups.data = groups
             selected_groups = Group.query.filter(Group.id.in_(groups)).all()
             selected_user_ids = list(
                 set(
@@ -344,33 +340,38 @@ def view_reviews():
                 )
             )
             
-        if len(create_time_start):
+        if create_time_start and len(create_time_start):
+            filter_form.create_time_start.data = datetime.date.fromisoformat(create_time_start)
             filtering_clause.append(
                 Review.create_time >= datetime.date.fromisoformat(create_time_start)
             )
             
-        if len(create_time_end):
+        if create_time_end and len(create_time_end):
+            filter_form.create_time_end.data = datetime.date.fromisoformat(create_time_end)
             filtering_clause.append(
                 Review.create_time < datetime.date.fromisoformat(create_time_end)
             )
             
-        if len(complete) < len(filter_form.complete.choices):
+        if complete and len(complete) < len(filter_form.complete.choices):
+            filter_form.complete.data = complete
             filtering_clause.append(Review.complete.in_(complete))
             
-        if len(epas) < len(filter_form.epas.choices):
+        if epas and len(epas) < len(filter_form.epas.choices):
+            filter_form.epas.data = epas
             filtering_clause.append(
                 Review.epa_id.in_(epas)
             )  # if this don't work, could prefetch epa ids
-            
-
-        if sort_key == "EPA":
-            sort_entity = Review.epa_id
-        elif sort_key == "implement_date":
-            sort_entity = Review.implement_date.desc()
-        elif sort_key == "create_time":
-            sort_entity = Review.create_time.desc()
-        elif sort_key == "complete":
-            sort_entity = Review.complete
+        
+        if sort_key:
+            filter_form.sort_key.data = sort_key
+            if sort_key == "EPA":
+                sort_entity = Review.epa_id
+            elif sort_key == "implement_date":
+                sort_entity = Review.implement_date.desc()
+            elif sort_key == "create_time":
+                sort_entity = Review.create_time.desc()
+            elif sort_key == "complete":
+                sort_entity = Review.complete
     else:
         # if not filter json, prefill all the options in filtering form
         filter_form.reviewees.data = [choice[0] for choice in filter_form.reviewees.choices]
@@ -543,7 +544,7 @@ def request_review():
         flash(f"提交成功，系統將透過 Line 或 email 通知 {review.reviewer.username} 前往評核", "alert-success")
 
         subject = f"[EPA通知]請評核{review.reviewee.username}"
-        msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可點此連結查看 {url_for("edit_review",review_id=review.id,_external=True)}'
+        msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可點此連結前往評核 {url_for("edit_review",review_id=review.id,_external=True)}'
         notification = Notification(user_id=review.reviewer.id, subject=subject, msg_body=msg_body)
         db.session.add(notification)
         db.session.commit()
@@ -721,7 +722,7 @@ def get_stats_by_user(user):
         grouped['score'].count().rename('review_cnt')
         ],axis='columns')
     epa_stats_df = pd.merge(epa_stats_df,epa_df, on='epa_id', how='outer').fillna(0)
-    epa_stats = epa_stats_df.drop(['epa_id'],axis='columns').set_index('name').T.to_dict()
+    epa_stats = epa_stats_df.rename({'epa_id':'id'},axis='columns').set_index('name').T.to_dict()
 
     milestoneitem_stats_df = pd.merge(epa_stats_df[['epa_id','score']], linkage_df, on='epa_id')
     milestoneitem_stats_df['checked'] = milestoneitem_stats_df['score'] > milestoneitem_stats_df['min_epa_level']

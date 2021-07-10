@@ -32,7 +32,11 @@
                         {% endif %}  
                     
                         <div class="col-3 col-md-1">
-                            <img src="{{review.reviewee.avatar()}}" class="w-100">
+                            {% if review.review_source == 'request' %}
+                                <img src="{{review.reviewee.avatar()}}" class="w-100">
+                            {% else%}
+                                <img src="{{review.reviewer.avatar()}}" class="w-100">
+                            {% endif %}
                         </div>
                         <div class="col-9 col-md-5">
                             <h5 class="card-title">{{card_title}}</h5>

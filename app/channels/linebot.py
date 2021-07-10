@@ -1,6 +1,6 @@
 from flask import request, abort, url_for
 from app import db, line_bot_api, handler
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent
 from linebot.exceptions import InvalidSignatureError
 
 linebotinfo = line_bot_api.get_bot_info()
@@ -19,7 +19,7 @@ def callback():
         abort(400)
     return 'OK'
 
-
+@handler.add(FollowEvent)
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     from app.models.user import User, LineNewUser
@@ -38,7 +38,7 @@ def handle_message(event):
         db.session.add(line_new_user)
         db.session.commit()
         line_new_user_token = line_new_user.get_jwt()
-        line_bot_api.reply_message(event.reply_token,TextSendMessage(f'新用戶你好，請點此連結註冊: {url_for("register", _external=True, line_new_user_token=line_new_user_token)}'))  
+        line_bot_api.reply_message(event.reply_token,TextSendMessage(f'請點此註冊或綁定你的帳號: {url_for("register", _external=True, line_new_user_token=line_new_user_token)}'))  
     else:
         # if registered, reply with greeting msg
         line_bot_api.reply_message(event.reply_token,TextSendMessage(f'嗨，{user.username}，請點此連結登入EPA系統 {url_for("index", _external=True)}'))
