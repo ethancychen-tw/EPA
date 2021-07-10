@@ -7,22 +7,8 @@
                 <div class="col-3 text-end">{{ field.label }}</div>
                 <div class="col-9">
                     {% if field.type in ["SelectMultipleField", "MultiCheckboxField"] %}
-                        <div class="row">
-                        {% for choice in field %}
-                            {% if choice.label.text | string | length > 20 %}
-                                <div class="col-12">
-                                    {{ choice(class="form-check-input")}}
-                                    {{ choice.label(class="form-check-label") }}
-                                </div>
-                            {% else %}
-                                <div class="col-4">
-                                    {{ choice(class="form-check-input")}}
-                                    {{ choice.label(class="form-check-label") }}
-                                </div>
-                            {% endif %}
-                            
-                        {% endfor %}
-                        </div>
+                        {{ field(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
+                    
                     {% elif field.type in ["DateField"] %}
                         <div class="row"><div class="col-6">{{ field(class="form-control") }}</div></div>
                         

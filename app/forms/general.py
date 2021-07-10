@@ -8,10 +8,6 @@ from app.models.user import User
 
 import datetime
 
-class MultiCheckboxField(SelectMultipleField):
-    widget = widgets.ListWidget(prefix_label=False)
-    option_widget = widgets.CheckboxInput()
-
 class ReviewForm(FlaskForm):
     implement_date = DateField(label="實作時間", validators=[DataRequired()], default=datetime.date.today())
     location = SelectField(label='實作地點', choices=[('', '')], default='')
@@ -106,12 +102,12 @@ class UserFilterForm(FlaskForm):
     role = SelectMultipleField(label='職級/角色', choices=[('', '')], default=[''])
 
 class ReviewFilterForm(FlaskForm):
-    reviewees = MultiCheckboxField(label='學生', choices=[('', '')],  default=[''])
-    reviewers = MultiCheckboxField(label='老師', choices=[('', '')], default=[''])
-    groups = MultiCheckboxField(label='群組',choices=[('', '')], default=['']) # only available for manager
+    reviewees = SelectMultipleField(label='學生', choices=[('', '')],  default=[''])
+    reviewers = SelectMultipleField(label='老師', choices=[('', '')], default=[''])
+    groups = SelectMultipleField(label='群組',choices=[('', '')], default=['']) # only available for manager
     create_time_start = DateField(label='創建時間開始', default=datetime.datetime.now()-datetime.timedelta(days=360))
     create_time_end = DateField(label='創建時間結束', default=datetime.datetime.now()+datetime.timedelta(days=1))
-    complete = MultiCheckboxField(label='已完成', choices=[('True', '是'),('False','否')])
-    epas = MultiCheckboxField(label='EPA', choices=[('', '')], default=[''])
+    complete = SelectMultipleField(label='已完成', choices=[('True', '是'),('False','否')])
+    epas = SelectMultipleField(label='EPA', choices=[('', '')], default=[''])
     sort_key = RadioField(label="排序", choices=[('EPA','EPA'),('implement_date','實作時間'), ('create_time','創建時間')], validators=[DataRequired()], default='EPA')
     submit = SubmitField(label='篩選')

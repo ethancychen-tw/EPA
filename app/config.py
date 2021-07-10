@@ -29,9 +29,6 @@ class Config:
     if not LINEBOT_MSG_CHANNEL_ACCESS_TOKEN or not LINEBOT_MSG_CHANNEL_SECRET:
         print("line bot not set!!! ")
 
-
-    
-
     # email
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@epa.org')
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.mail.yahoo.com')
@@ -41,8 +38,6 @@ class Config:
         MAIL_USE_SSL = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'username')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'password')
-    MAIL_SUBJECT_RESET_PASSWORD = '[EPA] Please Reset Your Password'
-    MAIN_SUBJECT_USER_ACTIVATE = '[EPA] Please Activate Your Accout'    
 
     # some other configs
     REVIEW_PER_PAGE = int(os.environ.get('REVIEW_PER_PAGE', 20))
