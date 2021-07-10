@@ -68,6 +68,10 @@ class RegisterForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user is not None:
             raise ValidationError('這個email已被使用')
+
+    def validate_external_groups(self, external_groups):
+        if self.internal_group.data in external_groups.data:
+            raise ValidationError('外訓醫院不可包含所屬醫院')
 class EditProfileForm(FlaskForm):
     
     bindline = BooleanField(label="Line帳號")
@@ -76,6 +80,10 @@ class EditProfileForm(FlaskForm):
     internal_group = SelectField(label="所屬醫院", validators=[DataRequired()])
     external_groups = SelectMultipleField(label="外派醫院", choices=[('', '')], default='')
     submit = SubmitField(label='更新並儲存')
+
+    def validate_external_groups(self, external_groups):
+        if self.internal_group.data in external_groups.data:
+            raise ValidationError('外訓醫院不可包含所屬醫院')
 
 class PasswdResetRequestForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired(), Email()])
