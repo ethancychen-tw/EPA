@@ -27,9 +27,20 @@ role = Role(name=f"醫院管理者", desc="醫院管理者 desc", can_request_re
 db.session.add(role)
 
 # #EPA
-epa_desc = ["EPA1(Airway) 呼吸道評估與處置", "EPA2(FB) 耳鼻喉頭頸部異物評估與處置", "EPA3(Bleeding) 耳鼻喉頭頸部出血評估與處置", "EPA4(Vertigo) 眩暈評估與處置", "EPA5(Infection) 耳鼻喉頭頸部感染症評估與處置", "EPA6(H&N) 耳鼻喉頭頸部(含口腔)腫瘤評估與處置", "EPA7(Ear/Hearing) 耳部與聽力疾病評估與處置", "EPA8(Nose/Sinus) 鼻部與鼻竇疾病評估與處置", "EPA9(Larynx) 咽喉部(音聲、語言、吞嚥)疾病評估與處置", "EPA10(SDB) 睡眠呼吸障礙評估與處置", "EPA11(Plasty) 顏面整形重建評估與處置"]
+epa_desc = [
+    "EPA01(Airway) 呼吸道評估與處置",
+    "EPA02(FB) 耳鼻喉頭頸部異物評估與處置",
+    "EPA03(Bleeding) 耳鼻喉頭頸部出血評估與處置",
+    "EPA04(Vertigo) 眩暈評估與處置",
+    "EPA05(Infection) 耳鼻喉頭頸部感染症評估與處置",
+    "EPA06(H&N) 耳鼻喉頭頸部(含口腔)腫瘤評估與處置",
+    "EPA07(Ear/Hearing) 耳部與聽力疾病評估與處置",
+    "EPA08(Nose/Sinus) 鼻部與鼻竇疾病評估與處置",
+    "EPA09(Larynx) 咽喉部(音聲、語言、吞嚥)疾病評估與處置",
+    "EPA10(SDB) 睡眠呼吸障礙評估與處置",
+    "EPA11(Plasty) 顏面整形重建評估與處置"]
 for i in range(len(epa_desc)):
-    epa = EPA(name=f"EPA{i+1}", desc=epa_desc[i])
+    epa = EPA(name=f"EPA{str(i+1).zfill(2)}", desc=epa_desc[i])
     db.session.add(epa)
 db.session.commit()
 
@@ -71,6 +82,7 @@ for line in milestone_items_epa_lines:
     milestone_item_code = li[0].strip()
     milestone_item = MilestoneItem.query.filter(MilestoneItem.code==milestone_item_code).first()
     epa_name = li[1].split(".")[0]
+    epa_name = epa_name[:3] + epa_name[3:].zfill(2)
     epa = EPA.query.filter(EPA.name==epa_name).first()
     min_epa_level = int(li[1].split(".")[1])
     mie = MilestoneItemEPA(min_epa_level=min_epa_level,epa=epa,milestone_item=milestone_item)
@@ -191,20 +203,4 @@ for i in range(20):
     review.location = all_locations[int(random.random()*len(all_locations))]
     review.epa = all_epa[int(random.random()*len(all_epa))]
     db.session.add(review)
-db.session.commit()
-
-# finished review
-review = Review()
-review.review_source = ReviewSource.query.filter(ReviewSource.name=="new").first()
-review.reviewer = User.query.join(Role).filter(Role.name=='主治醫師').first()
-review.reviewee = User.query.get(2)
-review.location = Location.query.get(2)
-review.epa = EPA.query.get(3)
-review.review_compliment = "good job"
-review.review_suggestion = "next time you should..."
-review.review_difficulty = ReviewDifficulty.query.get(2)
-review.review_score = ReviewScore.query.get(4)
-review.complete = True
-
-db.session.add(review)
 db.session.commit()

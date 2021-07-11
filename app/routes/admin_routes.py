@@ -1,3 +1,5 @@
+import datetime
+
 from flask import (
     render_template,
     redirect,
@@ -9,9 +11,10 @@ from flask import (
     Markup,
 )
 from flask_login import login_user, current_user, logout_user, login_required
+from wtforms.validators import NoneOf
 from app import db
 from app.models.review import Review
-from app.models.user import User, Notification
+from app.models.user import User, Notification, Role
 
 @login_required
 def admin_view_users():
@@ -89,11 +92,14 @@ def create_notifications_fill_review(flush=False):
     if flush:
         flush_channel_notifications()
 
-def flush_channel_notifications():
-    notifications = Notification.query.all()
+def flush_channel_notifications(user_ids=None):
+    if not user_ids:
+        notifications = Notification.query.all()
+    else:
+        notifications = Notification.query.filter(Notification.user_id.in_(user_ids))
+    
     if len(notifications) == 0:
         print("No notification to send via channels")
-        return "No unsent notification"
     notification_dict = dict()
     for nf in notifications:
         if nf.user_id not in notification_dict.keys():
@@ -111,5 +117,3 @@ def flush_channel_notifications():
             subject = user_noti_dict["subject"][0]
         msg_body = "\n".join(user_noti_dict["msg_body"])
         user.send_message(subject=subject, msg_body=msg_body, channels=["email","line"])
-
-    

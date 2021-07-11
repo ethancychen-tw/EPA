@@ -10,7 +10,7 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-9 col-md-8">
-                                <p class="card-title card-title pricing-card-title"><a href='{{url_for("view_reviews")}}?filters_json={"epas":[{{epa_stat["id"]}}]}'><h3>{{epa_name}}</h3></a></p>
+                                <p class="card-title card-title pricing-card-title"><a href="{{epa_stat['url']}}"><h3>{{epa_name}}</h3></a></p>
                                 <p class="card-text">{{epa_stat['desc']}}</p>
                             </div>
                             <div class="col-3 col-md-4">
