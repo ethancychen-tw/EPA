@@ -27,20 +27,21 @@ role = Role(name=f"醫院管理者", desc="醫院管理者 desc", can_request_re
 db.session.add(role)
 
 # #EPA
-epa_desc = [
-    "EPA01(Airway) 呼吸道評估與處置",
-    "EPA02(FB) 耳鼻喉頭頸部異物評估與處置",
-    "EPA03(Bleeding) 耳鼻喉頭頸部出血評估與處置",
-    "EPA04(Vertigo) 眩暈評估與處置",
-    "EPA05(Infection) 耳鼻喉頭頸部感染症評估與處置",
-    "EPA06(H&N) 耳鼻喉頭頸部(含口腔)腫瘤評估與處置",
-    "EPA07(Ear/Hearing) 耳部與聽力疾病評估與處置",
-    "EPA08(Nose/Sinus) 鼻部與鼻竇疾病評估與處置",
-    "EPA09(Larynx) 咽喉部(音聲、語言、吞嚥)疾病評估與處置",
-    "EPA10(SDB) 睡眠呼吸障礙評估與處置",
-    "EPA11(Plasty) 顏面整形重建評估與處置"]
-for i in range(len(epa_desc)):
-    epa = EPA(name=f"EPA{str(i+1).zfill(2)}", desc=epa_desc[i])
+epa_names = [
+    "EPA01 呼吸道評估與處置(Airway)",
+    "EPA02 異物評估與處置(FB)",
+    "EPA03 出血評估與處置(Bleeding)",
+    "EPA04 眩暈評估與處置(Vertigo)",
+    "EPA05 感染症評估與處置(Infection)",
+    "EPA06 頭頸部(含口腔)腫瘤評估與處置(H&N)",
+    "EPA07 耳部與聽力疾病評估與處置(Ear/Hearing)",
+    "EPA08 鼻部與鼻竇疾病評估與處置(Nose/Sinus)",
+    "EPA09 咽喉部(音聲、語言、吞嚥)疾病評估與處置(Larynx)",
+    "EPA10 睡眠呼吸障礙評估與處置(SDB)",
+    "EPA11 顏面整形重建評估與處置(Plasty)",
+    ]
+for epa_name in epa_names:
+    epa = EPA(name=epa_name, desc="")
     db.session.add(epa)
 db.session.commit()
 
