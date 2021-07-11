@@ -387,7 +387,8 @@ def view_reviews():
     all_user_related_reviews_q = Review.query
     if not current_user.role.is_manager:
         all_user_related_reviews_q = all_user_related_reviews_q.filter(
-            or_(Review.reviewer == current_user, Review.reviewee == current_user)
+            or_(Review.reviewer == current_user, Review.reviewee == current_user),
+            Review.complete == True
         )
 
     all_user_related_reviews_q = all_user_related_reviews_q.filter(
