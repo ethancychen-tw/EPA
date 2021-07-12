@@ -141,25 +141,28 @@
           {% endif %}
         </div>
       </nav>
+      
+
     </header>
-    {% with messages = get_flashed_messages(with_categories=True) %} {% if
-    messages %} {% for category, message in messages %}
-    <div class="mb-8 alert {{category}} alert-dismissible fade show">
-      {{ message }}
-      <button
-        type="button"
-        class="btn-close"
-        data-bs-dismiss="alert"
-        aria-label="Close"
-      ></button>
-    </div>
-    {% endfor %} {% endif %} {% endwith %}
+    
 
     <div
       class="container-fluid"
       style="padding-top: 140px; padding-bottom: 60px; min-height: 100%"
     >
-      {% block content %} {% endblock %}
+        {% with messages = get_flashed_messages(with_categories=True) %} {% if
+            messages %} {% for category, message in messages %}
+            <div class="mb-8 alert {{category}} alert-dismissible fade show">
+            {{ message }}
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+            ></button>
+            </div>
+            {% endfor %} {% endif %} {% endwith %}
+        {% block content %} {% endblock %}
     </div>
 
     <footer style="position: relative; bottom: 0px; height: 30px; width: 100%">
