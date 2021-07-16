@@ -30,14 +30,20 @@ class Config:
         print("line bot not set!!! ")
 
     # email
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@epa.org')
-    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.mail.yahoo.com')
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
     MAIL_PORT = os.environ.get('MAIL_PORT', 465)
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', True)
     if MAIL_USE_SSL == 'True':
         MAIL_USE_SSL = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'username')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'password')
+
+    # ISSUE REPORT GOOGLE FORM
+    ISSUE_REPORT_GOOGLE_FORM_URL=os.environ.get('ISSUE_REPORT_GOOGLE_FORM_URL', 'username')
+    ISSUE_REPORT_GOOGLE_FORM_NAME_FIELD_ID=os.environ.get('ISSUE_REPORT_GOOGLE_FORM_NAME_FIELD_ID', 'username')
+    ISSUE_REPORT_GOOGLE_FORM_INTERNAL_GROUP_FIELD_ID=os.environ.get('ISSUE_REPORT_GOOGLE_FORM_INTERNAL_GROUP_FIELD_ID', 'username')
+    ISSUE_REPORT_GOOGLE_FORM_ROLE_FIELD_ID=os.environ.get('ISSUE_REPORT_GOOGLE_FORM_ROLE_FIELD_ID', 'username')
+    ISSUE_REPORT_GOOGLE_FORM_EMAIL_FIELD_ID=os.environ.get('ISSUE_REPORT_GOOGLE_FORM_EMAIL_FIELD_ID', 'username')
 
     # some other configs
     REVIEW_PER_PAGE = int(os.environ.get('REVIEW_PER_PAGE', 20))
@@ -48,16 +54,25 @@ class Config:
 
 
 class DevelopmentConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(config_path, 'epa.db'))
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DEV_DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     STATIC_FOLDER = "static"
-    
     DEBUG = True
-    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_ECHO = True
 
+class StagingConfig(Config):
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL')
+
+    DEBUG = False
+    SQLALCHEMY_ECHO = False
+    @staticmethod
+    def init_app(app):
+        Config.init_app(app)
+        if not os.environ.get('SECRET_KEY'):
+            raise Exception('SECRET_KEY IS NOT SET!')
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('PROD_DATABASE_URL')
 
     DEBUG = False
     SQLALCHEMY_ECHO = False
@@ -70,5 +85,6 @@ class ProductionConfig(Config):
 
 config = {
     'development': DevelopmentConfig,
+    'staging': StagingConfig,
     'production': ProductionConfig
 }
