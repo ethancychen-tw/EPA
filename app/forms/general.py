@@ -14,21 +14,29 @@ class ReviewForm(FlaskForm):
     epa = SelectField(label='EPA', choices=[('', '')], default='')
     reviewee = SelectField(label="學生", choices=[('', '')], default='')
     reviewer = SelectField(label='老師', choices=[('', '')], default='')
+    reviewee_note = TextAreaField(label="學生備註" )
     review_difficulty = SelectField(label='(1) 這項工作的複雜程度為')
     review_compliment = TextAreaField(label="(2) 我覺得你表現不錯的地方在" ,validators=[DataRequired()])
-    review_suggestion = TextAreaField(label="(3) 如果你能做到以下建議，就可以獲得老師或病人更高的信任" , validators=[DataRequired()])
-    review_score = SelectField(label='(4) 如果下次再遇到類似情形，我對你的信賴等級為')
-    submit = SubmitField('提交')
+    review_suggestion = TextAreaField(label="(3) 如果你能做到以下建議會更好" , validators=[DataRequired()])
+    review_score = RadioField(label='(4) 我對你的信賴等級為')
 
+    submit = SubmitField(label='提交')
+    save_draft = SubmitField(label='存成草稿')
+
+    
+    creator = SelectField(label="創建者", choices=[('', '')], default='')
     review_source = SelectField(label='來源', choices=[('', '')], default='')
     complete = SelectField(label="已完成", choices=[('True', '是'),('False','否')], default='False')
     create_time = DateTimeLocalField(label='創建時間', format='%Y-%m-%dT%H:%M')
     last_edited = DateTimeLocalField(label='最近更新時間',format='%Y-%m-%dT%H:%M')
 
-    
+    @property
+    def btns(self):
+        return [self.submit, self.save_draft]
+        
     @property
     def requesting_fields(self):
-        return [self.epa, self.reviewer, self.reviewee, self.location, self.implement_date ]
+        return [self.epa, self.reviewer, self.reviewee, self.location, self.implement_date, self.reviewee_note ]
     
     @property
     def scoring_fields(self):
@@ -36,7 +44,7 @@ class ReviewForm(FlaskForm):
     
     @property
     def meta_fields(self):
-        return [self.review_source, self.complete, self.create_time, self.last_edited]    
+        return [self.review_source, self.complete, self.create_time, self.last_edited, self.creator]    
 
 class LoginForm(FlaskForm):
     username = StringField("姓名" ,validators=[DataRequired()])

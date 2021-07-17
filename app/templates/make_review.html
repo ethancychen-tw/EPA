@@ -66,10 +66,6 @@
 
             <p></p>
             <div class="w-100"></div>
-
-              
-
-
             <div class="text-center col-md-3"></div>
             <div class="text-center col-md-6">
                 
@@ -79,8 +75,10 @@
                             {{ field(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
                         {% elif field.type == "TextAreaField"%}
                             {{ field(class="form-control", style="height: 100px") }}
+                        {% elif field.type == "RadioField"%}
+                            {{ field(class="form-control", style="height: 100px") }}
                         {% else %}
-                            {{ field(class="form-control") }}
+                            {{ field(class="form-control form-check") }}
                         {% endif %}
                         {{ field.label }}
                         {% for error in field.errors %}
@@ -96,14 +94,22 @@
             
             <p></p>
             <div class="w-100"></div>
-            <div class="col-3 col-md-5"></div>
-            <div class="col-6 col-md-2">
-                {% if review_type != "inspect" %}
+            <div class="col-3"></div>
+           
+            {% if review_type != "inspect" %}
+                <div class="col-3">
+                    {{ form.save_draft(title=form.save_draft.description, class="w-100 btn btn-outline-dark")}}
+                </div>
+                <div class="col-3">
                     {{ form.submit(title=form.submit.description, class="w-100 btn btn-outline-primary")}}
+                </div>
+                    
                 {% else %}
-                    <a href="{{url_for('view_reviews')}}" class="w-100 btn btn-outline-primary">回上一頁</a>
-                {% endif %}
-            </div>
+                <div class="col-3">
+                    <a href="{{url_for('view_reviews')}}" class="w-100 btn btn-outline-primary">回查看所有評核</a>
+                </div>
+            {% endif %}
+           
             
     </div>
 </form>

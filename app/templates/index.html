@@ -3,22 +3,28 @@
 {% block content %}
 
 <div class="container">
-    <div class='row justify-content-center align-items-center'><h1>嗨，{{current_user.username}}</h1></div> 
+    <div class='row justify-content-center align-items-center'><h1>嗨，{{current_user.role.name}} {{current_user.username}}</h1></div> 
     {% if unfin_being_reviews | length == 0 and unfin_make_reviews | length == 0%}
         太棒了，你沒有待辦事項
     {% endif %}
+    {% if draft_reviews | length > 0%}
+        <h5>你有{{draft_reviews | length}}則暫存的評核</h5>
+        {% set reviews = draft_reviews %}
+        {% include "_reviews.html" %}
+    {% endif %}
     {% if unfin_make_reviews | length > 0%}
-        <h5>以下是你待完成的評核</h5>
+        <p></p>
+        <h5>{{unfin_make_reviews | length}}則未完成評核</h5>
         {% set reviews = unfin_make_reviews%}
         {% include "_reviews.html" %}
     {% endif %}
     {% if unfin_being_reviews | length > 0%}
         <p></p>
-        <h5>以下是關於你的評核，等待指定老師完成</h5>
+        <h5>{{unfin_being_reviews | length}}則等待老師評核</h5>
         {% set reviews = unfin_being_reviews%}
         {% include "_reviews.html" %}
     {% endif %}
 
-      
+    </div>      
 </div>
 {% endblock %}

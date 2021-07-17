@@ -17,7 +17,7 @@ line_bot_api = LineBotApi(config['production'].LINEBOT_MSG_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(config['production'].LINEBOT_MSG_CHANNEL_SECRET)
 
 from app.routes.route import index, login, logout, register, page_not_found, \
-    edit_profile, reset_password_request, password_reset, new_review, request_review, edit_review, view_reviews, inspect_review, remove_review, progress_stat
+    edit_profile, reset_password_request, password_reset, create_review, request_review, edit_review, view_all_reviews, inspect_review, delete_review, progress_stat
 from app.routes.admin_routes import admin_view_users, user, create_notifications_fill_review_wrapper
 from app.channels import linebot
 
@@ -31,6 +31,8 @@ def create_app(config_name='development'):
 
     app.add_url_rule('/index', 'index', methods=['GET', 'POST'])
     app.add_url_rule('/', 'index', index, methods=['GET', 'POST'])
+    app.add_url_rule('/error', page_not_found, methods=['GET'])
+    
     app.add_url_rule('/login', 'login', login, methods=['GET', 'POST'])
     app.add_url_rule('/logout', 'logout', logout)
     app.add_url_rule('/register', 'register', register, methods=['GET', 'POST'])
@@ -50,13 +52,16 @@ def create_app(config_name='development'):
     )
     app.register_error_handler(404, page_not_found)
     # app.add_url_rule('/explore', 'explore', explore)
-    app.add_url_rule('/review/new', 'new_review', new_review, methods=['GET', 'POST'])
+
+    # TODO: Blueprint
+    app.add_url_rule('/review/create', 'create_review', create_review, methods=['GET', 'POST'])
     app.add_url_rule('/review/request', 'request_review', request_review, methods=['GET', 'POST'])
     app.add_url_rule('/review/edit/<review_id>', 'edit_review', edit_review, methods=['GET', 'POST'])
-    app.add_url_rule('/review/remove/<review_id>', 'remove_review', remove_review, methods=['GET', 'POST'])
+    app.add_url_rule('/review/delete/<review_id>', 'delete_review', delete_review, methods=['GET', 'POST'])
     app.add_url_rule('/review/inspect/<review_id>', 'inspect_review', inspect_review, methods=['GET'])
-    
-    app.add_url_rule('/view_reviews', 'view_reviews', view_reviews, methods=['GET', 'POST'])
+    app.add_url_rule('/review/view_all', 'view_all_reviews', view_all_reviews, methods=['GET', 'POST'])
+
+
     app.add_url_rule('/progress_stat', 'progress_stat', progress_stat, methods=['GET'])
     
     # admin

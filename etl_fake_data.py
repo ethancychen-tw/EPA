@@ -1,8 +1,8 @@
 import datetime
 import random
-
+import os
 from app import db, create_app  # 此時db仍沒有連上engine，因為app在  __init__.py 中只有初始化SQLAlchemy空物件而已
-app = create_app() # 這裏db也還是沒有連上，只是創造出app 環境而已
+app = create_app('development') # 這裏db也還是沒有連上，只是創造出app 環境而已
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
 
 from app.models.review import Review, Location, ReviewDifficulty, ReviewScore, ReviewSource, Milestone, CoreCompetence, MilestoneItemEPA, EPA, MilestoneItem
@@ -17,17 +17,17 @@ for table_name in [
 
 # Role
 for i in range(1,5):
-    role = Role(name=f"住院醫師-R{i}", desc=f"住院醫師-R{i} desc", can_request_review=True, can_create_and_edit_review=False, is_manager=False)
+    role = Role(name=f"住院醫師-R{i}", desc=f"住院醫師-R{i} desc", can_be_reviewee = True)
     db.session.add(role)
-role = Role(name=f"住院醫師-R5(總醫師)", desc="住院醫師-R5 desc", can_request_review=True, can_create_and_edit_review=True, is_manager=False)
+role = Role(name=f"住院醫師-R5(總醫師)", desc="住院醫師-R5 desc", can_be_reviewee=True, can_be_reviewer=True)
 db.session.add(role)
-role = Role(name=f"主治醫師", desc="主治醫師 desc", can_request_review=False, can_create_and_edit_review=True, is_manager=False)
+role = Role(name=f"主治醫師", desc="主治醫師 desc",  can_be_reviewer=True)
 db.session.add(role)
-role = Role(name=f"醫院管理者", desc="醫院管理者 desc", can_request_review=True, can_create_and_edit_review=True, is_manager=True)
+role = Role(name=f"醫院管理者", desc="醫院管理者 desc", is_manager=True)
 db.session.add(role)
 
 # #EPA
-epa_names = [
+epa_desc_list = [
     "EPA01 呼吸道評估與處置(Airway)",
     "EPA02 異物評估與處置(FB)",
     "EPA03 出血評估與處置(Bleeding)",
@@ -40,8 +40,8 @@ epa_names = [
     "EPA10 睡眠呼吸障礙評估與處置(SDB)",
     "EPA11 顏面整形重建評估與處置(Plasty)",
     ]
-for epa_name in epa_names:
-    epa = EPA(name=epa_name, desc="")
+for epa_desc in epa_desc_list:
+    epa = EPA(name=epa_desc.split(" ")[0].replace("A0","A"), desc=epa_desc)
     db.session.add(epa)
 db.session.commit()
 
@@ -83,7 +83,7 @@ for line in milestone_items_epa_lines:
     milestone_item_code = li[0].strip()
     milestone_item = MilestoneItem.query.filter(MilestoneItem.code==milestone_item_code).first()
     epa_name = li[1].split(".")[0]
-    epa_name = epa_name[:3] + epa_name[3:].zfill(2)
+    epa_name = epa_name[:3] + epa_name[3:]
     epa = EPA.query.filter(EPA.name==epa_name).first()
     min_epa_level = int(li[1].split(".")[1])
     mie = MilestoneItemEPA(min_epa_level=min_epa_level,epa=epa,milestone_item=milestone_item)
@@ -189,18 +189,19 @@ db.session.commit()
 
 # ask review
 
-all_reviewers = User.query.join(Role).filter(Role.can_create_and_edit_review == True, Role.is_manager == False).all()
-all_reviewees = User.query.join(Role).filter(Role.can_request_review == True, Role.is_manager == False).all()
+all_reviewers = User.query.join(Role).filter(Role.can_be_reviewer == True, Role.is_manager == False).all()
+all_reviewees = User.query.join(Role).filter(Role.can_be_reviewee == True, Role.is_manager == False).all()
 
 all_locations = Location.query.all()
 all_epa = EPA.query.all()
 for i in range(20):
     review = Review()
+    reviewee_options = [user for user in all_reviewees if user != review.reviewer ]
+    review.creator = reviewee_options[int(random.random()*len(reviewee_options))]
     review.implement_date = datetime.date.fromisoformat('2019-12-04') + datetime.timedelta(days=int(random.random()*(1-random.random())*1000))
     review.review_source = ReviewSource.query.filter(ReviewSource.name=="request").first()
     review.reviewer = all_reviewers[int(random.random()*len(all_reviewers))]
-    reviewee_options = [user for user in all_reviewees if user != review.reviewer ]
-    review.reviewee = reviewee_options[int(random.random()*len(reviewee_options))]
+    review.reviewee = review.creator
     review.location = all_locations[int(random.random()*len(all_locations))]
     review.epa = all_epa[int(random.random()*len(all_epa))]
     db.session.add(review)

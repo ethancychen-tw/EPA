@@ -51,7 +51,7 @@
                             <a href="{{btn_url}}" class="btn w-100 btn-outline-primary">{{btn_text}}</a>
                         </div>
                     
-                        {% if current_user.can_remove_review(review) %}
+                        {% if current_user.can_delete_review(review) %}
                             <div class="col-5 col-md-1">
                                 <a href="{{url_for('remove_review',review_id=review.id)}}" class="btn w-100 btn-outline-danger">刪除</a>
                             </div>

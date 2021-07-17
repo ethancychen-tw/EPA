@@ -1,10 +1,13 @@
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import validates
 import uuid
 from app import db
+
 class Review(db.Model):
     __tablename__ = "reviews"
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  
+    creator_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id')) 
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'))
     epa_id = db.Column(db.Integer, db.ForeignKey('epa.id'))
     implement_date = db.Column(db.DateTime)
@@ -12,12 +15,14 @@ class Review(db.Model):
     review_difficulty_id = db.Column(db.Integer, db.ForeignKey('review_difficulty.id')) 
     review_score_id = db.Column(db.Integer, db.ForeignKey('review_score.id')) 
     reviewee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id')) 
+    reviewee_note = db.Column(db.String(512))
     reviewer_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'))
     review_compliment = db.Column(db.String(512))
     review_suggestion = db.Column(db.String(512))
+    is_draft = db.Column(db.Boolean, default=True)
     complete = db.Column(db.Boolean, default=False)
     create_time = db.Column(db.DateTime, default=datetime.now())
-    last_edited = db.Column(db.DateTime)
+    last_edited = db.Column(db.DateTime, default=datetime.now())
 
     def __repr__(self):
         return f"""review:  
@@ -28,9 +33,22 @@ class Review(db.Model):
         location={self.location_id}, 
         epa={self.epa_id}, 
         create_time={self.create_time}, 
-        review_source_id={self.review_score_id}, 
+        review_source_id{self.review_score_id}, 
         review_difficulty_id={self.review_difficulty_id}
         """
+    
+    # 一旦 complete，draft 就會自動變成 False
+    @validates('status_complete')
+    def validate_status_complete(self, key, field):
+        if field:
+            self.status_draft = False
+        return field
+
+    @validates('status_draft')
+    def validate_status_draft(self, key, field):
+        if field:
+            assert not self.status_complete
+        return field
 
 class Location(db.Model):
     __tablename__ = 'location'

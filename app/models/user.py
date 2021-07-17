@@ -36,13 +36,12 @@ class Role(db.Model):
     name = db.Column(db.String(64))
     desc = db.Column(db.String(64))
     
-    can_request_review = db.Column(db.Boolean(), default=False) # can request a review
-    can_create_and_edit_review = db.Column(db.Boolean(), default=False) # can create, edit, del a review if reviewer
+    can_be_reviewee = db.Column(db.Boolean(), default=False) # can request a review
+    can_be_reviewer = db.Column(db.Boolean(), default=False) # can request a review
 
-    # manager, admin
-    is_manager = db.Column(db.Boolean(), default=False) # can do anything
-
-    users = db.relationship('User', backref='role', lazy='dynamic')
+    # manager
+    is_manager = db.Column(db.Boolean(), default=False) # a convient tag. can do anything for the internal group, or users being assign to manager's internal group
+    users = db.relationship('User', backref='role', lazy='dynamic') # should use lazy='dynamic': load the required relation when it's called
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
@@ -56,6 +55,7 @@ class User(UserMixin, db.Model):
     
     # If you use backref you don't need to declare the relationship on the second table.
     line_userId = db.Column(db.String(128))
+    create_reviews = db.relationship('Review', primaryjoin=Review.creator_id==id, backref='creator', lazy='dynamic') 
     make_reviews = db.relationship('Review', primaryjoin=Review.reviewer_id==id, backref='reviewer', lazy='dynamic') # need to specify primary join, cuz there are more than one ways to join users and review
     being_reviews = db.relationship('Review' ,primaryjoin=Review.reviewee_id==id, backref='reviewee', lazy='dynamic') 
     external_groups = db.relationship('Group', secondary=user_externalgroup, backref="external_users", lazy='dynamic') # first specify the target
@@ -133,30 +133,46 @@ class User(UserMixin, db.Model):
         except:
             return
         return User.query.filter(User.email==email).first()
-    
-    def can_remove_review(self, review=None):
+    def can_view_review(self, review=None):
         if self.role.is_manager:
             return True
-        if review.reviewer==self or review.reviewee == self:
-            if not review.complete:
-                return True
-            else:
-                # for now, those who can make a review could edit/del the review
-                return review.reviewer == self and self.role.can_create_and_edit_review 
+        # 發起人一定能看，不論狀態
+        if review.creator == self:
+            return True
+        # 相關人只能在非draft狀態下看
+        if not review.is_draft and (self ==review.reviewer or self == review.reviewee):
+            return True
         return False
 
+    def can_create_review(self):
+        return self.role.can_be_reviewer
+
     def can_edit_review(self, review=None):
-        return self.role.is_manager or ( review.reviewer == self and self.role.can_create_and_edit_review)
+        if self.role.is_manager:
+            return True
+        # 發起人在draft狀態下一定能編輯
+        if review.creator == self and review.is_draft and not review.complete:
+            return True
+        # 如果是老師，能編的情況和可看的情況是一樣的
+        if review.reviewer == self and self.can_view_review(review):
+            return True
+
+    def can_delete_review(self, review=None):
+        if self.role.is_manager:
+            return True
+        if review.creator == self and review.is_draft and not review.complete:
+            return True
+        return False
     
     def get_potential_reviewees(self):
-        if self.role.can_create_and_edit_review:
-            return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user !=self and user.role.can_request_review]))
+        if self.role.can_be_reviewer:
+            return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user !=self and user.role.can_be_reviewee]))
         else:
             return []
     
     def get_potential_reviewers(self):
-        if self.role.can_request_review:
-            return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user != self and user.role.can_create_and_edit_review]))
+        if self.role.can_be_reviewee:
+            return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user != self and user.role.can_be_reviewer]))
         else:
             return []
 

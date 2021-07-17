@@ -11,7 +11,7 @@ from flask import (
     Markup,
 )
 from flask_login import login_user, current_user, logout_user, login_required
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, String
 
 from app.forms.general import (
     LoginForm,
@@ -48,10 +48,10 @@ def inspect_review(review_id):
     only reviewer or reviewee could see
     """
     prefilled_review = Review.query.get(review_id)
-    if (not current_user.role.is_manager) and (
-        current_user.id
-        not in [prefilled_review.reviewer.id, prefilled_review.reviewee.id]
-    ):
+    if not prefilled_review:
+        flash("no such review", "alert-danger")
+        return redirect(url_for("index"))
+    if not current_user.can_view_review(prefilled_review):
         flash("您沒有權限存取這個評核", "alert-warning")
         return redirect(url_for("index"))
 
@@ -63,28 +63,35 @@ def inspect_review(review_id):
 
     # (2) on submit handle (not applicable here)
     # (3) prefill
-    form.review_source.choices = [("", prefilled_review.review_source.desc)]
-    form.reviewer.choices = [("", prefilled_review.reviewer.username)]
-    form.reviewee.choices = [("", prefilled_review.reviewee.username)]
-    form.location.choices = [("", prefilled_review.location.desc)]
     form.implement_date.data = prefilled_review.implement_date
+    form.location.choices = [("", prefilled_review.location.desc)]
     form.epa.choices = [("", prefilled_review.epa.desc)]
-    form.review_compliment.data = prefilled_review.review_compliment
-    form.review_suggestion.data = prefilled_review.review_suggestion
+    form.reviewee.choices = [("", prefilled_review.reviewee.username)]
+    form.reviewer.choices = [("", prefilled_review.reviewer.username)]
+    form.reviewee_note.data = prefilled_review.reviewee_note
     form.review_difficulty.choices = [
         (
             "",
             prefilled_review.review_difficulty.desc
-            if prefilled_review.review_score
+            if prefilled_review.review_difficulty
             else "",
         )
     ]
+    form.review_compliment.data = prefilled_review.review_compliment
+    form.review_suggestion.data = prefilled_review.review_suggestion
     form.review_score.choices = [
         (
             "",
             prefilled_review.review_score.desc if prefilled_review.review_score else "",
         )
     ]
+    
+    form.creator.data= [("", prefilled_review.creator.username)]
+    form.review_source = [("", prefilled_review.review_source.desc)]
+    form.complete = [("", prefilled_review.complete)]
+    form.create_time.data = prefilled_review.create_time
+    form.last_edited.data = prefilled_review.last_edited
+    
     return render_template(
         "make_review.html",
         title="查看評核",
@@ -96,13 +103,16 @@ def inspect_review(review_id):
 
 @login_required
 def edit_review(review_id):
-    prefilled_review = Review.query.get(review_id)
-    if (not current_user.role.is_manager) and (
-        not current_user.can_edit_review(prefilled_review)
-    ):
-        flash("您沒有權限存取這個評核", "alert-warning")
+    try:
+        prefilled_review = Review.query.get(review_id)
+    except Exception as e:
+        flash("review not found!")
+        print(e)
+    if not current_user.can_edit_review(prefilled_review):
+        flash("您沒有權限編輯這個評核", "alert-warning")
         return redirect(url_for("index"))
-    # (1) form configuration
+    
+    # (1) form configuration mostly for select fields
     form = ReviewForm()
     form.review_difficulty.choices = [
         (str(review_difficulty.id), review_difficulty.desc)
@@ -112,37 +122,33 @@ def edit_review(review_id):
         (str(review_score.id), review_score.desc)
         for review_score in ReviewScore.query.all()
     ]
-    if current_user.role.is_manager:
-        review_type = "admin_edit"
-        all_users = User.query.join(Role).filter(Role.is_manager == False).all()
-        all_reviewers = [
-            user for user in all_users if user.role.can_create_and_edit_review
-        ]
-        all_reviewees = [user for user in all_users if user.role.can_request_review]
-        form.reviewer.choices = [(user.id, user.username) for user in all_reviewers]
-        form.reviewee.choices = [(user.id, user.username) for user in all_reviewees]
-        form.location.choices = [
-            (str(location.id), location.desc) for location in Location.query.all()
-        ]
-        form.epa.choices = [(str(epa.id), epa.desc) for epa in EPA.query.all()]
-        form.review_source.choices = [
-            (str(review_source.id), review_source.desc)
-            for review_source in ReviewSource.query.all()
-        ]
-        form.create_time.render_kw = {"disabled": "disabled"}
-        form.last_edited.render_kw = {"disabled": "disabled"}
-    else:
+
+    if current_user == prefilled_review.reviewer:
         review_type = "user_edit"
-        form.reviewer.choices = [("", prefilled_review.reviewer.username)]
-        form.reviewee.choices = [("", prefilled_review.reviewee.username)]
-        form.location.choices = [("", prefilled_review.location.desc)]
-        form.epa.choices = [("", prefilled_review.epa.desc)]
+        form.reviewer.choices = [(prefilled_review.reviewer_id, prefilled_review.reviewer.username)]
+        form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees]
+        form.epa.choices = [EPA.query.with_entities(func.cast(EPA.id, String),EPA.desc).all()]
+        form.location.choices = [Location.query.with_entites(func.cast(Location.id, String), Location.desc).all()]
+        form.review_difficulty.choices = [ReviewDifficulty.query.with_entites(func.cast(ReviewDifficulty.id, String), ReviewDifficulty.desc).all()]
+        form.review_score.choices = [ReviewScore.query.with_entites(func.cast(ReviewScore.id, String), ReviewScore.desc).all()]
+        implement_date
+        location
+        epa
+        reviewee
+        reviewer
+        reviewee_note
+        review_difficulty
+        review_compliment
+        review_suggestion
+        review_score
+
         for field in form.requesting_fields + form.meta_fields:
             field.render_kw = {"disabled": "disabled"}
 
     # (2) on submit process
     if form.validate_on_submit():
         review = prefilled_review
+        review.reviewee_note = form.reviewee_note.data
         # scoring
         review.review_compliment = form.review_compliment.data
         review.review_suggestion = form.review_suggestion.data
@@ -153,34 +159,39 @@ def edit_review(review_id):
         # meta
         review.last_edited = datetime.datetime.now()
 
+
+        if form.submit.data:
+            # press submit btn
+            review.is_draft = False
+            if review.reviewer == current_user:
+                review.complete = True
+            else:
+                # 是學生complete就設為false，這樣就會通知老師
+                review.complete = False
+        else:
+            # press save draft btn
+            review.is_draft = True
+            
+
         if current_user.role.is_manager:
             # requesting field
             review.reviewer = User.query.get(form.reviewer.data)
             review.reviewee = User.query.get(form.reviewee.data)
-            review.epa = EPA.query.get(int(form.epa.data))
-            review.location = Location.query.get(int(form.location.data))
             # meta
             review.review_source = ReviewSource.query.get(int(form.review_source.data))
             review.complete = form.complete.data == "True"
-            try:
-                db.session.commit()
-                flash("編輯成功", "alert-success")
-            except Exception as e:
-                print(e)
         else:
-            try:
-                db.session.commit()
-
-                review.complete = True
-                subject = "[EPA通知]您已被評核"
-                msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
-                notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
-                db.session.add(notification)
-                db.session.commit()
-                flush_channel_notifications() # for demo purpose
-                flash("編輯成功，已通知被評核者", "alert-success")
-            except Exception as e:
-                print(e)
+            review.complete = True
+            subject = "[EPA通知]您已被評核"
+            msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
+            notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
+            db.session.add(notification)
+        try:
+            db.session.commit()
+            flash("評核提交成功", "alert-success")
+        except Exception as e:
+            print(e)
+        
         return redirect(url_for("edit_review", review_id=review_id))
 
     # (3) prefill (if have)
@@ -190,6 +201,7 @@ def edit_review(review_id):
     form.epa.data = str(prefilled_review.epa.id)
     form.location.data = str(prefilled_review.location.id)
     form.implement_date.data = prefilled_review.implement_date
+    form.reviewee_note.data = prefilled_review.reviewee_note
 
     # scoring field
     form.review_compliment.data = prefilled_review.review_compliment
@@ -205,7 +217,7 @@ def edit_review(review_id):
     if prefilled_review.last_edited:
         form.last_edited.data = (
             prefilled_review.last_edited
-        )  # prefilled_review.last_edited
+        )
     form.complete.data = str(prefilled_review.complete)
     mies, mis = get_epa_linkages()
     return render_template(
@@ -220,14 +232,14 @@ def edit_review(review_id):
 
 
 @login_required
-def remove_review(review_id):
+def delete_review(review_id):
     try:
         review = Review.query.get(review_id)
     except Exception as e:
         flash("review not found!")
         print(e)
 
-    if current_user.can_remove_review(review):
+    if current_user.can_delete_review(review):
         try:
             db.session.delete(review)
             db.session.commit()
@@ -239,7 +251,7 @@ def remove_review(review_id):
 
 
 @login_required
-def view_reviews():
+def view_all_reviews():
     filter_form = ReviewFilterForm()
     # (1) filter form configuration
     if current_user.role.is_manager:
@@ -446,7 +458,10 @@ def get_epa_linkages():
     return mies_json, mis_json
 
 @login_required
-def new_review():
+def create_review():
+    if not current_user.role.can_be_reviewer and not current_user.role.is_manager:
+        flash('你沒有權限建立評核','alert-danger')
+        redirect(url_for('index'))
     prefilled_review = Review()
     # (1) form configuration
     form = ReviewForm()
@@ -535,21 +550,32 @@ def request_review():
         review.implement_date = form.implement_date.data
         review.reviewee = current_user
         review.reviewer = User.query.get(form.reviewer.data)
+        review.reviewee_note = form.reviewee_note.data
+
+        # meta
+        review.creator = current_user
         review.review_source = ReviewSource.query.filter(
             ReviewSource.name == "request"
         ).first()
+
+        if form.save_draft.data:
+            review.is_draft = True
         review.complete = False
         db.session.add(review)
-        db.session.commit()
-
-        flash(f"提交成功，系統將透過 Line 或 email 通知 {review.reviewer.username} 前往評核", "alert-success")
-
-        subject = f"[EPA通知]請評核{review.reviewee.username}"
-        msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可點此連結前往評核 {url_for("edit_review",review_id=review.id,_external=True)}'
-        notification = Notification(user_id=review.reviewer.id, subject=subject, msg_body=msg_body)
-        db.session.add(notification)
-        db.session.commit()
-        flush_channel_notifications() # for demo purpuse
+        try:
+            db.session.commit()
+            if form.save_draft.data:
+                flash(f"已儲存草稿", "alert-success")
+            else:
+                subject = f"[EPA通知]請評核{review.reviewee.username}"
+                msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可點此連結前往評核 {url_for("edit_review",review_id=review.id,_external=True)}'
+                notification = Notification(user_id=review.reviewer.id, subject=subject, msg_body=msg_body)
+                db.session.add(notification)
+                db.session.commit()
+                flush_channel_notifications() # for demo purpuse
+                flash(f"提交成功，系統將透過 Line 或 email 通知 {review.reviewer.username} 前往評核", "alert-success")
+        except:
+            flash('sth wrong, plz tell manager', 'alert-danger')
         return redirect(url_for("index"))
 
     mies, mis = get_epa_linkages()
@@ -561,13 +587,9 @@ def request_review():
 
 @login_required
 def index():
-    unfin_being_reviews = current_user.being_reviews.filter(
-        Review.complete == False
-    ).all()
-    unfin_make_reviews = current_user.make_reviews.filter(
-        Review.complete == False
-    ).all()
-
+    draft_reviews = []
+    unfin_being_reviews = []
+    unfin_make_reviews = []
     # show notification and del notification
     for notification in current_user.notifications:
         flash( Markup(f'{notification.subject}: {notification.msg_body}') , 'alert-info',)
@@ -577,6 +599,7 @@ def index():
     return render_template(
         "index.html",
         title="首頁",
+        draft_reviews=draft_reviews,
         unfin_being_reviews=unfin_being_reviews,
         unfin_make_reviews=unfin_make_reviews,
     )
