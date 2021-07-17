@@ -111,7 +111,7 @@ def edit_review(review_id):
     if not current_user.can_edit_review(prefilled_review):
         flash("您沒有權限編輯這個評核", "alert-warning")
         return redirect(url_for("index"))
-    
+    review_type = "user_edit"
     # (1) form configuration mostly for select fields
     form = ReviewForm()
     form.review_difficulty.choices = [
@@ -124,7 +124,6 @@ def edit_review(review_id):
     ]
 
     if current_user == prefilled_review.reviewer:
-        review_type = "user_edit"
         form.reviewer.choices = [(prefilled_review.reviewer_id, prefilled_review.reviewer.username)]
         form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees]
         form.epa.choices = [EPA.query.with_entities(func.cast(EPA.id, String),EPA.desc).all()]
@@ -496,6 +495,7 @@ def create_review():
         review.review_difficulty = ReviewDifficulty.query.get(
             int(form.review_difficulty.data)
         )
+        review.creator = current_user
         review.review_source = ReviewSource.query.filter(
             ReviewSource.name == "new"
         ).first()
@@ -587,9 +587,9 @@ def request_review():
 
 @login_required
 def index():
-    draft_reviews = []
-    unfin_being_reviews = []
-    unfin_make_reviews = []
+    draft_reviews = current_user.get_draft_reviews()
+    unfin_being_reviews = current_user.get_unfin_being_reviews()
+    unfin_make_reviews = current_user.get_unfin_reviews()
     # show notification and del notification
     for notification in current_user.notifications:
         flash( Markup(f'{notification.subject}: {notification.msg_body}') , 'alert-info',)
