@@ -53,25 +53,6 @@
         <a class="navbar-brand me-auto" href="{{ url_for('index') }}"><img
             src="{{url_for('static',filename='img/nav_bar.svg')}}" width="270px"/></a>
         {% if current_user.is_authenticated %}
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            {% if current_user.role.can_request_review %}
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('request_review') }}">請求評核</a>
-            </li>
-            {% endif %} {% if current_user.role.can_create_and_edit_review %}
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('new_review') }}">新增評核</a>
-            </li>
-            {% endif %}
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('view_reviews') }}">查看所有評核</a>
-            </li>
-          </ul>
           <div class="btn-group">
             <a href="#" type="button" class="
                   btn
@@ -125,14 +106,36 @@
               可放標題
             </div>
           </li>
+          {% if current_user.role.can_request_review %}
           <li>
-            <a href="#" class="nav-link px-3 active sidebar-link">
+            <a href="{{ url_for('request_review') }}" class="nav-link px-3 active sidebar-link">
+              <span class="me-2">
+                <i class="bi bi-check-square"></i>
+              </span>
+              <span>請求評核</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if current_user.role.can_request_review %}
+          <li>
+            <a href="{{ url_for('new_review') }}" class="nav-link px-3 active sidebar-link">
+              <span class="me-2">
+                <i class="bi bi-check-square"></i>
+              </span>
+              <span>新增評核</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if current_user.role.can_request_review %}
+          <li>
+            <a href="{{ url_for('view_reviews') }}" class="nav-link px-3 active sidebar-link">
               <span class="me-2">
                 <i class="bi bi-check-square"></i>
               </span>
               <span>查看所有評核</span>
             </a>
           </li>
+          {% endif %}
           <li class="my-4">
             <hr class="dropdown-divider" />
           </li>
