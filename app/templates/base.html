@@ -66,11 +66,9 @@
               <i class="bi bi-person-fill"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-              {% if current_user.role.can_request_review %}
               <li>
                 <a class="dropdown-item" href="{{ url_for('progress_stat') }}">我的EPA紀錄</a>
               </li>
-              {% endif %}
               <li>
                 <a class="dropdown-item" href="{{ url_for('edit_profile') }}">我的個人檔案</a>
               </li>
@@ -106,7 +104,6 @@
               可放標題
             </div>
           </li>
-          {% if current_user.role.can_request_review %}
           <li>
             <a href="{{ url_for('request_review') }}" class="nav-link px-3 active sidebar-link">
               <span class="me-2">
@@ -115,8 +112,6 @@
               <span>請求評核</span>
             </a>
           </li>
-          {% endif %}
-          {% if current_user.role.can_create_and_edit_review %}
           <li>
             <a href="{{ url_for('new_review') }}" class="nav-link px-3 active sidebar-link">
               <span class="me-2">
@@ -125,7 +120,6 @@
               <span>新增評核</span>
             </a>
           </li>
-          {% endif %}
           
           <li>
             <a href="{{ url_for('view_reviews') }}" class="nav-link px-3 active sidebar-link">
