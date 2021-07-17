@@ -93,14 +93,14 @@ class User(UserMixin, db.Model):
 
     def avatar(self):
         img_src = None
-        if not img_src and self.line_userId:
+        if self.line_userId:
             try:
                 line_user_profile = linebot.line_bot_api.get_profile(self.line_userId)
                 img_src = line_user_profile.picture_url
             except Exception as e:
                 print("can't get line profile")
                 print(e)
-        if not img_src:
+        else:
             try:
                 md5_digest = md5(self.email.lower().encode('utf-8')).hexdigest()
                 img_src = f'https://www.gravatar.com/avatar/{md5_digest}?d=identicon&s=40'
@@ -175,6 +175,13 @@ class User(UserMixin, db.Model):
             return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user != self and user.role.can_be_reviewer]))
         else:
             return []
+    
+    def get_draft_reviews(self):
+        return Review.query.filter(Review.creator_id == self.id, Review.complete==False).all()
+    def get_unfin_being_reviews(self):
+        return Review.query.filter(Review.reviewee_id == self.id, Review.complete==False, Review.is_draft == False).all()
+    def get_unfin_reviews(self):
+        return Review.query.filter(Review.reviewer_id == self.id, Review.complete==False, Review.is_draft == False).all()
 
 class Notification(db.Model):
     __tablename__ = "notifications"

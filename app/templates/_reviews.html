@@ -9,15 +9,13 @@
                 </h5>
                 <div class="card-body">
                     <div class="row">
-                        
+                        {% set card_text = review.epa.desc%}
                         {% if current_user.role.is_manager %}
                             {% set card_title = "" %}
-                            {% set card_text = review.reviewer.username + "評核" + review.reviewee.username+"實作的"+review.epa.desc%}
                             {% set btn_url = url_for('edit_review',review_id=review.id) %}
                             {% set btn_text = "查看/編輯" %}
                         {% elif current_user.can_edit_review(review) %}
                             {% set card_title = "評核" + review.reviewee.username %}
-                            {% set card_text = review.reviewee.username+"實作的"+review.epa.desc%}
                             {% set btn_url = url_for('edit_review',review_id=review.id) %}
                             {% if review.complete %}
                                 {% set btn_text = "查看/編輯 " %}
@@ -26,17 +24,12 @@
                             {% endif %}
                         {% else %}
                             {% set card_title = review.reviewer.username + review.reviewer.role.name%}
-                            {% set card_text = review.reviewer.username + "評核你實作的" + review.epa.desc %}
                             {% set btn_url = url_for('inspect_review',review_id=review.id) %}
                             {% set btn_text = "查看" %}
                         {% endif %}  
                     
                         <div class="col-3 col-md-1">
-                            {% if review.review_source == 'request' %}
-                                <img src="{{review.reviewee.avatar()}}" class="w-100">
-                            {% else%}
-                                <img src="{{review.reviewer.avatar()}}" class="w-100">
-                            {% endif %}
+                            <img src="{{review.creator.avatar()}}" class="w-100">
                         </div>
                         <div class="col-9 col-md-5">
                             <h5 class="card-title">{{card_title}}</h5>
@@ -53,7 +46,7 @@
                     
                         {% if current_user.can_delete_review(review) %}
                             <div class="col-5 col-md-1">
-                                <a href="{{url_for('remove_review',review_id=review.id)}}" class="btn w-100 btn-outline-danger">刪除</a>
+                                <a href="{{url_for('delete_review',review_id=review.id)}}" class="btn w-100 btn-outline-danger">刪除</a>
                             </div>
                         {% endif %}
                     </div>
