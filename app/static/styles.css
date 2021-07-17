@@ -1,0 +1,49 @@
+:root {
+ --offcanvas-width:270px;
+ --topNavbarHeight:100px;
+}
+
+.sidebar-nav {
+    width: var(--offcanvas-width);
+    margin-top:  var(--topNavbarHeight);
+}
+
+.sidebar-link{
+display: flex;
+align-items: center;
+}
+
+.main{
+    padding-top:  var(--topNavbarHeight);
+    margin-left: var( --offcanvas-width);
+}
+
+.login-btn{
+    background-color:#03A6A6
+}
+
+.login-link{
+    color:#888585;
+    text-decoration: none;
+}
+
+.login-link:hover{
+    color:#03A6A6;
+    text-decoration: none;
+}
+  
+@media (min-width : 992px){
+    body {
+        overflow:auto !important;
+    }
+    .offcanvas-backdrop::before{
+        display: none;
+    }
+    .sidebar-nav {
+        transform: none;
+        visibility: visible !important;
+        /* top: var(--topNavbarHeight);
+        height:calc(100% - var(--topNavbarHeight)); */
+    }
+    
+}
