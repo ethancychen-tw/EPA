@@ -19,6 +19,7 @@
                 {% set card_desc = "請填寫指定被評醫師、項目以及您的評核內容，被評核者只能是所屬醫院(含外派至本院)的住院醫師/總醫師" %} 
             {% elif review_type == "user_edit" %}
                 {% set card_subtitle = "評核住院醫師實作的EPA項目" %}
+                {#
                 {% if review.review_source.name == "request" %}
                     {% set card_desc = review.reviewee.username + "請求您評核他實作的" + review.epa.desc +
                         "。此項紀錄於"+review.create_time.strftime("%Y-%m-%d %H時")+"創立，"+("評核完成時間為"+review.last_edited.strftime("%Y-%m-%d %H時") if review.complete else "尚未完成評核") %} 
@@ -27,6 +28,7 @@
                         "。此項紀錄於"+review.create_time.strftime("%Y-%m-%d %H時")+"創立，"+("評核完成時間為"+review.last_edited.strftime("%Y-%m-%d %H時") if review.complete else "尚未完成評核") %} 
 
                 {% endif %}
+                #}
             {% endif %}
             
         {% elif review_type in ["inspect"] %}

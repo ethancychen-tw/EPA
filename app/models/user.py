@@ -146,6 +146,9 @@ class User(UserMixin, db.Model):
 
     def can_create_review(self):
         return self.role.can_be_reviewer
+    
+    def can_request_review(self):
+        return self.role.can_be_reviewee
 
     def can_edit_review(self, review=None):
         if self.role.is_manager:

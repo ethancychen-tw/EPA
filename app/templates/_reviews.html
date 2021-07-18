@@ -15,7 +15,7 @@
                             {% set btn_url = url_for('edit_review',review_id=review.id) %}
                             {% set btn_text = "查看/編輯" %}
                         {% elif current_user.can_edit_review(review) %}
-                            {% set card_title = "評核" + review.reviewee.username %}
+                            {% set card_title = "評核" + review.reviewee.username if review.reviewee_id else "評核未知的使用者"%}
                             {% set btn_url = url_for('edit_review',review_id=review.id) %}
                             {% if review.complete %}
                                 {% set btn_text = "查看/編輯 " %}
@@ -37,7 +37,7 @@
                             
                         </div>
 
-                        <div class="col-12 col-md-2 text-end text-md-start text-muted">{{review.implement_date.strftime('%Y-%m-%d')}} @{{review.location.desc}}</div>
+                        <div class="col-12 col-md-2 text-end text-md-start text-muted">{{review.implement_date.strftime('%Y-%m-%d') if review.implement_date else "未知時間"}} @{{review.location.desc if review.location_id else "未知地點"}}</div>
                         
                         
                         <div class="col-5 col-md-2">
