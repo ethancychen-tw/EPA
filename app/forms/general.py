@@ -18,10 +18,10 @@ class ReviewForm(FlaskForm):
     reviewee_note = TextAreaField(label="學生備註" )
 
     # scoring fields
-    review_difficulty = SelectField(label='(1) 這項工作的複雜程度為')
-    review_compliment = TextAreaField(label="(2) 我覺得你表現不錯的地方在" ,validators=[DataRequired()])
-    review_suggestion = TextAreaField(label="(3) 如果你能做到以下建議會更好" , validators=[DataRequired()])
-    review_score = RadioField(label='(4) 我對你的信賴等級為')
+    review_difficulty = SelectField(label='(1) 這項工作的複雜程度為', choices=[('', '')], default='')
+    review_compliment = TextAreaField(label="(2) 我覺得你表現不錯的地方在" )
+    review_suggestion = TextAreaField(label="(3) 如果你能做到以下建議會更好" )
+    review_score = RadioField(label='(4) 我對你的信賴等級為', choices=[('', '')], default='')
 
     # btns
     submit = SubmitField(label='提交')

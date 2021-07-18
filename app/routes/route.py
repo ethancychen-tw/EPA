@@ -54,21 +54,14 @@ def inspect_review(review_id):
     if not current_user.can_view_review(prefilled_review):
         flash("您沒有權限存取這個評核", "alert-warning")
         return redirect(url_for("index"))
-
+    
     # (1) form configuration
     form = ReviewForm()
-
-    for field in form:
-        field.render_kw = {"disabled": "disabled"}
-
-    # (2) on submit handle (not applicable here)
-    # (3) prefill
-    form.implement_date.data = prefilled_review.implement_date
+    
     form.location.choices = [("", prefilled_review.location.desc)]
     form.epa.choices = [("", prefilled_review.epa.desc)]
     form.reviewee.choices = [("", prefilled_review.reviewee.username)]
     form.reviewer.choices = [("", prefilled_review.reviewer.username)]
-    form.reviewee_note.data = prefilled_review.reviewee_note
     form.review_difficulty.choices = [
         (
             "",
@@ -77,17 +70,28 @@ def inspect_review(review_id):
             else "",
         )
     ]
-    form.review_compliment.data = prefilled_review.review_compliment
-    form.review_suggestion.data = prefilled_review.review_suggestion
     form.review_score.choices = [
         (
             "",
             prefilled_review.review_score.desc if prefilled_review.review_score else "",
         )
     ]
-    
+    form.creator.choices = [("", prefilled_review.creator.username)]
+    form.review_source.choices = [("", prefilled_review.review_source.desc)]
+
+
+    for field in form:
+        field.render_kw = {"disabled": "disabled"}
+    showing_fields = form.requesting_fields + form.scoring_fields + form.meta_fields
+    # (2) on submit handle (not applicable here)
+
+    # (3) prefill: (for select fields, must be valid choices configured above)
+    form.implement_date.data = prefilled_review.implement_date
+    form.reviewee_note.data = prefilled_review.reviewee_note
+    form.review_compliment.data = prefilled_review.review_compliment
+    form.review_suggestion.data = prefilled_review.review_suggestion
     form.creator.data= [("", prefilled_review.creator.username)]
-    form.review_source = [("", prefilled_review.review_source.desc)]
+    form.review_source.data = [("", prefilled_review.review_source.desc)]
     form.complete = [("", prefilled_review.complete)]
     form.create_time.data = prefilled_review.create_time
     form.last_edited.data = prefilled_review.last_edited
@@ -98,11 +102,13 @@ def inspect_review(review_id):
         form=form,
         review=prefilled_review,
         review_type="inspect",
+        showing_fields=showing_fields
     )
 
 
 @login_required
 def edit_review(review_id):
+    #TODO: could refactor "new", "inspect", "edit" into a factory. no need to configure every single time
     try:
         prefilled_review = Review.query.get(review_id)
     except Exception as e:
@@ -111,114 +117,109 @@ def edit_review(review_id):
     if not current_user.can_edit_review(prefilled_review):
         flash("您沒有權限編輯這個評核", "alert-warning")
         return redirect(url_for("index"))
+    
     review_type = "user_edit"
     # (1) form configuration mostly for select fields
     form = ReviewForm()
-    form.review_difficulty.choices = [
-        (str(review_difficulty.id), review_difficulty.desc)
-        for review_difficulty in ReviewDifficulty.query.all()
-    ]
-    form.review_score.choices = [
-        (str(review_score.id), review_score.desc)
-        for review_score in ReviewScore.query.all()
-    ]
 
-    if current_user == prefilled_review.reviewer:
+    # configure - request fields
+    form.epa.choices = [(str(epa.id), epa.desc)for epa in EPA.query.with_entities(EPA.id,EPA.desc).all()]
+    if current_user.role.is_manager:
+        # TODO manager
+        pass
+    elif current_user == prefilled_review.reviewer:
         form.reviewer.choices = [(prefilled_review.reviewer_id, prefilled_review.reviewer.username)]
-        form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees]
-        form.epa.choices = [EPA.query.with_entities(func.cast(EPA.id, String),EPA.desc).all()]
-        form.location.choices = [Location.query.with_entites(func.cast(Location.id, String), Location.desc).all()]
-        form.review_difficulty.choices = [ReviewDifficulty.query.with_entites(func.cast(ReviewDifficulty.id, String), ReviewDifficulty.desc).all()]
-        form.review_score.choices = [ReviewScore.query.with_entites(func.cast(ReviewScore.id, String), ReviewScore.desc).all()]
-        implement_date
-        location
-        epa
-        reviewee
-        reviewer
-        reviewee_note
-        review_difficulty
-        review_compliment
-        review_suggestion
-        review_score
-
-        for field in form.requesting_fields + form.meta_fields:
-            field.render_kw = {"disabled": "disabled"}
+        form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees()]
+    elif current_user == prefilled_review.reviewee:
+        form.reviewer.choices = [(user.id, user.username) for user in current_user.get_potential_reviewers()]
+        form.reviewee.choices = [(prefilled_review.reviewee.id, prefilled_review.reviewee.username)]
+    form.location.choices = [(str(location.id), location.desc) for location in Location.query.with_entities(Location.id, Location.desc).all()]
+    # configure - scoring field
+    form.review_difficulty.choices = [(str(rd.id), rd.desc) for rd in ReviewDifficulty.query.with_entities(ReviewDifficulty.id, ReviewDifficulty.desc).all()]+[('','')]
+    form.review_score.choices = [(str(rs.id), rs.desc) for rs in ReviewScore.query.with_entities(ReviewScore.id, ReviewScore.desc).all()]+[('','')]
+    
+    if current_user.role.is_manager:
+        # TODO manager
+        pass
+    elif current_user == prefilled_review.reviewer:
+        showing_fields = form.requesting_fields + form.scoring_fields
+    elif current_user == prefilled_review.reviewee:
+        showing_fields = form.requesting_fields
 
     # (2) on submit process
     if form.validate_on_submit():
         review = prefilled_review
+        # requesting fields
+        review.epa = EPA.query.get(int(form.epa.data))
+        review.reviewer = User.query.get(form.reviewer.data)
+        review.reviewee = User.query.get(form.reviewee.data)
+        review.location = Location.query.get(int(form.location.data))
+        review.implement_date = form.implement_date.data
         review.reviewee_note = form.reviewee_note.data
-        # scoring
+        # scoring fields
+        if len(form.review_difficulty.data):
+            review.review_difficulty = ReviewDifficulty.query.get(int(form.review_difficulty.data)) 
         review.review_compliment = form.review_compliment.data
         review.review_suggestion = form.review_suggestion.data
-        review.review_difficulty = ReviewDifficulty.query.get(
-            int(form.review_difficulty.data)
-        )
-        review.review_score = ReviewScore.query.get(int(form.review_score.data))
-        # meta
-        review.last_edited = datetime.datetime.now()
-
-
+        
+        if len(form.review_score.data):
+            review.review_score = ReviewScore.query.get(int(form.review_score.data))
+        # meta fields (when editing, no need to update every one)
         if form.submit.data:
             # press submit btn
             review.is_draft = False
             if review.reviewer == current_user:
                 review.complete = True
             else:
-                # 是學生complete就設為false，這樣就會通知老師
+                # 是學生 提交 就設為false，這樣就會通知老師
                 review.complete = False
         else:
             # press save draft btn
             review.is_draft = True
-            
+        review.last_edited = datetime.datetime.now()
 
-        if current_user.role.is_manager:
-            # requesting field
-            review.reviewer = User.query.get(form.reviewer.data)
-            review.reviewee = User.query.get(form.reviewee.data)
-            # meta
-            review.review_source = ReviewSource.query.get(int(form.review_source.data))
-            review.complete = form.complete.data == "True"
-        else:
-            review.complete = True
-            subject = "[EPA通知]您已被評核"
-            msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
-            notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
-            db.session.add(notification)
         try:
             db.session.commit()
-            flash("評核提交成功", "alert-success")
+            if review.complete:
+                flash("評核提交成功", "alert-success")
+                # notify std
+                subject = "[EPA通知]您已被評核"
+                msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
+                notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
+                db.session.add(notification)
+            if not review.complete and not review.is_draft:
+                subject = "[EPA通知]學生請求評核"
+                msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}'
+                notification = Notification(user_id=review.reviewer.id,subject=subject, msg_body=msg_body)
+                db.session.add(notification)
+                flash('請求提交成功，將會通知老師評核','alert-success')
+            if review.is_draft:
+                flash('儲存成功','alert-success')
         except Exception as e:
             print(e)
         
-        return redirect(url_for("edit_review", review_id=review_id))
+        return redirect(url_for("inspect_review", review_id=review_id))
 
     # (3) prefill (if have)
+    # no matter it's std or teacher, we could prefill with prefilled review anyway
+    # (PS) if field render_kw is disabled, the prefill could only be default, or it won't pass form validation
     # requesting fields
-    form.reviewer.data = prefilled_review.reviewer.id
-    form.reviewee.data = prefilled_review.reviewee.id
     form.epa.data = str(prefilled_review.epa.id)
+    form.reviewer.data = prefilled_review.reviewer_id
+    form.reviewee.data = prefilled_review.reviewee_id
     form.location.data = str(prefilled_review.location.id)
     form.implement_date.data = prefilled_review.implement_date
     form.reviewee_note.data = prefilled_review.reviewee_note
 
     # scoring field
-    form.review_compliment.data = prefilled_review.review_compliment
-    form.review_suggestion.data = prefilled_review.review_suggestion
     if prefilled_review.review_difficulty:
         form.review_difficulty.data = str(prefilled_review.review_difficulty.id)
+    form.review_compliment.data = prefilled_review.review_compliment
+    form.review_suggestion.data = prefilled_review.review_suggestion
     if prefilled_review.review_score:
         form.review_score.data = str(prefilled_review.review_score.id)
-
-    # meta field
-    form.review_source.data = str(prefilled_review.review_source.id)
-    form.create_time.data = prefilled_review.create_time  # prefilled_review.create_time
-    if prefilled_review.last_edited:
-        form.last_edited.data = (
-            prefilled_review.last_edited
-        )
-    form.complete.data = str(prefilled_review.complete)
-    mies, mis = get_epa_linkages()
+    
+    mies, mis = None, None#get_epa_linkages()
     return render_template(
         "make_review.html",
         title="填寫/編輯評核",
@@ -227,6 +228,7 @@ def edit_review(review_id):
         mis=mis,
         review=prefilled_review,
         review_type=review_type,
+        showing_fields=showing_fields
     )
 
 
