@@ -9,21 +9,25 @@ from app.models.user import User
 import datetime
 
 class ReviewForm(FlaskForm):
-    implement_date = DateField(label="實作時間", validators=[DataRequired()], default=datetime.date.today())
-    location = SelectField(label='實作地點', choices=[('', '')], default='')
+    # requesting fields
     epa = SelectField(label='EPA', choices=[('', '')], default='')
-    reviewee = SelectField(label="學生", choices=[('', '')], default='')
     reviewer = SelectField(label='老師', choices=[('', '')], default='')
+    reviewee = SelectField(label="學生", choices=[('', '')], default='')
+    location = SelectField(label='實作地點', choices=[('', '')], default='')
+    implement_date = DateField(label="實作時間", validators=[DataRequired()], default=datetime.date.today())
     reviewee_note = TextAreaField(label="學生備註" )
+
+    # scoring fields
     review_difficulty = SelectField(label='(1) 這項工作的複雜程度為')
     review_compliment = TextAreaField(label="(2) 我覺得你表現不錯的地方在" ,validators=[DataRequired()])
     review_suggestion = TextAreaField(label="(3) 如果你能做到以下建議會更好" , validators=[DataRequired()])
     review_score = RadioField(label='(4) 我對你的信賴等級為')
 
+    # btns
     submit = SubmitField(label='提交')
     save_draft = SubmitField(label='存成草稿')
 
-    
+    # meta
     creator = SelectField(label="創建者", choices=[('', '')], default='')
     review_source = SelectField(label='來源', choices=[('', '')], default='')
     complete = SelectField(label="已完成", choices=[('True', '是'),('False','否')], default='False')
@@ -44,7 +48,7 @@ class ReviewForm(FlaskForm):
     
     @property
     def meta_fields(self):
-        return [self.review_source, self.complete, self.create_time, self.last_edited, self.creator]    
+        return [self.creator, self.review_source, self.complete, self.create_time, self.last_edited]    
 
 class LoginForm(FlaskForm):
     username = StringField("姓名" ,validators=[DataRequired()])
