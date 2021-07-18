@@ -105,6 +105,132 @@ def inspect_review(review_id):
         showing_fields=showing_fields
     )
 
+@login_required
+def create_review():
+    if not current_user.role.can_be_reviewer and not current_user.role.is_manager:
+        flash('你沒有權限建立評核','alert-danger')
+        redirect(url_for('index'))
+    prefilled_review = Review()
+    # (1) form configuration
+    form = ReviewForm()
+    form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
+    form.location.choices = [
+        (location.id, location.desc) for location in Location.query.all()
+    ]
+    form.reviewee.choices = [
+        (user.id, user.username) for user in current_user.get_potential_reviewees()
+    ]
+    form.reviewer.choices = [("", current_user.username)]
+    form.reviewer.render_kw = {"disabled": "disabled"}
+
+    form.review_difficulty.choices = [
+        (review_difficulty.id, review_difficulty.desc)
+        for review_difficulty in ReviewDifficulty.query.all()
+    ]
+    form.review_score.choices = [
+        (review_score.id, review_score.desc) for review_score in ReviewScore.query.all()
+    ]
+    # (2) on submit handling
+    if form.validate_on_submit():
+        review = Review()
+        review.implement_date = form.implement_date.data
+        review.epa = EPA.query.get(form.epa.data)
+        review.location = Location.query.get(int(form.location.data))
+        review.reviewee = User.query.get(form.reviewee.data)
+        review.reviewer = current_user
+        review.review_score = ReviewScore.query.get(int(form.review_score.data))
+        review.review_compliment = form.review_compliment.data
+        review.review_suggestion = form.review_suggestion.data
+        review.review_difficulty = ReviewDifficulty.query.get(
+            int(form.review_difficulty.data)
+        )
+        review.creator = current_user
+        review.review_source = ReviewSource.query.filter(
+            ReviewSource.name == "new"
+        ).first()
+        review.last_edited = datetime.datetime.now()
+        review.complete = True
+        try:
+            db.session.add(review)
+            db.session.commit()
+            flash("提交成功", "alert-success")
+            
+            subject = "[EPA通知]您已被評核"
+            msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可點此連結查看 {url_for("inspect_review",review_id=review.id,_external=True)} '
+            notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
+            db.session.add(notification)
+            db.session.commit()
+            flush_channel_notifications() # for demo purpose
+        except:
+            flash("提交失敗，請重新嘗試", "alert-warning")
+        return redirect(url_for("index"))
+    mies, mis = get_epa_linkages()
+    return render_template(
+        "make_review.html",
+        title="新增評核",
+        mies=mies,
+        mis=mis,
+        form=form,
+        review=prefilled_review,
+        review_type="new",
+    )
+
+
+@login_required
+def request_review():
+    # anyone could make a review request to any teacher
+    # fill epa, location, reviewer
+    form = ReviewForm()
+    form.reviewee.render_kw = {"disabled": "disabled"}
+    form.reviewee.choices = [("", current_user.username)]
+    form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
+    form.location.choices = [
+        (location.id, location.desc) for location in Location.query.all()
+    ]
+
+    form.reviewer.choices = [
+        (user.id.hex, user.username) for user in current_user.get_potential_reviewers()
+    ]
+
+    if form.is_submitted():
+        review = Review()
+        review.epa = EPA.query.get(form.epa.data)
+        review.location = Location.query.get(form.location.data)
+        review.implement_date = form.implement_date.data
+        review.reviewee = current_user
+        review.reviewer = User.query.get(form.reviewer.data)
+        review.reviewee_note = form.reviewee_note.data
+
+        # meta
+        review.creator = current_user
+        review.review_source = ReviewSource.query.filter(
+            ReviewSource.name == "request"
+        ).first()
+
+        if form.save_draft.data:
+            review.is_draft = True
+        review.complete = False
+        db.session.add(review)
+        try:
+            db.session.commit()
+            if form.save_draft.data:
+                flash(f"已儲存草稿", "alert-success")
+            else:
+                subject = f"[EPA通知]請評核{review.reviewee.username}"
+                msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可點此連結前往評核 {url_for("edit_review",review_id=review.id,_external=True)}'
+                notification = Notification(user_id=review.reviewer.id, subject=subject, msg_body=msg_body)
+                db.session.add(notification)
+                db.session.commit()
+                flush_channel_notifications() # for demo purpuse
+                flash(f"提交成功，系統將透過 Line 或 email 通知 {review.reviewer.username} 前往評核", "alert-success")
+        except:
+            flash('sth wrong, plz tell manager', 'alert-danger')
+        return redirect(url_for("index"))
+
+    mies, mis = get_epa_linkages()
+    return render_template(
+        "make_review.html", title="請求評核", mies=mies, mis=mis, form=form, review_type="request"
+    )
 
 @login_required
 def edit_review(review_id):
@@ -248,7 +374,7 @@ def delete_review(review_id):
         except Exception as e:
             flash("未成功刪除，如果問題一直存在，請聯絡管理員")
             print(e)
-    return redirect(url_for("view_reviews"))
+    return redirect(url_for("view_all_reviews"))
 
 
 @login_required
@@ -457,135 +583,6 @@ def get_epa_linkages():
     mis = MilestoneItem.query.with_entities(MilestoneItem.code.label('milestone_item_code'), MilestoneItem.content.label('milestone_item_content')).all()
     mis_json = json.dumps({mi['milestone_item_code']:mi['milestone_item_content']  for mi in mis})
     return mies_json, mis_json
-
-@login_required
-def create_review():
-    if not current_user.role.can_be_reviewer and not current_user.role.is_manager:
-        flash('你沒有權限建立評核','alert-danger')
-        redirect(url_for('index'))
-    prefilled_review = Review()
-    # (1) form configuration
-    form = ReviewForm()
-    form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
-    form.location.choices = [
-        (location.id, location.desc) for location in Location.query.all()
-    ]
-    form.reviewee.choices = [
-        (user.id, user.username) for user in current_user.get_potential_reviewees()
-    ]
-    form.reviewer.choices = [("", current_user.username)]
-    form.reviewer.render_kw = {"disabled": "disabled"}
-
-    form.review_difficulty.choices = [
-        (review_difficulty.id, review_difficulty.desc)
-        for review_difficulty in ReviewDifficulty.query.all()
-    ]
-    form.review_score.choices = [
-        (review_score.id, review_score.desc) for review_score in ReviewScore.query.all()
-    ]
-    # (2) on submit handling
-    if form.validate_on_submit():
-        review = Review()
-        review.implement_date = form.implement_date.data
-        review.epa = EPA.query.get(form.epa.data)
-        review.location = Location.query.get(int(form.location.data))
-        review.reviewee = User.query.get(form.reviewee.data)
-        review.reviewer = current_user
-        review.review_score = ReviewScore.query.get(int(form.review_score.data))
-        review.review_compliment = form.review_compliment.data
-        review.review_suggestion = form.review_suggestion.data
-        review.review_difficulty = ReviewDifficulty.query.get(
-            int(form.review_difficulty.data)
-        )
-        review.creator = current_user
-        review.review_source = ReviewSource.query.filter(
-            ReviewSource.name == "new"
-        ).first()
-        review.last_edited = datetime.datetime.now()
-        review.complete = True
-        try:
-            db.session.add(review)
-            db.session.commit()
-            flash("提交成功", "alert-success")
-            
-            subject = "[EPA通知]您已被評核"
-            msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可點此連結查看 {url_for("inspect_review",review_id=review.id,_external=True)} '
-            notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
-            db.session.add(notification)
-            db.session.commit()
-            flush_channel_notifications() # for demo purpose
-        except:
-            flash("提交失敗，請重新嘗試", "alert-warning")
-        return redirect(url_for("index"))
-    mies, mis = get_epa_linkages()
-    return render_template(
-        "make_review.html",
-        title="新增評核",
-        mies=mies,
-        mis=mis,
-        form=form,
-        review=prefilled_review,
-        review_type="new",
-    )
-
-
-@login_required
-def request_review():
-    # anyone could make a review request to any teacher
-    # fill epa, location, reviewer
-    form = ReviewForm()
-    form.reviewee.render_kw = {"disabled": "disabled"}
-    form.reviewee.choices = [("", current_user.username)]
-    form.epa.choices = [(epa.id, epa.desc) for epa in EPA.query.all()]
-    form.location.choices = [
-        (location.id, location.desc) for location in Location.query.all()
-    ]
-
-    form.reviewer.choices = [
-        (user.id.hex, user.username) for user in current_user.get_potential_reviewers()
-    ]
-
-    if form.is_submitted():
-        review = Review()
-        review.epa = EPA.query.get(form.epa.data)
-        review.location = Location.query.get(form.location.data)
-        review.implement_date = form.implement_date.data
-        review.reviewee = current_user
-        review.reviewer = User.query.get(form.reviewer.data)
-        review.reviewee_note = form.reviewee_note.data
-
-        # meta
-        review.creator = current_user
-        review.review_source = ReviewSource.query.filter(
-            ReviewSource.name == "request"
-        ).first()
-
-        if form.save_draft.data:
-            review.is_draft = True
-        review.complete = False
-        db.session.add(review)
-        try:
-            db.session.commit()
-            if form.save_draft.data:
-                flash(f"已儲存草稿", "alert-success")
-            else:
-                subject = f"[EPA通知]請評核{review.reviewee.username}"
-                msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date}實作的{review.epa.desc}，你可點此連結前往評核 {url_for("edit_review",review_id=review.id,_external=True)}'
-                notification = Notification(user_id=review.reviewer.id, subject=subject, msg_body=msg_body)
-                db.session.add(notification)
-                db.session.commit()
-                flush_channel_notifications() # for demo purpuse
-                flash(f"提交成功，系統將透過 Line 或 email 通知 {review.reviewer.username} 前往評核", "alert-success")
-        except:
-            flash('sth wrong, plz tell manager', 'alert-danger')
-        return redirect(url_for("index"))
-
-    mies, mis = get_epa_linkages()
-    return render_template(
-        "make_review.html", title="請求評核", mies=mies, mis=mis, form=form, review_type="request"
-    )
-
-
 
 @login_required
 def index():
