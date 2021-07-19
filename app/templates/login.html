@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-<main class="form-signin">
-    <!-- <div class='row'> -->
-        <div class="text-center col-md-4 mx-auto bg-white p-3 py-5">
-            <img class="mb-1" src="{{url_for('static',filename='img/login.svg')}}" style="width: auto;">
+<main class="login-page">
+        <div class="text-center col-md-4 mx-auto bg-white p-3">
+            <img class="mb-1 login-mark" src="{{url_for('static',filename='img/login.svg')}}">
             <h1 class="h3 mb-3 fw-normal">登入</h1>
             <form action="" method="post" class="form-signin">
                 {{ form.csrf_token }}
@@ -37,7 +36,6 @@
                 
             </form>
         </div>
-    <!-- </div> -->
 </main>
 
 {% endblock %}

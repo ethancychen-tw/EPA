@@ -33,27 +33,28 @@
 <body style="background-color: #ffffff; height: 100%">
   <!-- navbar  -->
   <header>
-    <nav class="navbar navbar-expand-lg navbar-light fixed-top" style="
+    <nav class="navbar navbar-expand-xl navbar-light fixed-top" style="
           background-color: rgba(255, 255, 255, 0.8) !important;
           box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px 0 rgb(0 0 0 / 6%);
           backdrop-filter: saturate(180%) blur(5px);
           width: 100%;
           position: fixed;
           z-index: 99;
+          height: 100px;
         ">
       <div class="container-fluid">
         <!-- offcanvas toggle button -->
         {% if current_user.is_authenticated %}
         <button class="navbar-toggler me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample"
-          aria-controls="offcanvasExample">
+          aria-controls="offcanvasExample"  style="padding: 1px;">
           <span class="navbar-toggler-icon"></span>
         </button>
         {% endif %}
         <!-- offcanvas toggle button -->
-        <a class="navbar-brand me-auto" href="{{ url_for('index') }}"><img
-            src="{{url_for('static',filename='img/nav_bar.svg')}}" width="270px"/></a>
+        <a class="navbar-brand me-auto navbar-brand-link" href="{{ url_for('index') }}"><img
+            src="{{url_for('static',filename='img/nav_bar.svg')}}" class="header-img"/></a>
         {% if current_user.is_authenticated %}
-          <div class="btn-group">
+          <div class="btn-group" >
             <a href="#" type="button" class="
                   btn
                   d-block
@@ -61,11 +62,12 @@
                   text-decoration-none
                   dropdown-toggle
                 " data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
-              <img src="{{ current_user.avatar() }}" alt="mdo" width="32" height="32" class="rounded-circle" />
+              <img src="{{ current_user.avatar() }}" alt="mdo" width="28" height="28" class="rounded-circle" />
               {{ current_user.username }}
               <i class="bi bi-person-fill"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+
               <li>
                 <a class="dropdown-item" href="{{ url_for('progress_stat') }}">我的EPA紀錄</a>
               </li>
@@ -104,6 +106,7 @@
               可放標題
             </div>
           </li>
+
           <li>
             <a href="{{ url_for('request_review') }}" class="nav-link px-3 active sidebar-link">
               <span class="me-2">
@@ -156,21 +159,16 @@
 
   {% with messages = get_flashed_messages(with_categories=True) %} {% if
     messages %} {% for category, message in messages %}
-  <div class="container-fluid" style="padding-top: 70px; padding-bottom:10px; min-height: 100%">
-
-    <div class="mb-8 alert {{category}} alert-dismissible fade show">
+  <div class="container" style="position:relative; padding-top: 50px;">
+    <div class="alert {{category}} alert-dismissible fade show" style="z-index:100; margin: auto; display: table;">
       {{ message }}
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   </div>
   {% endfor %} {% endif %} {% endwith %}
-  <main>
+  <main class="mt-1 pt-1">
     <div class="container-fluid">
-      <div class="row">
-        <div class="col-md-12 fw-bold">
           {% block content %} {% endblock %}
-        </div>
-      </div>
     </div>
   </main>
   <footer style="position: relative; bottom: 0px; height: 30px; width: 100%">

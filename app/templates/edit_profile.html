@@ -9,8 +9,7 @@
         {{ form.csrf_token }}
         
         <div class='row'>
-            <div class="text-center col-md-2"></div>
-            <div class="text-center col-md-8">
+            <div class="text-center col-md-8 profile">
                 
                 <div class="card mb-3">
                     <div class="row align-items-center justify-content-center">
@@ -33,28 +32,28 @@
                         <div class="col-md-4 card-body text-start">
                             
                             
-                            <div class="form-floating">
+                            <div class="form-floating mb-2">
                                 {{ form.role(class="form-select") }}
                                 {{ form.role.label }}
                                 {% for error in form.role.errors %}
                                     <span style="color: red;">[{{ error }}]</span>
                                 {% endfor %}
                             </div>
-                            <div class="form-floating">
+                            <div class="form-floating mb-2">
                                 {{ form.email(class="form-control") }}
                                 {{ form.email.label }}
                                 {% for error in form.email.errors %}
                                     <span style="color: red;">[{{ error }}]</span>
                                 {% endfor %}
                             </div>
-                            <div class="form-floating">
+                            <div class="form-floating mb-2">
                                 {{ form.internal_group(**{"class":"selectpicker form-control", "data-live-search": "true"} ) }}
                                 {{ form.internal_group.label }}
                                 {% for error in form.internal_group.errors %}
                                     <span style="color: red;">[{{ error }}]</span>
                                 {% endfor %}
                             </div>
-                            <div class="form-floating">
+                            <div class="form-floating mb-2">
                                 {{ form.external_groups(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
                                 {{ form.external_groups.label }}
                                 {% for error in form.external_groups.errors %}

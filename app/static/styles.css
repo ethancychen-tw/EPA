@@ -3,6 +3,9 @@
  --topNavbarHeight:100px;
 }
 
+.offcanvas{
+    background-color: rgba(255, 255, 255, 0.9) !important;
+}
 .sidebar-nav {
     width: var(--offcanvas-width);
     margin-top:  var(--topNavbarHeight);
@@ -13,9 +16,26 @@ display: flex;
 align-items: center;
 }
 
-.main{
+.login-page{
     padding-top:  var(--topNavbarHeight);
-    margin-left: var( --offcanvas-width);
+}
+
+.profile{
+    padding-top:  var(--topNavbarHeight);   
+}
+
+.index-page{
+    padding-top:  var(--topNavbarHeight);
+    /* margin-left: var( --offcanvas-width); */
+    overflow: auto;
+}
+
+.password-reset-request{
+    padding-top:  var(--topNavbarHeight);
+}
+
+.password-reset-btn{
+    background-color:#03A6A6
 }
 
 .login-btn{
@@ -31,8 +51,18 @@ align-items: center;
     color:#03A6A6;
     text-decoration: none;
 }
-  
-@media (min-width : 992px){
+
+.navbar-brand-link .header-img{
+    width:120px;
+}
+
+@media (min-width : 476px){
+    .navbar-brand-link .header-img{
+        width:170px;
+    }
+}
+
+@media (min-width : 1025px){
     body {
         overflow:auto !important;
     }
@@ -45,5 +75,20 @@ align-items: center;
         /* top: var(--topNavbarHeight);
         height:calc(100% - var(--topNavbarHeight)); */
     }
-    
+
+    .navbar-brand-link .header-img{
+        width:220px;
+    }
+    .login-mark{
+        width:300px;
+    }
+    .index-page{
+        padding-top:  var(--topNavbarHeight);
+        margin-left: var( --offcanvas-width);
+    }
+
+    .profile{
+        padding-top:  var(--topNavbarHeight);
+        margin-left: var( --offcanvas-width);
+    }
 }
