@@ -1,6 +1,6 @@
 :root {
  --offcanvas-width:270px;
- --topNavbarHeight:100px;
+ --topNavbarHeight:70px;
 }
 
 .offcanvas{
@@ -9,6 +9,7 @@
 .sidebar-nav {
     width: var(--offcanvas-width);
     margin-top:  var(--topNavbarHeight);
+    height:calc(100% - var(--topNavbarHeight));
 }
 
 .sidebar-link{
