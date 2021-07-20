@@ -6,7 +6,7 @@
     <!-- <div class='row justify-content-center align-items-center index-page'><h1>嗨，{{current_user.role.name}} {{current_user.username}}</h1></div>  -->
     <div class="row">
         
-    {% if unfin_being_reviews | length == 0 and unfin_make_reviews | length == 0%}
+    {% if unfin_being_reviews | length == 0 and unfin_make_reviews | length == 0 and draft_reviews | length == 0%}
     <div class="col-md-12 fw-bold fs-2"> 太棒了，你沒有待辦事項</div>
     {% endif %}
 </div>
