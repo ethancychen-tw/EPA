@@ -163,7 +163,6 @@ for name in group_names:
 db.session.commit()
 
 # User
-# admin
 all_groups = Group.query.all()
 all_roles = Role.query.filter(Role.is_manager == False).all()
 for i in range(200):
@@ -182,6 +181,46 @@ for i in range(200):
     user.set_password(user.username)    
     db.session.add(user)
 
+
+#group1 "耕莘醫院(耕莘)"
+user = User(username="G1R1", email="G1R1@epa.com")
+user.set_password("G1R1")
+user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
+user.internal_group = Group.query.filter(Group.name == "耕莘醫院(耕莘)").first()
+user.external_groups.append(Group.query.filter(Group.name == "亞東紀念醫院(亞東)").first())
+db.session.add(user)
+
+user = User(username="G1R5",email="G1R5@epa.com")
+user.set_password("G1R5")
+user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
+user.internal_group = Group.query.filter(Group.name == "耕莘醫院(耕莘)").first()
+db.session.add(user)
+
+user = User(username="G1R6", email="G1R6@epa.com")
+user.set_password("G1R6")
+user.role = Role.query.filter(Role.name=="主治醫師").first()
+user.internal_group = Group.query.filter(Group.name == "耕莘醫院(耕莘)").first()
+db.session.add(user)
+
+# group2 "亞東紀念醫院(亞東)"
+user = User(username="G2R1", email="G2R1@epa.com")
+user.set_password("G2R1")
+user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
+user.internal_group = Group.query.filter(Group.name == "亞東紀念醫院(亞東)").first()
+db.session.add(user)
+
+user = User(username="G2R5",email="G2R5@epa.com")
+user.set_password("G2R5")
+user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
+user.internal_group = Group.query.filter(Group.name == "亞東紀念醫院(亞東)").first()
+db.session.add(user)
+
+user = User(username="G2R6", email="G2R6@epa.com")
+user.set_password("G2R6")
+user.role = Role.query.filter(Role.name=="主治醫師").first()
+user.internal_group = Group.query.filter(Group.name == "亞東紀念醫院(亞東)").first()
+db.session.add(user)
+
 db.session.commit()
 
 # # use "append" to resolve bridging table
@@ -194,17 +233,19 @@ for i in range(10):
 db.session.commit()
 
 # ask review
-all_users = User.query.all()
+all_users = User.query.filter(User.username.in_(["G1R1","G1R5","G1R6","G2R1","G2R5","G2R6"])).all()
 
 all_locations = Location.query.all()
 all_epa = EPA.query.all()
 review_source_req = ReviewSource.query.filter(ReviewSource.name=='request').first()
 review_source_new = ReviewSource.query.filter(ReviewSource.name=='new').first()
-for i in range(20):
+all_review_scores = ReviewScore.query.all()
+for i in range(100):
     
     user = all_users[int(random.random()*len(all_users))]
     review = Review()
     review.creator = user
+    review.complete = random.random() > 0.3
     
     if user.can_create_review():
         review.reviewer = user
@@ -213,7 +254,6 @@ for i in range(20):
             continue
         review.reviewee = reviewee_options[int(random.random()*len(reviewee_options))]
         review.review_source = review_source_new
-        review.is_draft = True
     else:
         review.reviewee = user
         reviewer_options = user.get_potential_reviewers()
@@ -224,5 +264,13 @@ for i in range(20):
     
     review.location = all_locations[int(random.random()*len(all_locations))]
     review.epa = all_epa[int(random.random()*len(all_epa))]
+    review.implement_date = datetime.datetime.now()
+    if review.complete:
+        review.review_compliment = '棒'
+        review.review_suggestion = '爛'
+        review.review_score = all_review_scores[int(random.random()*len(all_review_scores))]
+        review.review_difficulty_id = 1
+    else:
+        review.draft = random.random() > 0.7
     db.session.add(review)
 db.session.commit()

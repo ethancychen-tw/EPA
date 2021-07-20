@@ -616,7 +616,7 @@ def page_not_found(e):
 
 def get_stats_by_user(user):
     entities = [ Review.epa_id, ReviewScore.value.label('score')]
-    user_reviews = Review.query.join(EPA).join(ReviewScore).filter(Review.reviewee_id == "76e9e534-8332-4047-97a9-51c567aa8279").with_entities(*entities).all()
+    user_reviews = Review.query.join(EPA).join(ReviewScore).filter(Review.reviewee_id == user.id ).with_entities(*entities).all()
     re_dict = {'epa_stats':None, 'corecompetence_stats':None, 'milestone_stats':None}
     if len(user_reviews) == 0:
         return re_dict
