@@ -93,9 +93,11 @@
             <div class="col-3"></div>
            
             {% if review_type != "inspect" %}
-                <div class="col-3">
-                    {{ form.save_draft(title=form.save_draft.description, class="w-100 btn btn-outline-dark")}}
-                </div>
+                {% if not review.complete %}
+                    <div class="col-3">
+                        {{ form.save_draft(title=form.save_draft.description, class="w-100 btn btn-outline-dark")}}
+                    </div>
+                {% endif %}
                 <div class="col-3">
                     {{ form.submit(title=form.submit.description, class="w-100 btn btn-outline-primary")}}
                 </div>
