@@ -159,7 +159,7 @@
   {% with messages = get_flashed_messages(with_categories=True) %} {% if
     messages %} {% for category, message in messages %}
   <div class="position-absolute top-40 start-50 translate-middle-x" style="z-index:110">
-    <div class="alert {{category}} alert-dismissible fade show" style="white-space:nowrap;">
+    <div class="alert {{category}} alert-dismissible fade show" >
       {{ message }}
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
@@ -170,8 +170,8 @@
           {% block content %} {% endblock %}
     </div>
   </main>
-  <footer style="position: relative; bottom: 0px; height: 30px; width: 100%">
-    <p class="text-center mt-3 text-muted">
+  <footer style="position:relative; bottom: 0px; height: 10px; width: 100%">
+    <p class="text-center mt-3 text-muted" style="font-size: 0.5rem;">
       Copyright &copy; 2021 CHT ENT. All rights reserved.
     </p>
   </footer>

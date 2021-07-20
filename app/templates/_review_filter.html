@@ -1,7 +1,7 @@
 <form action="" method="post">
     {{ filter_form.hidden_tag() }}
     {{ filter_form.csrf_token }}
-    <div class="d-none d-sm-none d-md-none d-lg-block d-xl-block">
+    <div class="d-none d-sm-none d-md-none d-lg-block d-xl-block review-form">
         <div class="row">
             {% for field in filter_form if field.type not in ["CSRFTokenField", "SubmitField"] %}
                 <div class="col-3 text-end">{{ field.label }}</div>

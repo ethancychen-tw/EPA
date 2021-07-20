@@ -17,6 +17,11 @@ display: flex;
 align-items: center;
 }
 
+.review-form{
+    margin: 0 auto;
+    padding-top:  var(--topNavbarHeight);
+}
+
 .login-page{
     padding-top:  var(--topNavbarHeight);
 }
@@ -28,7 +33,7 @@ align-items: center;
 .index-page{
     padding-top:  var(--topNavbarHeight);
     /* margin-left: var( --offcanvas-width); */
-    overflow: auto;
+    /* overflow: auto; */
 }
 
 .password-reset-request{
@@ -57,6 +62,9 @@ align-items: center;
     width:120px;
 }
 
+.alert {
+    word-wrap:break-word;
+}
 @media (min-width : 476px){
     .navbar-brand-link .header-img{
         width:170px;
@@ -91,5 +99,12 @@ align-items: center;
     .profile{
         padding-top:  var(--topNavbarHeight);
         margin-left: var( --offcanvas-width);
+    }
+    .review-form{
+        padding-top:  var(--topNavbarHeight);
+        margin-left: var( --offcanvas-width);
+    }
+    .alert {
+        white-space:nowrap;
     }
 }
