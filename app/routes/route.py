@@ -335,7 +335,7 @@ def view_all_reviews():
             },
             default=lambda x: str(x) if isinstance(x, datetime.date) else "",
         )
-        return redirect(url_for("view_reviews", filters_json=filters_json))
+        return redirect(url_for("view_all_reviews", filters_json=filters_json))
     
     sort_entity = Review.create_time.desc()
     filtering_clause = []
@@ -442,7 +442,7 @@ def view_all_reviews():
     )
     next_url = (
         url_for(
-            "view_reviews",
+            "view_all_reviews",
             page=all_user_related_reviews.next_num,
             filters_json=filters_json,
         )
@@ -451,7 +451,7 @@ def view_all_reviews():
     )
     prev_url = (
         url_for(
-            "view_reviews",
+            "view_all_reviews",
             page=all_user_related_reviews.prev_num,
             filters_json=filters_json,
         )
@@ -702,11 +702,10 @@ def progress_stat():
     epa_stats = user_stats['epa_stats']
     corecompetence_stats_json = json.dumps(user_stats['corecompetence_stats'])
     milestone_stats_json = json.dumps(user_stats['milestone_stats'])
-    
     for key in epa_stats:
         epa_stats[key].update({
             'img_src':f'{key[3:].zfill(2)}.svg',
-            'url':url_for('view_reviews',filters_json=json.dumps({"epas":[epa_stats[key]['id']]}))
+            'url':url_for('view_all_reviews',filters_json=json.dumps({"epas":[epa_stats[key]['id']]}))
             })
     epa_stats=dict(sorted(epa_stats.items()))
     return render_template(
