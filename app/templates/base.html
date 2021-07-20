@@ -40,7 +40,7 @@
           width: 100%;
           position: fixed;
           z-index: 99;
-          height: 100px;
+          height: 70px;
         ">
       <div class="container-fluid">
         <!-- offcanvas toggle button -->
@@ -64,7 +64,6 @@
                 " data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
               <img src="{{ current_user.avatar() }}" alt="mdo" width="28" height="28" class="rounded-circle" />
               {{ current_user.username }}
-              <i class="bi bi-person-fill"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
 
@@ -159,8 +158,8 @@
 
   {% with messages = get_flashed_messages(with_categories=True) %} {% if
     messages %} {% for category, message in messages %}
-  <div class="container" style="position:relative; padding-top: 50px;">
-    <div class="alert {{category}} alert-dismissible fade show" style="z-index:100; margin: auto; display: table;">
+  <div class="position-absolute top-40 start-50 translate-middle-x" style="z-index:110">
+    <div class="alert {{category}} alert-dismissible fade show" >
       {{ message }}
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
@@ -171,8 +170,8 @@
           {% block content %} {% endblock %}
     </div>
   </main>
-  <footer style="position: relative; bottom: 0px; height: 30px; width: 100%">
-    <p class="text-center mt-5 text-muted">
+  <footer style="position:relative; bottom: 0px; height: 10px; width: 100%">
+    <p class="text-center mt-3 text-muted" style="font-size: 0.5rem;">
       Copyright &copy; 2021 CHT ENT. All rights reserved.
     </p>
   </footer>
