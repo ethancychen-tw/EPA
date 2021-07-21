@@ -716,7 +716,8 @@ def progress_stat():
             'img_src':f'{key[3:].zfill(2)}.svg',
             'url':url_for('view_all_reviews',filters_json=json.dumps({"epas":[epa_stats[key]['id']]}))
             })
-    epa_stats=dict(sorted(epa_stats.items(),key=lambda x:x[0]))
+    epa_stats=dict(sorted(epa_stats.items(),key=lambda x:int(x[0].split(" ")[0][3:])))
+    print(epa_stats)
     return render_template(
         "progress_stat.html",
         title=user.username,
