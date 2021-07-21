@@ -10,7 +10,7 @@ class AdminEditProfileForm(FlaskForm):
     email = EmailField("Email", validators=[DataRequired(), Email()])
     role = SelectField(label='職級', choices=[('', '')], default='')
     internal_group = SelectField(label="所屬醫院", validators=[DataRequired()])
-    external_groups = SelectMultipleField(label="外派醫院", choices=[('', '')], default='')
+    external_groups = SelectMultipleField(label="外訓醫院", choices=[('', '')], default='')
     create_time = DateTimeLocalField(label='創建時間', validators=[DataRequired()])
     username = StringField(label='姓名', validators=[DataRequired()])
     password = PasswordField(label="密碼", validators=[DataRequired("這是必填項目")])
@@ -21,7 +21,7 @@ class NewGroupForm(FlaskForm):
     name = StringField(label='群組名稱', validators=[DataRequired()])
     desc = StringField(label='描述', validators=[DataRequired()])
     internal_users = SelectMultipleField(label='院內成員')
-    external_users = SelectMultipleField(label='外派至此院之成員')
+    external_users = SelectMultipleField(label='外訓至此院之成員')
 
 class NewEPAForm(FlaskForm):
     name = StringField(label='EPA名稱', validators=[DataRequired()])

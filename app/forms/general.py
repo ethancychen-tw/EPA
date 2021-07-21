@@ -86,7 +86,7 @@ class EditProfileForm(FlaskForm):
     email = EmailField("Email", validators=[DataRequired(), Email()])
     role = SelectField(label='職級', choices=[('', '')], default='')
     internal_group = SelectField(label="所屬醫院", validators=[DataRequired()])
-    external_groups = SelectMultipleField(label="外派醫院", choices=[('', '')], default='')
+    external_groups = SelectMultipleField(label="外訓醫院", choices=[('', '')], default='')
     submit = SubmitField(label='更新並儲存')
 
     def validate_external_groups(self, external_groups):
