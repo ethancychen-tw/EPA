@@ -79,7 +79,7 @@
               <!--should refactor the email template into config -->
               <li>
                 <a class="dropdown-item"
-                  href="mailto:{{config['MAIL_USERNAME']}}?subject=EPA問題回報&body=[姓名][螢幕截圖][問題描述]">問題回報</a>
+                  href="{{config['ISSUE_REPORT_GOOGLE_FORM_URL']}}?entry.{{config['ISSUE_REPORT_GOOGLE_FORM_NAME_FIELD_ID']}}={{current_user.username}}&entry.{{config['ISSUE_REPORT_GOOGLE_FORM_INTERNAL_GROUP_FIELD_ID']}}={{current_user.internal_group.name}}&entry.{{config['ISSUE_REPORT_GOOGLE_FORM_ROLE_FIELD_ID']}}={{current_user.role.name}}&entry.{{config['ISSUE_REPORT_GOOGLE_FORM_EMAIL_FIELD_ID']}}={{current_user.email}}">問題回報</a>
               </li>
               <li>
                 <a class="dropdown-item" href="{{ url_for('logout') }}">登出</a>
