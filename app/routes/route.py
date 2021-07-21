@@ -626,12 +626,15 @@ def get_stats_by_user(user):
 
     epas = EPA.query.with_entities(EPA.id.label('epa_id'), EPA.name, EPA.desc).all()
     milestones = Milestone.query.with_entities(Milestone.name, Milestone.id.label('milestone_id'), Milestone.desc).all()
+    milestone_items = MilestoneItem.query.join(Milestone).with_entities(MilestoneItem.id.label('milestone_item_id'), MilestoneItem.level, Milestone.desc.label('milestone'), MilestoneItem.code, MilestoneItem.content)
     corecompetences = CoreCompetence.query.with_entities(CoreCompetence.name, CoreCompetence.id.label('corecompetence_id'),CoreCompetence.desc).all()
     epa_df = pd.DataFrame(epas, columns=epas[0].keys())
     milestone_df = pd.DataFrame(milestones, columns=milestones[0].keys())
+    milestone_item_df = pd.DataFrame(milestone_items, columns=milestone_items[0].keys())
     corecompetence_df = pd.DataFrame(corecompetences, columns=corecompetences[0].keys())
     linkage_entites = [
         EPA.id.label('epa_id'),
+        MilestoneItem.id.label('milestone_item_id'),
         MilestoneItem.level.label('milestone_item_level'),
         MilestoneItemEPA.min_epa_level,
         Milestone.id.label('milestone_id'),
@@ -651,6 +654,7 @@ def get_stats_by_user(user):
 
     milestoneitem_stats_df = pd.merge(epa_stats_df[['epa_id','score']], linkage_df, on='epa_id')
     milestoneitem_stats_df['checked'] = milestoneitem_stats_df['score'] > milestoneitem_stats_df['min_epa_level']
+    
     grouped = milestoneitem_stats_df.groupby(['milestone_id','milestone_item_level'])
     milestone_level_stats_df = pd.concat([
         grouped['checked'].all().rename('all'),
@@ -677,12 +681,16 @@ def get_stats_by_user(user):
     milestone_stats = milestone_stats_df[['milestone_id','score']]
     corecompetence_stats = milestone_stats_df.groupby('corecompetence_id')['score'].mean().reset_index()
 
-    milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id').drop(['milestone_id'],axis='columns').set_index('name').T.to_dict()
-    corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df).drop(['corecompetence_id'],axis='columns').set_index('name').T.to_dict()
-
+    
+    
+    milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id',how='outer').fillna(0).drop(['milestone_id'],axis='columns').set_index('name').T.to_dict()
+    corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df, on='corecompetence_id',how='outer').drop(['corecompetence_id'],axis='columns').fillna(0).set_index('name').T.to_dict()
+    milestone_item_checking = pd.merge(milestoneitem_stats_df.groupby('milestone_item_id')['checked'].any().reset_index(), milestone_item_df , on='milestone_item_id').drop(['milestone_item_id'],axis='columns').set_index(['code']).T.to_dict()
+    
     re_dict['epa_stats'] = epa_stats
     re_dict['milestone_stats'] = milestone_stats
     re_dict['corecompetence_stats'] = corecompetence_stats
+    re_dict['milestone_item_checking'] = milestone_item_checking
 
     return re_dict
 
@@ -702,6 +710,7 @@ def progress_stat():
     epa_stats = user_stats['epa_stats']
     corecompetence_stats_json = json.dumps(user_stats['corecompetence_stats'])
     milestone_stats_json = json.dumps(user_stats['milestone_stats'])
+    milestone_item_checking_json = json.dumps(user_stats['milestone_item_checking'])
     for key in epa_stats:
         epa_stats[key].update({
             'img_src':f'{key[3:].zfill(2)}.svg',
@@ -714,7 +723,8 @@ def progress_stat():
         user=user,
         epa_stats=epa_stats,
         corecompetence_stats_json=corecompetence_stats_json,
-        milestone_stats_json=milestone_stats_json
+        milestone_stats_json=milestone_stats_json,
+        milestone_item_checking_json=milestone_item_checking_json
     )
 
 @login_required

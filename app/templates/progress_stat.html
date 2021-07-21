@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<meta id="meta_stats" data-corecompetence="{{corecompetence_stats_json}}" data-milestone="{{milestone_stats_json}}">
+<meta id="meta_stats" data-corecompetence="{{corecompetence_stats_json}}" data-milestone="{{milestone_stats_json}}" data-milestoneitemchecking="{{milestone_item_checking_json}}">
 <div class="container">
     <main class="container">
         <div class="row" data-masonry='{"percentPosition": true }'>
@@ -54,6 +54,7 @@
 <script>
 const data_corecompetence = $("#meta_stats").data("corecompetence")
 const data_milestone = $("#meta_stats").data("milestone")
+const data_milestoneitemchecking = $("#meta_stats").data("milestoneitemchecking")
 
 var cc_labels= []
 var cc_data = []
