@@ -35,6 +35,9 @@ align-items: center;
     /* margin-left: var( --offcanvas-width); */
     /* overflow: auto; */
 }
+.progress-stat-page{
+    padding-top:  var(--topNavbarHeight);
+}
 
 .password-reset-request{
     padding-top:  var(--topNavbarHeight);
@@ -65,12 +68,29 @@ align-items: center;
 .alert {
     word-wrap:break-word;
 }
+
+.progress-stat-card{
+    /* min-width:220px; */
+    /* width:30%; */
+}
 @media (min-width : 476px){
     .navbar-brand-link .header-img{
         width:170px;
     }
+    
 }
-
+@media (min-width: 768px){
+.progress-stat-card{
+    min-width:300px;
+    /* width:30%; */
+}
+}
+@media (min-width: 992px){
+    .progress-stat-card{
+        min-width:400px;
+        /* width:30%; */
+    }
+}
 @media (min-width : 1025px){
     body {
         overflow:auto !important;
@@ -104,7 +124,16 @@ align-items: center;
         padding-top:  var(--topNavbarHeight);
         margin-left: var( --offcanvas-width);
     }
+    .progress-stat-page{
+        padding-top:  var(--topNavbarHeight);
+        margin-left: var( --offcanvas-width);
+    }
+    
     .alert {
         white-space:nowrap;
+    }
+
+    .progress-stat-card{
+        max-width:400px;
     }
 }

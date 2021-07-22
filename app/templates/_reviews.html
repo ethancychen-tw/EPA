@@ -1,62 +1,66 @@
+<div class="row justify-content-md-center" data-masonry='{"percentPosition": true }' style="margin:auto">
+    {% for review in reviews %}
+    <div class="card col col-12 px-0 mb-2">
 
-<main class="container">
-    <div class="row justify-content-md-center" data-masonry='{"percentPosition": true }'>
-        {% for review in reviews %}
-            <div class="card col col-12 px-0 mb-2">
-                
-                <div class="card-header">
-                    {% if review.complete %} <span class="badge bg-success">已完成</span> {% else %} <span class="badge bg-warning text-dark">未完成</span> {% endif %}
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% set card_text = review.epa.desc%}
-                        {% if current_user.role.is_manager %}
-                            {% set card_title = "" %}
-                            {% set btn_url = url_for('edit_review',review_id=review.id) %}
-                            {% set btn_text = "查看/編輯" %}
-                        {% elif current_user.can_edit_review(review) %}
-                            {% set card_title = "評核" + review.reviewee.username if review.reviewee_id else "評核未知的使用者"%}
-                            {% set btn_url = url_for('edit_review',review_id=review.id) %}
-                            {% if review.complete %}
-                                {% set btn_text = "查看/編輯 " %}
-                            {% else %} 
-                                {% set btn_text = "前往填寫" %}  
-                            {% endif %}
-                        {% else %}
-                            {% set card_title = review.reviewer.username + review.reviewer.role.name%}
-                            {% set btn_url = url_for('inspect_review',review_id=review.id) %}
-                            {% set btn_text = "查看" %}
-                        {% endif %}  
-                    
-                        <div class="col-3 col-md-1">
-                            <img src="{{review.creator.avatar()}}" class="w-100">
-                        </div>
-                        <div class="col-9 col-md-5">
-                            <h5 class="card-title">{{card_title}}</h5>
-                            <p class="card-text">{{card_text}}</p>
-                            
-                        </div>
+        <div class="card-header">
+            {% if review.complete %} <span class="badge bg-success">已完成</span> {% else %} <span
+                class="badge bg-warning text-dark">未完成</span> {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% set card_text = review.epa.desc%}
+                {% if current_user.role.is_manager %}
+                {% set card_title = "" %}
+                {% set btn_url = url_for('edit_review',review_id=review.id) %}
+                {% set btn_text = "查看/編輯" %}
+                {% elif current_user.can_edit_review(review) %}
+                {% set card_title = "評核" + review.reviewee.username if review.reviewee_id else "評核未知的使用者"%}
+                {% set btn_url = url_for('edit_review',review_id=review.id) %}
+                {% if review.complete %}
+                {% set btn_text = "查看/編輯 " %}
+                {% else %}
+                {% set btn_text = "前往填寫" %}
+                {% endif %}
+                {% else %}
+                {% set card_title = review.reviewer.username + review.reviewer.role.name%}
+                {% set btn_url = url_for('inspect_review',review_id=review.id) %}
+                {% set btn_text = "查看" %}
+                {% endif %}
 
-                        <div class="col-12 col-md-2 text-end text-md-start text-muted">{{review.implement_date.strftime('%Y-%m-%d') if review.implement_date else "未知時間"}} @{{review.location.desc if review.location_id else "未知地點"}}</div>
-                        
-                        
-                        <div class="col-5 col-md-2">
-                            <a href="{{btn_url}}" class="btn w-100 btn-outline-primary">{{btn_text}}</a>
-                        </div>
-                    
-                        {% if current_user.can_delete_review(review) %}
-                            <div class="col-5 col-md-1">
-                                <a href="{{url_for('delete_review',review_id=review.id)}}" class="btn w-100 btn-outline-danger">刪除</a>
-                            </div>
-                        {% endif %}
-                    </div>
+                <div class="col-3 col-md-1">
+                    <img src="{{review.creator.avatar()}}" class="w-90">
                 </div>
+                <div class="col-9 col-md-5">
+                    <h5 class="card-title">{{card_title}}</h5>
+                    <p class="card-text">{{card_text}}</p>
+
+                </div>
+
+                <div class="col-12 col-md-2 text-end text-md-start text-muted">
+                    {{review.implement_date.strftime('%Y-%m-%d') if review.implement_date else "未知時間"}}
+                    <br>{{review.location.desc if review.location_id else "未知地點"}}</div>
+
+
+                <div class="col-5 col-md-2">
+                    <a href="{{btn_url}}" class="btn w-100 btn-outline-primary">{{btn_text}}</a>
+                </div>
+
+                {% if current_user.can_delete_review(review) %}
+                <div class="col-5 col-md-1">
+                    <a href="{{url_for('delete_review',review_id=review.id)}}"
+                        class="btn w-100 btn-outline-danger">刪除</a>
+                </div>
+                {% endif %}
             </div>
-            
-        {% endfor %}
-    
+        </div>
+
     </div>
-</main>
+
+    {% endfor %}
+
+</div>
 
 
-<script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>
+<script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"
+    integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous"
+    async></script>

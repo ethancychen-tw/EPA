@@ -12,11 +12,11 @@
         {% set card_desc = "請注意您的編輯將直接修改評核內容，將不另行通知評核相關人" %}
         {% elif review_type in ["request"] %}
         {% set card_subtitle = "請求評核指定的EPA項目" %}
-        {% set card_desc = "請填寫以下欄位，評核者只能是所屬醫院或外派醫院中的總醫師/主治醫師" %}
+        {% set card_desc = "請填寫以下欄位，評核者只能是所屬醫院或訓醫院中的總醫師/主治醫師" %}
         {% elif review_type in ["new", "user_edit"] %}
         {% if review_tpye == "new"%}
         {% set card_subtitle = "評核住院醫師實作的EPA項目" %}
-        {% set card_desc = "請填寫指定被評醫師、項目以及您的評核內容，被評核者只能是所屬醫院(含外派至本院)的住院醫師/總醫師" %}
+        {% set card_desc = "請填寫指定被評醫師、項目以及您的評核內容，被評核者只能是所屬醫院(含外訓至本院)的住院醫師/總醫師" %}
         {% elif review_type == "user_edit" %}
         {% set card_subtitle = "評核住院醫師實作的EPA項目" %}
         {#

@@ -2,53 +2,59 @@
 
 {% block content %}
 <meta id="meta_stats" data-corecompetence="{{corecompetence_stats_json}}" data-milestone="{{milestone_stats_json}}" data-milestoneitemchecking="{{milestone_item_checking_json}}">
-<div class="container">
-    <main class="container">
-        <div class="row" data-masonry='{"percentPosition": true }'>
-            {% for epa_name, epa_stat in epa_stats.items() %}
-                <div class="card col col-12 col-md-4 border-warning">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-9 col-md-8">
-                                <p class="card-title card-title pricing-card-title"><a href="{{epa_stat['url']}}"><h3>{{epa_name}}</h3></a></p>
-                                <p class="card-text">{{epa_stat['desc']}}</p>
-                            </div>
-                            <div class="col-3 col-md-4">
-                              <img src="static/img/epa_icon/{{epa_stat['img_src']}}" class="w-100">
-                            </div>
-                            <div class="col-2 col-md-2">
-                              <span class=" badge bg-warning text-dark">完成度</span>
-                            </div>
-                            <div class="col-4 col-md-5">
-                              {{epa_stat['score']|int }}/5 ({{epa_stat['score'] * 20 | int}}%)
-                            </div>
-                        </div>
-                    </div>
-                    <h5 class="card-header text-center">Level {{ epa_stat['score'] | int}}</h5>
-                    <p></p>
-                </div>
-                
-            {% endfor %}
-        
-        </div>
-        <div class="w-100"><p></p></div>
-        <p></p>
-        <div class="row">
-            <div class="col-12 col-md-8">
-                <h5>次核心能力</h5>
-                <canvas id="milestone_bar_chart"></canvas>
-            </div>
-            <div class="col-12 col-md-4">
-                <h5>核心能力</h5>
-                <canvas id="core_competence_radar_chart"></canvas>
-            </div>
-        </div>
+<div class="container progress-stat-page">
+    <main class="container" style="justify-content: space-between;">
+    <div class="d-flex justify-content-md-between" data-masonry='{"percentPosition": true }'>
+      {% for epa_name, epa_stat in epa_stats.items() %}
 
-    </main>
+      <div class="card col-6 col-12 col-md-4 px-0 mb-2 progress-stat-card" style="margin-right: 0.3rem">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-9 col-md-8">
+              <p class="card-title card-title pricing-card-title"><a href="{{epa_stat['url']}}">
+                  <h3>{{epa_name}}</h3>
+                </a></p>
+              <p class="card-text">{{epa_stat['desc'].split(' ')[1]}}</p>
+            </div>
+            <div class="col-3 col-md-4">
+              <img src="static/img/epa_icon/{{epa_stat['img_src']}}" class="w-100">
+            </div>
+            <div class="col-4 col-md-3">
+              <span class=" badge bg-warning text-dark">完成度</span>
+            </div>
+            <div class="col-5 col-md-5">
+              {{epa_stat['score']|int }}/5 ({{epa_stat['score'] * 20 | int}}%)
+            </div>
+          </div>
+        </div>
+        <h5 class="card-header text-center">Level {{ epa_stat['score'] | int}}</h5>
+
+      </div>
+      {% endfor %}
+
+    </div>
+    <div class="w-100">
+      <p></p>
+    </div>
+    <p></p>
+    <div class="row">
+      <div class="col-12 col-md-8">
+        <h5>次核心能力</h5>
+        <canvas id="milestone_bar_chart"></canvas>
+      </div>
+      <div class="col-12 col-md-4">
+        <h5>核心能力</h5>
+        <canvas id="core_competence_radar_chart"></canvas>
+      </div>
+    </div>
+
+  </main>
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>
+<script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"
+  integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous"
+  async></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -56,93 +62,89 @@ const data_corecompetence = $("#meta_stats").data("corecompetence")
 const data_milestone = $("#meta_stats").data("milestone")
 const data_milestoneitemchecking = $("#meta_stats").data("milestoneitemchecking")
 
-var cc_labels= []
-var cc_data = []
-for(var key in data_corecompetence){
-  cc_labels.push(key)
-  cc_data.push(data_corecompetence[key]['score'])
-}
+  var cc_labels = []
+  var cc_data = []
+  for (var key in data_corecompetence) {
+    cc_labels.push(key)
+    cc_data.push(data_corecompetence[key]['score'])
+  }
 
-var mi_labels= []
-var mi_data = []
-for(var key in data_milestone){
-  mi_labels.push(key)
-  mi_data.push(data_milestone[key]['score'])
-}
+  var mi_labels = []
+  var mi_data = []
+  for (var key in data_milestone) {
+    mi_labels.push(key)
+    mi_data.push(data_milestone[key]['score'])
+  }
 
-const core_competence_data = {
-  labels: cc_labels,
-  datasets: [{
-    // label: '核心能力',
-    data: cc_data,
-    fill: true,
-    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-    borderColor: 'rgb(255, 99, 132)',
-    pointBackgroundColor: 'rgb(255, 99, 132)',
-    pointBorderColor: '#fff',
-    pointHoverBackgroundColor: '#fff',
-    pointHoverBorderColor: 'rgb(255, 99, 132)'
-  }]
-};
-const core_competence_config = {
-  type: 'radar',
-  data: core_competence_data,
-  options: {
-    elements: {
-      line: {
-        borderWidth: 3
+  const core_competence_data = {
+    labels: cc_labels,
+    datasets: [{
+      // label: '核心能力',
+      data: cc_data,
+      fill: true,
+      backgroundColor: 'rgba(255, 99, 132, 0.2)',
+      borderColor: 'rgb(255, 99, 132)',
+      pointBackgroundColor: 'rgb(255, 99, 132)',
+      pointBorderColor: '#fff',
+      pointHoverBackgroundColor: '#fff',
+      pointHoverBorderColor: 'rgb(255, 99, 132)'
+    }]
+  };
+  const core_competence_config = {
+    type: 'radar',
+    data: core_competence_data,
+    options: {
+      elements: {
+        line: {
+          borderWidth: 3
+        }
+      },
+      plugins: {
+        legend: {
+          display: false,
+        }
       }
-    }, 
-    plugins:{
-         legend:{
-            display:false,
-         }
     }
-}
-};
-var core_competence_radar_chart = new Chart($('#core_competence_radar_chart'),core_competence_config);
+  };
+  var core_competence_radar_chart = new Chart($('#core_competence_radar_chart'), core_competence_config);
 
 
 
-const milestone_data = {
-  labels: mi_labels,
-  datasets: [{
-    // label: '次核心能力',
-    data: mi_data,
-    backgroundColor: [
-      'rgba(255, 99, 132, 0.2)',
-      'rgba(255, 159, 64, 0.2)',
-      'rgba(255, 205, 86, 0.2)',
-      'rgba(75, 192, 192, 0.2)',
-      'rgba(54, 162, 235, 0.2)',
-      'rgba(153, 102, 255, 0.2)',
-      'rgba(201, 203, 207, 0.2)'
-    ],
-    borderWidth: 1
-  }]
-};
-const milestone_config = {
-  type: 'bar',
-  data: milestone_data,
-  options: {
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 5
+  const milestone_data = {
+    labels: mi_labels,
+    datasets: [{
+      // label: '次核心能力',
+      data: mi_data,
+      backgroundColor: [
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(255, 159, 64, 0.2)',
+        'rgba(255, 205, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(201, 203, 207, 0.2)'
+      ],
+      borderWidth: 1
+    }]
+  };
+  const milestone_config = {
+    type: 'bar',
+    data: milestone_data,
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 5
+        }
+      },
+      plugins: {
+        legend: {
+          display: false,
+        }
       }
     },
-    plugins:{
-         legend:{
-            display:false,
-         }
-    }
-  },
-};
-var milestone_bar_chart = new Chart($('#milestone_bar_chart'),milestone_config);
+  };
+  var milestone_bar_chart = new Chart($('#milestone_bar_chart'), milestone_config);
 
 </script>
 {% endblock %}
-
-
-
-    
