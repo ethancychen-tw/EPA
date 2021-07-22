@@ -19,7 +19,7 @@ class Review(db.Model):
     reviewer_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'))
     review_compliment = db.Column(db.String(512))
     review_suggestion = db.Column(db.String(512))
-    is_draft = db.Column(db.Boolean, default=True)
+    is_draft = db.Column(db.Boolean, default=False)
     complete = db.Column(db.Boolean, default=False)
     create_time = db.Column(db.DateTime, default=datetime.now())
     last_edited = db.Column(db.DateTime, default=datetime.now())
