@@ -281,48 +281,41 @@ def delete_review(review_id):
 
 @login_required
 def view_all_reviews():
+
+    view_as = request.args.get("view_as", None)
     filter_form = ReviewFilterForm()
     # (1) filter form configuration
-    if current_user.role.is_manager:
-        filter_form.reviewees.choices += [
-            (user_id.hex, user_name)
-            for user_id, user_name in User.query.join(Role)
-            .filter(Role.can_request_review == True)
-            .with_entities(User.id, User.username)
-            .all()
-        ]
-        filter_form.reviewers.choices += [
-            (user_id.hex, user_name)
-            for user_id, user_name in User.query.join(Role)
-            .filter(Role.can_create_and_edit_review == True)
-            .with_entities(User.id, User.username)
-            .all()
-        ]
-        filter_form.groups.choices += [
-            (group_id.hex, group_name)
-            for group_id, group_name in Group.query.with_entities(
-                Group.id, Group.name
-            ).all()
-        ]
-    else:
-        filter_form.reviewers.choices += sorted([
+    
+    if current_user.role.can_be_reviewee:
+        filter_form.reviewers.choices = sorted([
             (user.id.hex, user.username)
             for user in current_user.get_potential_reviewers()
         ],key=lambda x:x[0])
-        filter_form.reviewees.choices += sorted([
+    else:
+        filter_form.reviewers.render_kw = {'disabled':'disabled'}
+    if current_user.role.can_be_reviewer:
+        filter_form.reviewees.choices = sorted([
             (user.id.hex, user.username)
             for user in current_user.get_potential_reviewees()
         ], key=lambda x:x[0])
-        filter_form.groups.choices += sorted([
-            (group_id.hex, group_name)
-            for group_id, group_name in Group.query.with_entities(
-                Group.id, Group.name
-            ).all()
-        ],key=lambda x:x[0])
+    else:
+        filter_form.reviewers.render_kw = {'disabled':'disabled'}
+    filter_form.groups.choices = sorted([
+        (group.id.hex, group.name)
+        for group in [current_user.internal_group ]+ current_user.external_groups.all()
+    ],key=lambda x:x[0])
 
-    filter_form.epas.choices += [
-        (str(epa_id), epa_desc)
-        for epa_id, epa_desc in EPA.query.with_entities(EPA.id, EPA.desc).all()
+    if view_as == 'reviewer' and current_user.role.can_be_reviewer:
+        filter_form.reviewers.choices = [(current_user.id.hex, current_user.username)]
+        filter_form.reviewers.render_kw = {'disabled':'disabled'}
+    elif view_as == 'reviewee' and current_user.role.can_be_reviewee:
+        filter_form.reviewees.choices = [(current_user.id.hex, current_user.username)]
+        filter_form.reviewees.render_kw = {'disabled':'disabled'}
+    
+
+    filter_form.epas.choices = [
+        (epa.id, epa.desc)
+        for epa in EPA.query.with_entities(EPA.id, EPA.desc).all()
     ]
 
     # (2) fitler form on submit
@@ -340,16 +333,21 @@ def view_all_reviews():
     sort_entity = Review.create_time.desc()
     filtering_clause = []
 
+    if view_as == 'reviewer':
+        filtering_clause.append(Review.reviewer_id == current_user.id)
+    elif view_as == 'reviewee':
+        filtering_clause.append(Review.reviewee_id == current_user.id)
+
     # filters handling. Should pull into a function
     filters_json = request.args.get("filters_json", None)
     if filters_json:
         filters = json.loads(filters_json)
-        reviewees = filters.get("reviewees", ['all'])
-        reviewers = filters.get("reviewers", ['all'])
-        groups = filters.get("groups", ['all'])
+        reviewees = filters.get("reviewees", [])
+        reviewers = filters.get("reviewers", [])
+        groups = filters.get("groups", [])
         create_time_start = filters.get("create_time_start", None)
         create_time_end = filters.get("create_time_end", None)
-        epas = filters.get("epas",['all'])
+        epas = filters.get("epas",[])
         sort_key = filters.get("sort_key", 'create_time')
 
         # TODO: could refactor this in factory
@@ -357,41 +355,33 @@ def view_all_reviews():
         # cuz Some hackers may hit the url directly, rather use the form to genereate url
         # TODO: make 'select all'(+ clear all selected) in select be handle in FE
         if set(reviewees) & set([reviewee[0] for reviewee in filter_form.reviewees.choices]):
-            if 'all' not in reviewees:
-                filter_form.reviewees.data = reviewees
-                filtering_clause.append(Review.reviewee_id.in_(reviewees))
-            else:
-                filter_form.reviewees.data = ['all']
+            filter_form.reviewees.data = reviewees
+            filtering_clause.append(Review.reviewee_id.in_(reviewees))
 
         if set(reviewers) & set([reviewer[0] for reviewer in filter_form.reviewers.choices]):
-            if 'all' not in reviewers:
-                filter_form.reviewers.data = reviewers
-                filtering_clause.append(Review.reviewer_id.in_(reviewers))
-            else:
-                filter_form.reviewers.data = ['all']
+            filter_form.reviewers.data = reviewers
+            filtering_clause.append(Review.reviewer_id.in_(reviewers))
             
             
         if set(groups) & set([group[0] for group in filter_form.groups.choices]):
-            if 'all' not in groups:
-                filter_form.groups.data = groups
-                selected_groups = Group.query.filter(Group.id.in_(groups)).all()
-                selected_user_ids = list(
-                    set(
-                        [
-                            user.id.hex
-                            for group in selected_groups
-                            for user in group.internal_users.all() + group.external_users
-                        ]
-                    )
+            
+            filter_form.groups.data = groups
+            selected_groups = Group.query.filter(Group.id.in_(groups)).all()
+            selected_user_ids = list(
+                set(
+                    [
+                        user.id.hex
+                        for group in selected_groups
+                        for user in group.internal_users.all() + group.external_users
+                    ]
                 )
-                filtering_clause.append(
-                    or_(
-                        Review.reviewer_id.in_(selected_user_ids),
-                        Review.reviewee_id.in_(selected_user_ids),
-                    )
+            )
+            filtering_clause.append(
+                or_(
+                    Review.reviewer_id.in_(selected_user_ids),
+                    Review.reviewee_id.in_(selected_user_ids),
                 )
-            else:
-                filter_form.groups.data = ['all']
+            )
             
         if create_time_start:
             filter_form.create_time_start.data = datetime.date.fromisoformat(create_time_start)
@@ -404,13 +394,12 @@ def view_all_reviews():
             filtering_clause.append(
                 Review.create_time < datetime.date.fromisoformat(create_time_end)
             )
-            
         if set(epas) & set([epa[0] for epa in filter_form.epas.choices]):
             filter_form.epas.data = epas
-            if 'all' not in epas:
-                filtering_clause.append(
-                    Review.epa_id.in_(epas)
-                )
+            filtering_clause.append(
+                Review.epa_id.in_(epas)
+            )
+                
         
         if sort_key:
             filter_form.sort_key.data = sort_key
@@ -431,10 +420,11 @@ def view_all_reviews():
             or_(Review.reviewer == current_user, Review.reviewee == current_user),
             Review.complete == True
         )
-
-    all_user_related_reviews_q = all_user_related_reviews_q.filter(
-        *filtering_clause
-    ).order_by(sort_entity)
+    if filtering_clause:
+        all_user_related_reviews_q = all_user_related_reviews_q.filter(
+            *filtering_clause
+        )
+    all_user_related_reviews_q = all_user_related_reviews_q.order_by(sort_entity)
     all_user_related_reviews = all_user_related_reviews_q.paginate(
         page=cur_page_num,
         per_page=int(current_app.config["REVIEW_PER_PAGE"]),
@@ -445,6 +435,7 @@ def view_all_reviews():
             "view_all_reviews",
             page=all_user_related_reviews.next_num,
             filters_json=filters_json,
+            view_as=view_as
         )
         if all_user_related_reviews.has_next
         else None
@@ -454,6 +445,7 @@ def view_all_reviews():
             "view_all_reviews",
             page=all_user_related_reviews.prev_num,
             filters_json=filters_json,
+            view_as=view_as
         )
         if all_user_related_reviews.has_prev
         else None
@@ -465,6 +457,7 @@ def view_all_reviews():
         filter_form=filter_form,
         next_url=next_url,
         prev_url=prev_url,
+        view_as=view_as
     )
 
 def get_epa_linkages():

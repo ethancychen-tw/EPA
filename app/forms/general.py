@@ -114,11 +114,11 @@ class UserFilterForm(FlaskForm):
     role = SelectMultipleField(label='職級/角色', choices=[('', '')], default=[''])
 
 class ReviewFilterForm(FlaskForm):
-    reviewees = SelectMultipleField(label='學生', choices=[('all', '全選')],  default=['all'], validators=[DataRequired()])
-    reviewers = SelectMultipleField(label='老師', choices=[('all', '全選')], default=['all'], validators=[DataRequired()])
-    groups = SelectMultipleField(label='群組',choices=[('all', '全選')], default=['all']) # only available for manager
+    reviewees = SelectMultipleField(label='學生', choices=[])
+    reviewers = SelectMultipleField(label='老師', choices=[])
+    groups = SelectMultipleField(label='群組', choices=[]) # only available for manager
     create_time_start = DateField(label='創建時間開始', default=datetime.datetime.now()-datetime.timedelta(days=360), validators=[DataRequired()])
     create_time_end = DateField(label='創建時間結束', default=datetime.datetime.now()+datetime.timedelta(days=1), validators=[DataRequired()])
-    epas = SelectMultipleField(label='EPA', choices=[('all', '全選')], default=['all'], validators=[DataRequired()])
+    epas = SelectMultipleField(label='EPA', choices=[])
     sort_key = RadioField(label="排序", choices=[('EPA','EPA'),('implement_date','實作時間'), ('create_time','創建時間')], validators=[DataRequired()], default='EPA')
     submit = SubmitField(label='篩選')
