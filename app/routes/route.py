@@ -626,7 +626,7 @@ def get_stats_by_user(user):
 
     epas = EPA.query.with_entities(EPA.id.label('epa_id'), EPA.name, EPA.desc).all()
     milestones = Milestone.query.with_entities(Milestone.name, Milestone.id.label('milestone_id'), Milestone.desc).all()
-    milestone_items = MilestoneItem.query.join(Milestone).with_entities(MilestoneItem.id.label('milestone_item_id'), MilestoneItem.level, Milestone.desc.label('milestone'), MilestoneItem.code, MilestoneItem.content)
+    milestone_items = MilestoneItem.query.join(Milestone).with_entities(MilestoneItem.id.label('milestone_item_id'), MilestoneItem.level, Milestone.name.label('milestone'), MilestoneItem.code, MilestoneItem.content)
     corecompetences = CoreCompetence.query.with_entities(CoreCompetence.name, CoreCompetence.id.label('corecompetence_id'),CoreCompetence.desc).all()
     epa_df = pd.DataFrame(epas, columns=epas[0].keys())
     milestone_df = pd.DataFrame(milestones, columns=milestones[0].keys())
@@ -685,12 +685,21 @@ def get_stats_by_user(user):
     
     milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id',how='outer').fillna(0).drop(['milestone_id'],axis='columns').set_index('name').T.to_dict()
     corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df, on='corecompetence_id',how='outer').drop(['corecompetence_id'],axis='columns').fillna(0).set_index('name').T.to_dict()
-    milestone_item_checking = pd.merge(milestoneitem_stats_df.groupby('milestone_item_id')['checked'].any().reset_index(), milestone_item_df , on='milestone_item_id').drop(['milestone_item_id'],axis='columns').set_index(['code']).T.to_dict()
+    milestone_item_checking = pd.merge(milestoneitem_stats_df.groupby('milestone_item_id')['checked'].any().reset_index(), milestone_item_df , on='milestone_item_id').drop(['milestone_item_id'],axis='columns')#.set_index(['code']).T.to_dict()
+    
+    milestone_item_checking_dict = dict()
+    for _, row in milestone_item_checking.iterrows():
+        if not row['milestone'] in milestone_item_checking_dict.keys():
+            milestone_item_checking_dict[row['milestone']] = {i:[] for i in range(1,6)}
+        milestone_item_checking_dict[row['milestone']][row['level']].append(row.loc[['code','checked','content']].to_dict())
+    for key in milestone_item_checking_dict.keys():
+        for level in range(1,6):
+            milestone_item_checking_dict[key][level].sort(key=lambda x:int(x['code'].split(".")[-1]))
     
     re_dict['epa_stats'] = epa_stats
     re_dict['milestone_stats'] = milestone_stats
     re_dict['corecompetence_stats'] = corecompetence_stats
-    re_dict['milestone_item_checking'] = milestone_item_checking
+    re_dict['milestone_item_checking'] = milestone_item_checking_dict
 
     return re_dict
 
