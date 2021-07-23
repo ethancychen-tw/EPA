@@ -128,6 +128,7 @@ def request_review():
     review.reviewee = current_user
     review.creator = current_user
     review.review_source = ReviewSource.query.filter(ReviewSource.name == 'request').first()
+    review.is_draft = True # must set to true so that could edit
     db.session.add(review)
     db.session.commit()
     return redirect(url_for('edit_review', review_id=review.id))
@@ -159,6 +160,8 @@ def edit_review(review_id):
     elif current_user == prefilled_review.reviewee:
         form.reviewer.choices = [(user.id, user.username) for user in current_user.get_potential_reviewers()]
         form.reviewee.choices = [(prefilled_review.reviewee.id, prefilled_review.reviewee.username)]
+        form.review_difficulty.validate_choice=False
+        form.review_score.validate_choice=False
     form.location.choices = [(str(location.id), location.desc) for location in Location.query.with_entities(Location.id, Location.desc).all()]
     # configure - scoring field
     form.review_difficulty.choices = [(str(rd.id), rd.desc) for rd in ReviewDifficulty.query.with_entities(ReviewDifficulty.id, ReviewDifficulty.desc).all()]
@@ -183,13 +186,13 @@ def edit_review(review_id):
         review.implement_date = form.implement_date.data
         review.reviewee_note = form.reviewee_note.data
         # scoring fields
-        if len(form.review_difficulty.data):
-            review.review_difficulty = ReviewDifficulty.query.get(int(form.review_difficulty.data)) 
-        review.review_compliment = form.review_compliment.data
-        review.review_suggestion = form.review_suggestion.data
-        
-        if len(form.review_score.data):
-            review.review_score = ReviewScore.query.get(int(form.review_score.data))
+        if current_user.id == review.reviewer_id:
+            if form.review_difficulty.data:
+                review.review_difficulty = ReviewDifficulty.query.get(int(form.review_difficulty.data)) 
+            review.review_compliment = form.review_compliment.data
+            review.review_suggestion = form.review_suggestion.data
+            if form.review_score.data:
+                review.review_score = ReviewScore.query.get(int(form.review_score.data))
         # meta fields (when editing, no need to update every one)
         if form.submit.data:
             # press submit btn
@@ -199,7 +202,7 @@ def edit_review(review_id):
             else:
                 # 是學生 提交 就設為false，這樣就會通知老師
                 review.complete = False
-        else:
+        elif form.submit_draft.data:
             # press save draft btn
             review.is_draft = True
         review.last_edited = datetime.datetime.now()
@@ -231,23 +234,24 @@ def edit_review(review_id):
     # (PS) if field render_kw is disabled, the prefill could only be default, or it won't pass form validation
     # requesting fields
     # if prefilled_review.epa_id:
-    form.epa.data = str(prefilled_review.epa_id) or form.epa.choices[0][0]
+    form.epa.data = str(prefilled_review.epa_id or form.epa.choices[0][0])
     # if prefilled_review.reviewer_id:
     form.reviewer.data = prefilled_review.reviewer_id or form.reviewer.choices[0][0]
     # if prefilled_review.reviewee_id:
     form.reviewee.data = prefilled_review.reviewee_id or form.reviewee.choices[0][0]
     # if prefilled_review.location_id:
     form.location.data = str(prefilled_review.location_id) or form.location.choices[0][0]
-    form.implement_date.data = prefilled_review.implement_date
+    form.implement_date.data = prefilled_review.implement_date or datetime.datetime.now()
     form.reviewee_note.data = prefilled_review.reviewee_note 
 
     # scoring field
-    form.review_difficulty.data = str(prefilled_review.review_difficulty_id) or form.review_difficulty.choices[0][0]
+    form.review_difficulty.data = str(prefilled_review.review_difficulty_id or str(form.review_difficulty.choices[0][0]))
     form.review_compliment.data = prefilled_review.review_compliment
     form.review_suggestion.data = prefilled_review.review_suggestion
-    form.review_score.data = str(prefilled_review.review_score_id) or form.review_score.choices[0][0]
+    form.review_score.data = str(prefilled_review.review_score_id or str(form.review_score.choices[0][0]))
     
-    mies, mis = None, None#get_epa_linkages()
+    
+    mies, mis = None, None # get_epa_linkages()
     return render_template(
         "make_review.html",
         title="填寫/編輯評核",

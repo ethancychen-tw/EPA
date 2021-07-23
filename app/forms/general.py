@@ -10,22 +10,22 @@ import datetime
 
 class ReviewForm(FlaskForm):
     # requesting fields
-    epa = SelectField(label='EPA', choices=[('', '')], default='')
-    reviewer = SelectField(label='老師', choices=[('', '')], default='')
-    reviewee = SelectField(label="學生", choices=[('', '')], default='')
-    location = SelectField(label='實作地點', choices=[('', '')], default='')
+    epa = SelectField(label='EPA')
+    reviewer = SelectField(label='老師')
+    reviewee = SelectField(label="學生")
+    location = SelectField(label='實作地點')
     implement_date = DateField(label="實作時間", validators=[DataRequired()], default=datetime.date.today())
     reviewee_note = TextAreaField(label="學生備註" )
 
     # scoring fields
-    review_difficulty = SelectField(label='(1) 這項工作的複雜程度為', choices=[('', '')], default='')
+    review_difficulty = SelectField(label='(1) 這項工作的複雜程度為')
     review_compliment = TextAreaField(label="(2) 我覺得你表現不錯的地方在" )
     review_suggestion = TextAreaField(label="(3) 如果你能做到以下建議會更好" )
-    review_score = RadioField(label='(4) 我對你的信賴等級為', choices=[('', '')], default='')
+    review_score = RadioField(label='(4) 我對你的信賴等級為')
 
     # btns
     submit = SubmitField(label='提交')
-    save_draft = SubmitField(label='存成草稿')
+    submit_draft = SubmitField(label='存成草稿')
 
     # meta
     creator = SelectField(label="創建者", choices=[('', '')], default='')
