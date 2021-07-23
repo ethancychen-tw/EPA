@@ -275,6 +275,7 @@ for i in range(200):
     if review.complete:
         review.review_compliment = '棒'
         review.review_suggestion = '爛'
+        review.is_draft = False
         review.review_score = all_review_scores[int(random.random()*len(all_review_scores))]
         review.review_difficulty_id = 1
     else:

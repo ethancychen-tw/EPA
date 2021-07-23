@@ -10,21 +10,21 @@
             <div class="row">
                 {% set card_text = review.epa.desc%}
                 {% if current_user.role.is_manager %}
-                {% set card_title = "" %}
-                {% set btn_url = url_for('edit_review',review_id=review.id) %}
-                {% set btn_text = "查看/編輯" %}
+                    {% set card_title = "" %}
+                    {% set btn_url = url_for('edit_review',review_id=review.id) %}
+                    {% set btn_text = "查看/編輯" %}
                 {% elif current_user.can_edit_review(review) %}
-                {% set card_title = "評核" + review.reviewee.username if review.reviewee_id else "評核未知的使用者"%}
-                {% set btn_url = url_for('edit_review',review_id=review.id) %}
-                {% if review.complete %}
-                {% set btn_text = "查看/編輯 " %}
+                    {% set card_title = "評核" + review.reviewee.username if review.reviewee_id else "評核未知的使用者"%}
+                    {% set btn_url = url_for('edit_review',review_id=review.id) %}
+                    {% if review.complete %}
+                        {% set btn_text = "查看/編輯 " %}
+                    {% else %}
+                        {% set btn_text = "前往填寫" %}
+                    {% endif %}
                 {% else %}
-                {% set btn_text = "前往填寫" %}
-                {% endif %}
-                {% else %}
-                {% set card_title = review.reviewer.username + review.reviewer.role.name%}
-                {% set btn_url = url_for('inspect_review',review_id=review.id) %}
-                {% set btn_text = "查看" %}
+                    {% set card_title = (review.reviewer.username + review.reviewer.role.name) if review.reviewer else "評核未知的使用者" %}
+                    {% set btn_url = url_for('inspect_review',review_id=review.id) %}
+                    {% set btn_text = "查看" %}
                 {% endif %}
 
                 <div class="col-3 col-md-1">
