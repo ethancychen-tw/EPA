@@ -318,7 +318,7 @@ def view_all_reviews():
     
 
     filter_form.epas.choices = [
-        (epa.id, epa.desc)
+        (str(epa.id), epa.desc)
         for epa in EPA.query.with_entities(EPA.id, EPA.desc).all()
     ]
 
@@ -386,7 +386,6 @@ def view_all_reviews():
                     Review.reviewee_id.in_(selected_user_ids),
                 )
             )
-            
         if create_time_start:
             filter_form.create_time_start.data = datetime.date.fromisoformat(create_time_start)
             filtering_clause.append(
@@ -411,8 +410,6 @@ def view_all_reviews():
                 sort_entity = Review.epa_id
             elif sort_key == "implement_date":
                 sort_entity = Review.implement_date.desc()
-            elif sort_key == "create_time":
-                sort_entity = Review.create_time.desc()
             elif sort_key == "complete":
                 sort_entity = Review.complete
 

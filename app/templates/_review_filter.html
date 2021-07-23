@@ -4,13 +4,13 @@
     <div class="d-none d-sm-none d-md-none d-lg-block d-xl-block review-form">
         <div class="row">
             {% for field in filter_form if field.type not in ["CSRFTokenField", "SubmitField"] %}
-                <div class="col-3 text-end">{{ field.label }}</div>
-                <div class="col-9">
+                <div class="col-2 text-end">{{ field.label }}</div>
+                <div class="col-10">
                     {% if field.type in ["SelectMultipleField", "MultiCheckboxField"] %}
                         {{ field(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
                     
                     {% elif field.type in ["DateField"] %}
-                        <div class="row"><div class="col-6">{{ field(class="form-control") }}</div></div>
+                        {{ field(class="form-control") }}
                         
                     {% elif field.type in ["RadioField"] %}
                         <div class="row">
@@ -32,7 +32,7 @@
                 
             {% endfor %}
             <div class="col-3"></div>
-            <div class="col-2"><a class="w-100 btn btn-outline-secondary" href="{{url_for('view_all_reviews')}}">清除條件</a></div>
+            <div class="col-2"><a class="w-100 btn btn-outline-secondary" href="{{url_for('view_all_reviews',view_as=view_as)}}">清除條件</a></div>
             <div class="col-1"></div>
             <div class="col-2">{{ filter_form.submit(class="w-100 btn btn-outline-primary") }}</div>
             
