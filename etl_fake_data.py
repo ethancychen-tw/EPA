@@ -1,6 +1,7 @@
 import datetime
 import random
 import os
+from sqlalchemy import literal
 from app import db, create_app  # 此時db仍沒有連上engine，因為app在  __init__.py 中只有初始化SQLAlchemy空物件而已
 app = create_app('development') # 這裏db也還是沒有連上，只是創造出app 環境而已
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
@@ -19,7 +20,7 @@ for table_name in [
 
 
 
-# #EPA
+#EPA
 epa_desc_list = [
     "EPA01 呼吸道評估與處置(Airway)",
     "EPA02 異物評估與處置(FB)",
@@ -45,12 +46,16 @@ for corecompetence in corecompetence_names:
 db.session.commit()
 
 # milestone
-milestone_names = ['PC1', 'PC2', 'PC3','PC5', 'PC6', 'PC7','PC8','PCA1','MK1','MK2','MK3','MK4','MKA1','SBP1','SBP2','PBLI1','PBLIN2','PROF1','ICS1','ICSN1','ICSN2']
-for milestone in milestone_names:
-    c = CoreCompetence.query.filter(CoreCompetence.name.like(milestone[:2]+"%")).first()
-    m = Milestone(name=milestone, desc=f"desc for {milestone}")
-    m.corecompetence = c
-    db.session.add(m)
+milestone_lines = open("../temp/milestone_content.csv").readlines()
+for line in milestone_lines:
+    if len(line)<2:
+        continue
+    li = line.split(",")
+    name = li[0].strip()
+    desc = li[1].replace("\n","")
+    milestone = Milestone(name=name,desc=desc)
+    milestone.corecompetence_id = CoreCompetence.query.filter(literal(name).contains(CoreCompetence.name)).first().id
+    db.session.add(milestone)
 db.session.commit()
 
 # assume we have these PC1.level.item
@@ -252,7 +257,6 @@ for i in range(200):
     user = all_users[int(random.random()*len(all_users))]
     review = Review()
     review.creator = user
-    review.complete = random.random() > 0.3
     
     if user.can_create_review():
         review.reviewer = user
@@ -261,6 +265,7 @@ for i in range(200):
             continue
         review.reviewee = reviewee_options[int(random.random()*len(reviewee_options))]
         review.review_source = review_source_new
+        review.complete = random.random() > 0.3
     else:
         review.reviewee = user
         reviewer_options = user.get_potential_reviewers()
@@ -268,6 +273,7 @@ for i in range(200):
             continue
         review.reviewer = reviewer_options[int(random.random()*len(reviewer_options))]
         review.review_source = review_source_req
+        review.complete = False
     
     review.location = all_locations[int(random.random()*len(all_locations))]
     review.epa = all_epa[int(random.random()*len(all_epa))]
@@ -277,8 +283,13 @@ for i in range(200):
         review.review_suggestion = '爛'
         review.is_draft = False
         review.review_score = all_review_scores[int(random.random()*len(all_review_scores))]
-        review.review_difficulty_id = 1
+        review.review_difficulty_id = int(random.random())+1
     else:
-        review.draft = random.random() > 0.95
+        if review.review_source == review_source_new:
+            # 如果是老師創的，未完成一定是暫存
+            review.is_draft = True
+        else:
+            #如果是學生請求，有可能學生提交了，也可能是學生暫存
+            review.is_draft = random.random()>0.5
     db.session.add(review)
 db.session.commit()

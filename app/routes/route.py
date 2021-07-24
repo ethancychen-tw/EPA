@@ -82,7 +82,10 @@ def inspect_review(review_id):
 
     for field in form:
         field.render_kw = {"disabled": "disabled"}
-    showing_fields = form.requesting_fields + form.scoring_fields + form.meta_fields
+    if not prefilled_review.complete and prefilled_review.creator_id == current_user.id and prefilled_review.review_source_id == ReviewSource.query.filter(ReviewSource.name=='request').first().id:
+        showing_fields = form.requesting_fields + form.meta_fields
+    else:   
+        showing_fields = form.requesting_fields + form.scoring_fields + form.meta_fields
     # (2) on submit handle (not applicable here)
 
     # (3) prefill: (for select fields, must be valid choices configured above)
@@ -251,13 +254,15 @@ def edit_review(review_id):
     form.review_score.data = str(prefilled_review.review_score_id or str(form.review_score.choices[0][0]))
     
     
-    mies, mis = get_epa_linkages()
+    milestone_item_epa_linkage, milestone_items, epa_milestones = get_epa_linkages()
+    
     return render_template(
         "make_review.html",
         title="填寫/編輯評核",
         form=form,
-        mies=mies,
-        mis=mis,
+        milestone_item_epa_linkage=milestone_item_epa_linkage,
+        milestone_items=milestone_items,
+        epa_milestones=epa_milestones,
         review=prefilled_review,
         review_type=review_type,
         showing_fields=showing_fields
@@ -478,7 +483,17 @@ def get_epa_linkages():
     mies_json = json.dumps(mies_dict)
     mis = MilestoneItem.query.with_entities(MilestoneItem.code.label('milestone_item_code'), MilestoneItem.content.label('milestone_item_content')).all()
     mis_json = json.dumps({mi['milestone_item_code']:mi['milestone_item_content']  for mi in mis})
-    return mies_json, mis_json
+
+    epa_milestones = Milestone.query.join(MilestoneItem).join(MilestoneItemEPA).join(EPA).with_entities(EPA.name.label('epa'), Milestone.name.label('milestone_name'), Milestone.desc.label('milestone_desc')).distinct().order_by(EPA.name, Milestone.name).all()
+    epa_milestone_dict = dict()
+    for em in epa_milestones:
+        if not em.epa in epa_milestone_dict.keys():
+            epa_milestone_dict[em.epa] = []
+        epa_milestone_dict[em.epa].append({'name':em.milestone_name, 'desc':em.milestone_desc})
+    epa_milestone_json = json.dumps(epa_milestone_dict)
+    print(epa_milestone_json)
+
+    return mies_json, mis_json, epa_milestone_json
 
 @login_required
 def index():

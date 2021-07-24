@@ -4,7 +4,7 @@
 
         <div class="card-header">
             {% if review.is_draft %}
-                <span class="badge bg-light">暫存</span>
+                <span class="badge bg-secondary">暫存</span>
             {% elif review.complete %} 
                 <span class="badge bg-success">已完成</span> 
             {% else %} 
@@ -14,11 +14,7 @@
         <div class="card-body">
             <div class="row">
                 {% set card_text = review.epa.desc%}
-                {% if current_user.role.is_manager %}
-                    {% set card_title = "" %}
-                    {% set btn_url = url_for('edit_review',review_id=review.id) %}
-                    {% set btn_text = "查看/編輯" %}
-                {% elif current_user.can_edit_review(review) %}
+                {% if current_user.can_edit_review(review) %}
                     {% set card_title = "評核" + review.reviewee.username if review.reviewee_id else "評核未知的使用者"%}
                     {% set btn_url = url_for('edit_review',review_id=review.id) %}
                     {% if review.complete %}
@@ -26,7 +22,7 @@
                     {% else %}
                         {% set btn_text = "前往填寫" %}
                     {% endif %}
-                {% else %}
+                {% elif current_user.can_view_review(review) %}
                     {% set card_title = (review.reviewer.username + review.reviewer.role.name) if review.reviewer else "評核未知的使用者" %}
                     {% set btn_url = url_for('inspect_review',review_id=review.id) %}
                     {% set btn_text = "查看" %}
@@ -49,13 +45,12 @@
                 <div class="col-5 col-md-2">
                     <a href="{{btn_url}}" class="btn w-100 btn-outline-primary">{{btn_text}}</a>
                 </div>
-
-                {% if current_user.can_delete_review(review) %}
                 <div class="col-5 col-md-1">
+                {% if current_user.can_delete_review(review) %}
                     <a href="{{url_for('delete_review',review_id=review.id)}}"
                         class="btn w-100 btn-outline-danger">刪除</a>
-                </div>
                 {% endif %}
+                </div>
             </div>
         </div>
 

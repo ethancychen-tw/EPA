@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<meta id="meta_linkages" data-mies="{{ mies }}" data-mis="{{mis}}">
+<meta id="milestoneitem_epa" data-milestone_item_epa_linkage="{{ milestone_item_epa_linkage }}" data-milestone_items="{{milestone_items}}" data-epa_milestones="{{epa_milestones}}">
 
 <form action="" method="post">
     <div class="container">
@@ -11,6 +11,13 @@
             <div class="text-center col-md-6 mb-3">
                 <div class="card">
                     <div class="card-body">
+                        {% if review.is_draft %}
+                            <span class="badge bg-secondary">暫存</span>
+                        {% elif review.complete %} 
+                            <span class="badge bg-success">已完成</span> 
+                        {% else %} 
+                            <span class="badge bg-warning text-dark">未完成</span> 
+                        {% endif %}
                         <h5 class="card-title">{{title}}</h5>
                         <h6 class="card-subtitle mb-2 text-muted">
                             {% if review.review_source.name == 'request' %}
@@ -20,7 +27,7 @@
                             {% endif %}
                         </h6>
                         <p class="card-text">{{card_desc}}</p>
-                        <div id="btn_epa_linkage" class="text-center btn btn-outline-dark">查看EPA詳情</div>
+                        <div id="btn_epa_milestones" class="text-center btn btn-outline-dark">查看EPA詳情</div>
                     </div>
                 </div>
             </div>
@@ -65,11 +72,11 @@
 
         </div>
 </form>
-<div class="modal fade" id="epa_linkage_modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="epa_milestone_modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">EPA詳情</h5>
+                <h5 class="modal-title" id="exampleModalLabel">EPA連結的次核心能力</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -82,30 +89,31 @@
 </div>
 
 <script>
-    $("#btn_epa_linkage").on("click", (e) => {
+    $("#btn_epa_milestones").on("click", (e) => {
         var selectedText = $('#epa :selected').text();
         var selected_epa_code = selectedText.match(/EPA\d+/)[0]
         selected_epa_code = selected_epa_code.substring(0,3) + parseInt(selected_epa_code.substring(3))
         console.log(selected_epa_code)
-        var epa_linkage = find_epa_linkage(selected_epa_code)
-        var htmltext = "<ul>"
-        for (var i = 0; i < epa_linkage['milestone_item_codes'].length; i++) {
-            htmltext += `<li>(${epa_linkage['min_epa_level'][i]}) ${epa_linkage['milestone_item_codes'][i]}: ${epa_linkage['contents'][i]}</li>`
-        }
-        htmltext += "</ul>"
-        var $epa_modal = $('#epa_linkage_modal')
+        var epa_milestones = find_epa_milestone(selected_epa_code)
+        console.log(epa_milestones)
+        var htmltext = "<ul>"+epa_milestones.map(x=>"<li>"+x+"</li>").join("")+"<ul>"
+        var $epa_modal = $('#epa_milestone_modal')
         $epa_modal.find(".modal-body").html(htmltext)
         $epa_modal.find(".modal-title").html(selectedText)
         $epa_modal.modal('show');
 
     });
+    function find_epa_milestone(epa){
+        var epa_milestones = $("#milestoneitem_epa").data("epa_milestones")
+        return epa_milestones[epa].map(x=>x['name'] + " "+ x['desc'])
+    }
 
-    function find_epa_linkage(epa) {
-        var linkages = $("#meta_linkages")
-        var mies = linkages.data("mies") //would be json
-        var mis = linkages.data("mis")
-        var re = mies[epa]
-        re['contents'] = re['milestone_item_codes'].map(x => mis[x])
+    function find_epa_milestone_items(epa) {
+        var linkages = $("#milestoneitem_epa")
+        var milestone_item_epa_linkage = linkages.data("milestone_item_epa_linkage") //mies show the all epa level-miletone item linkage
+        var milestone_items = linkages.data("milestone_items") //  mis show the milestone item content
+        var re = milestone_item_epa_linkage[epa]
+        re['contents'] = re['milestone_item_codes'].map(x => milestone_items[x])
         return re
     }
 </script>

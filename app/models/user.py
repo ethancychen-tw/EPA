@@ -13,7 +13,7 @@ import jwt
 
 from app import db, login_manager
 from app.channels import linebot, gmail
-from app.models.review import Review
+from app.models.review import Review, ReviewSource
 
 user_externalgroup = db.Table('user_externalgroup',
     db.Column('user_id', UUID(as_uuid=True), db.ForeignKey('users.id')),
@@ -153,17 +153,27 @@ class User(UserMixin, db.Model):
     def can_edit_review(self, review=None):
         if self.role.is_manager:
             return True
+        if not self.can_view_review(review):
+            return False
+        
         # 發起人在draft狀態下一定能編輯
         if review.creator == self and review.is_draft and not review.complete:
             return True
         # 如果是老師，能編的情況和可看的情況是一樣的
-        if review.reviewer == self and self.can_view_review(review):
+        if review.reviewer == self:
             return True
 
     def can_delete_review(self, review=None):
         if self.role.is_manager:
             return True
-        if review.creator == self and review.is_draft and not review.complete:
+        if not self.can_view_review(review):
+            return False
+        if review.complete:
+            return False
+        # 是學生發起的話，學生只要非完成都可以刪(即便老師正暫存他的評核)
+        if review.review_source == ReviewSource.query.filter(ReviewSource.name=='request').first() and review.reviewee == self:
+            return True
+        if review.creator == self and review.is_draft:
             return True
         return False
     
