@@ -90,116 +90,48 @@
   <!-- navbar  -->
   <!-- offcanvas -->
   {% if current_user.is_authenticated %}
+    {% if current_user.can_request_review() and  current_user.can_create_review() %}
+      {% set nav_items = [
+        (url_for('index'), '未完成評核'),
+        (url_for('request_review'),'新增評核(學生)'),
+        (url_for('progress_stat'), '評核總覽(學生)'),
+        (url_for('create_review'),'新增評核(老師)'),
+        (url_for('view_all_reviews', view_as='reviewer'), '評核總覽(老師)')
+        ] 
+      %}
+    {% elif current_user.can_request_review() %}
+      {% set nav_items = [
+        (url_for('index'), '未完成評核'),
+        (url_for('request_review'),'新增評核'),
+        (url_for('progress_stat'), '評核總覽'),
+        ] 
+      %}
+        
+    {% elif current_user.can_create_review() %}
+      {% set nav_items = [
+        (url_for('index'), '未完成評核'),
+        (url_for('create_review'),'新增評核'),
+        (url_for('view_all_reviews', view_as='reviewee'), '評核總覽')
+        ] 
+      %}
+    {% endif %}
+
   <div class="offcanvas offcanvas-start sidebar-nav" tabindex="-1" id="offcanvasExample"
     aria-labelledby="offcanvasExampleLabel">
 
     <div class="offcanvas-body">
       <nav class="nav-light">
         <ul class="navbar-nav">
-          <li>
-            <div class="text-muted small fw-bold text-uppercase px-3">
-              可放標題
-            </div>
-          </li>
-          {% if current_user.can_request_review() and  current_user.can_create_review() %}
+          {% for nav_item in nav_items %}
             <li>
-              <a href="{{ url_for('request_review') }}" class="nav-link px-3 active sidebar-link">
+              <a href="{{ nav_item[0]}}" class="nav-link px-3 active sidebar-link">
                 <span class="me-2">
                   <i class="bi bi-check-square"></i>
                 </span>
-                <span>新增評核(學生)</span>
+                <span>{{nav_item[1]}}</span>
               </a>
             </li>
-            <li>
-              <a href="{{ url_for('create_review') }}" class="nav-link px-3 active sidebar-link">
-                <span class="me-2">
-                  <i class="bi bi-check-square"></i>
-                </span>
-                <span>新增評核(老師)</span>
-              </a>
-            </li>
-          {% elif current_user.can_request_review() %}
-            <li>
-              <a href="{{ url_for('request_review') }}" class="nav-link px-3 active sidebar-link">
-                <span class="me-2">
-                  <i class="bi bi-check-square"></i>
-                </span>
-                <span>新增評核</span>
-              </a>
-            </li>
-          {% elif current_user.can_create_review() %}
-            <li>
-              <a href="{{ url_for('create_review') }}" class="nav-link px-3 active sidebar-link">
-                <span class="me-2">
-                  <i class="bi bi-check-square"></i>
-                </span>
-                <span>新增評核</span>
-              </a>
-            </li>
-          {% endif %}
-          <li>
-            <a href="{{ url_for('index') }}" class="nav-link px-3 active sidebar-link">
-              <span class="me-2">
-                <i class="bi bi-check-square"></i>
-              </span>
-              <span>未完成評核</span>
-            </a>
-          </li>
-          {% if current_user.can_request_review() %}
-          <li>
-            <a href="{{ url_for('progress_stat') }}" class="nav-link px-3 active sidebar-link">
-              <span class="me-2">
-                <i class="bi bi-check-square"></i>
-              </span>
-              <span>評核成績統計</span>
-            </a>
-          </li>
-          {% endif %}
-          {% if current_user.can_request_review() and  current_user.can_create_review() %}
-            <li>
-              <a href="{{ url_for('view_all_reviews', view_as='reviewee')}}" class="nav-link px-3 active sidebar-link">
-                <span class="me-2">
-                  <i class="bi bi-check-square"></i>
-                </span>
-                <span>查看已完成評核(學生)</span>
-              </a>
-            </li>
-            <li>
-              <a href="{{ url_for('view_all_reviews', view_as='reviewer' )}}" class="nav-link px-3 active sidebar-link">
-                <span class="me-2">
-                  <i class="bi bi-check-square"></i>
-                </span>
-                <span>查看已完成評核(老師)</span>
-              </a>
-            </li>
-          {% else %}
-            <li>
-              <a href="{{ url_for('view_all_reviews')}}" class="nav-link px-3 active sidebar-link">
-                <span class="me-2">
-                  <i class="bi bi-check-square"></i>
-                </span>
-                <span>查看已完成評核</span>
-              </a>
-            </li>
-          {% endif %}
-          
-          
-          <li class="my-4">
-            <hr class="dropdown-divider" />
-          </li>
-          <li>
-            <div class="text-muted small fw-bold text-uppercase px-3">
-              可放標題
-            </div>
-          </li>
-          <li>
-            <a href="#" class="nav-link px-3 active sidebar-link">
-              <span class="me-2">
-                <i class="bi bi-plus-square"></i>
-              </span>
-              <span>請求評核</span>
-            </a>
-          </li>
+          {% endfor %}
         </ul>
       </nav>
     </div>
