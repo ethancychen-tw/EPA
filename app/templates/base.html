@@ -101,25 +101,41 @@
               可放標題
             </div>
           </li>
-          {% if current_user.can_request_review() %}
-          <li>
-            <a href="{{ url_for('request_review') }}" class="nav-link px-3 active sidebar-link">
-              <span class="me-2">
-                <i class="bi bi-check-square"></i>
-              </span>
-              <span>請求評核</span>
-            </a>
-          </li>
-          {% endif %}
-          {% if current_user.can_request_review() %}
-          <li>
-            <a href="{{ url_for('create_review') }}" class="nav-link px-3 active sidebar-link">
-              <span class="me-2">
-                <i class="bi bi-check-square"></i>
-              </span>
-              <span>新增評核</span>
-            </a>
-          </li>
+          {% if current_user.can_request_review() and  current_user.can_create_review() %}
+            <li>
+              <a href="{{ url_for('request_review') }}" class="nav-link px-3 active sidebar-link">
+                <span class="me-2">
+                  <i class="bi bi-check-square"></i>
+                </span>
+                <span>新增評核(學生)</span>
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('create_review') }}" class="nav-link px-3 active sidebar-link">
+                <span class="me-2">
+                  <i class="bi bi-check-square"></i>
+                </span>
+                <span>新增評核(老師)</span>
+              </a>
+            </li>
+          {% elif current_user.can_request_review() %}
+            <li>
+              <a href="{{ url_for('request_review') }}" class="nav-link px-3 active sidebar-link">
+                <span class="me-2">
+                  <i class="bi bi-check-square"></i>
+                </span>
+                <span>新增評核</span>
+              </a>
+            </li>
+          {% elif current_user.can_create_review() %}
+            <li>
+              <a href="{{ url_for('create_review') }}" class="nav-link px-3 active sidebar-link">
+                <span class="me-2">
+                  <i class="bi bi-check-square"></i>
+                </span>
+                <span>新增評核</span>
+              </a>
+            </li>
           {% endif %}
           <li>
             <a href="{{ url_for('index') }}" class="nav-link px-3 active sidebar-link">

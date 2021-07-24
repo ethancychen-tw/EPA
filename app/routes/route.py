@@ -160,6 +160,7 @@ def edit_review(review_id):
     elif current_user == prefilled_review.reviewer:
         form.reviewer.choices = [(prefilled_review.reviewer_id, prefilled_review.reviewer.username)]
         form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees()]
+        form.reviewee_note.render_kw = {'disabled':'disabled'}
     elif current_user == prefilled_review.reviewee:
         form.reviewer.choices = [(user.id, user.username) for user in current_user.get_potential_reviewers()]
         form.reviewee.choices = [(prefilled_review.reviewee.id, prefilled_review.reviewee.username)]
