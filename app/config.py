@@ -59,6 +59,11 @@ class DevelopmentConfig(Config):
     STATIC_FOLDER = "static"
     DEBUG = True
     SQLALCHEMY_ECHO = False
+    @staticmethod
+    def init_app(app):
+        Config.init_app(app)
+        if not os.environ.get('SECRET_KEY'):
+            raise Exception('SECRET_KEY IS NOT SET!')
 
 class StagingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL')
