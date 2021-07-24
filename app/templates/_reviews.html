@@ -4,7 +4,7 @@
 
         <div class="card-header">
             {% if review.is_draft %}
-                <span class="badge bg-secondary">暫存</span>
+                <span class="badge bg-danger">暫存</span>
             {% elif review.complete %} 
                 <span class="badge bg-success">已完成</span> 
             {% else %} 
@@ -40,8 +40,7 @@
                 <div class="col-12 col-md-2 text-end text-md-start text-muted">
                     {{review.implement_date.strftime('%Y-%m-%d') if review.implement_date else "未知時間"}}
                     <br>{{review.location.desc if review.location_id else "未知地點"}}</div>
-
-
+                    
                 <div class="col-5 col-md-2">
                     <a href="{{btn_url}}" class="btn w-100 btn-outline-primary">{{btn_text}}</a>
                 </div>

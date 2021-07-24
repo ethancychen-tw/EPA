@@ -11,9 +11,15 @@
         <div class="card-body">
           <div class="row">
             <div class="col-9 col-md-8">
-              <p class="card-title card-title pricing-card-title"><a href="{{epa_stat['url']}}">
+              <p class="card-title card-title pricing-card-title">
+                {% if epa_stat['review_cnt'] >0 %}
+                  <a href="{{epa_stat['url']}}">
+                    <h3>{{epa_name}}</h3>
+                  </a>
+                {% else %}
                   <h3>{{epa_name}}</h3>
-                </a></p>
+                {% endif %}
+              </p>
               <p class="card-text">{{epa_stat['desc'].split(' ')[1]}}</p>
             </div>
             <div class="col-3 col-md-4">

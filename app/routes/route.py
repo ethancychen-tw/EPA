@@ -630,17 +630,23 @@ def page_not_found(e):
 def get_stats_by_user(user):
     entities = [ Review.epa_id, ReviewScore.value.label('score')]
     user_reviews = Review.query.join(EPA).join(ReviewScore).filter(Review.reviewee_id == user.id ).with_entities(*entities).all()
-    re_dict = {'epa_stats':None, 'corecompetence_stats':None, 'milestone_stats':None}
+
+    epas = EPA.query.with_entities(EPA.id.label('epa_id'), EPA.name, EPA.desc).all()
+    milestones = Milestone.query.with_entities(Milestone.name, Milestone.id.label('milestone_id'), Milestone.desc).all()
+    corecompetences = CoreCompetence.query.with_entities(CoreCompetence.name, CoreCompetence.id.label('corecompetence_id'),CoreCompetence.desc).all()
+
+    re_dict = dict()
     if len(user_reviews) == 0:
+        re_dict['epa_stats'] = {epa.name: {'id': epa.epa_id, 'score': 0, 'review_cnt':0, 'desc': epa.desc} for epa in epas}
+        re_dict['milestone_stats'] = {ms.name: {'id': ms.milestone_id, 'score': 0, 'desc': ms.desc} for ms in milestones}
+        re_dict['corecompetence_stats'] = {cc.name: {'id': cc.corecompetence_id, 'score': 0, 'desc': cc.desc} for cc in corecompetences}
+        re_dict['milestone_item_checking'] = dict()
         return re_dict
 
     import pandas as pd
     review_df = pd.DataFrame(user_reviews,columns=user_reviews[0].keys())
-
-    epas = EPA.query.with_entities(EPA.id.label('epa_id'), EPA.name, EPA.desc).all()
-    milestones = Milestone.query.with_entities(Milestone.name, Milestone.id.label('milestone_id'), Milestone.desc).all()
     milestone_items = MilestoneItem.query.join(Milestone).with_entities(MilestoneItem.id.label('milestone_item_id'), MilestoneItem.level, Milestone.name.label('milestone'), MilestoneItem.code, MilestoneItem.content)
-    corecompetences = CoreCompetence.query.with_entities(CoreCompetence.name, CoreCompetence.id.label('corecompetence_id'),CoreCompetence.desc).all()
+    
     epa_df = pd.DataFrame(epas, columns=epas[0].keys())
     milestone_df = pd.DataFrame(milestones, columns=milestones[0].keys())
     milestone_item_df = pd.DataFrame(milestone_items, columns=milestone_items[0].keys())
@@ -693,8 +699,6 @@ def get_stats_by_user(user):
 
     milestone_stats = milestone_stats_df[['milestone_id','score']]
     corecompetence_stats = milestone_stats_df.groupby('corecompetence_id')['score'].mean().reset_index()
-
-    
     
     milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id',how='outer').fillna(0).drop(['milestone_id'],axis='columns').set_index('name').T.to_dict()
     corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df, on='corecompetence_id',how='outer').drop(['corecompetence_id'],axis='columns').fillna(0).set_index('name').T.to_dict()
@@ -728,7 +732,6 @@ def progress_stat():
         user = current_user
     
     user_stats = get_stats_by_user(user)
-    
     epa_stats = user_stats['epa_stats']
     corecompetence_stats_json = json.dumps(user_stats['corecompetence_stats'])
     milestone_stats_json = json.dumps(user_stats['milestone_stats'])
@@ -736,9 +739,10 @@ def progress_stat():
     for key in epa_stats:
         epa_stats[key].update({
             'img_src':f'{key[3:].zfill(2)}.svg',
-            'url':url_for('view_all_reviews',filters_json=json.dumps({"epas":[str(epa_stats[key]['id'])]}))
+            'url':url_for('view_all_reviews',view_as='reviewee',filters_json=json.dumps({"epas":[str(epa_stats[key]['id'])]}))
             })
     epa_stats=dict(sorted(epa_stats.items(),key=lambda x:int(x[0].split(" ")[0][3:])))
+
     return render_template(
         "progress_stat.html",
         title=user.username,

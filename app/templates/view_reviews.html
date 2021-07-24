@@ -3,15 +3,22 @@
 {% block content %}
 <div class="container">
     <div class="row justify-content-md-center review-form">
+        
         <div class="card">
+            
             <div class="card-body">
+                {% if view_as == 'reviewee' %}
+                <a class='btn btn-outline-dark'href="{{url_for('progress_stat')}}">← 回評核成績統計</a>
+            {% endif %}
+                <p></p>
                 <h5 class="card-title">{{title}}</h5>
+                
                 
                 <h6 class="card-subtitle d-none d-sm-none d-md-none d-lg-block mb-2 text-muted">你可以選擇篩選、排序規則(限電腦版)</h6>
                 {% include "_review_filter.html"%}
             </div>
-            
         </div>
+        
 
         {% include "_reviews.html" %}     
         <div class='row'>
