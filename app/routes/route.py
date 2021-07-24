@@ -111,6 +111,8 @@ def inspect_review(review_id):
 @login_required
 def create_review():
     if not current_user.can_create_review():
+        if current_user.can_request_review():
+            return redirect(url_for('request_review'))
         flash('你沒有權限建立評核','alert-danger')
         return redirect(url_for('index'))
     review = Review()
@@ -125,6 +127,8 @@ def create_review():
 @login_required
 def request_review():
     if not current_user.can_request_review():
+        if current_user.can_create_review():
+            return redirect(url_for('create_review'))
         flash('你沒有權限請求評核','alert-danger')
         return redirect(url_for('index'))
     review = Review()
@@ -492,7 +496,6 @@ def get_epa_linkages():
             epa_milestone_dict[em.epa] = []
         epa_milestone_dict[em.epa].append({'name':em.milestone_name, 'desc':em.milestone_desc})
     epa_milestone_json = json.dumps(epa_milestone_dict)
-    print(epa_milestone_json)
 
     return mies_json, mis_json, epa_milestone_json
 
