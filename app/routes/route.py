@@ -251,7 +251,7 @@ def edit_review(review_id):
     form.review_score.data = str(prefilled_review.review_score_id or str(form.review_score.choices[0][0]))
     
     
-    mies, mis = None, None # get_epa_linkages()
+    mies, mis = get_epa_linkages()
     return render_template(
         "make_review.html",
         title="填寫/編輯評核",

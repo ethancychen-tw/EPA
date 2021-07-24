@@ -4,12 +4,11 @@
 
 <div class="container index-page">
     <!-- <div class='row justify-content-center align-items-center index-page'><h1>嗨，{{current_user.role.name}} {{current_user.username}}</h1></div>  -->
-    <div class="row">
         
     {% if unfin_being_reviews | length == 0 and unfin_make_reviews | length == 0 and draft_reviews | length == 0%}
-    <div class="col-md-12 fw-bold fs-2"> 太棒了，你沒有待辦事項</div>
+        <div class="col-md-12 fw-bold fs-2"> 太棒了，你沒有待辦事項</div>
     {% endif %}
-</div>
+    
     {% if draft_reviews | length > 0%}
         <h5>你有{{draft_reviews | length}}則暫存的評核</h5>
         {% set reviews = draft_reviews %}

@@ -180,7 +180,7 @@ class User(UserMixin, db.Model):
             return []
     
     def get_draft_reviews(self):
-        return Review.query.filter(Review.creator_id == self.id, Review.complete==False).all()
+        return Review.query.filter(Review.creator_id == self.id, Review.complete==False, Review.is_draft == True).all()
     def get_unfin_being_reviews(self):
         return Review.query.filter(Review.reviewee_id == self.id, Review.complete==False, Review.is_draft == False).all()
     def get_unfin_reviews(self):
