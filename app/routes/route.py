@@ -308,7 +308,7 @@ def view_all_reviews():
             for user in current_user.get_potential_reviewees()
         ], key=lambda x:x[0])
     else:
-        filter_form.reviewers.render_kw = {'disabled':'disabled'}
+        filter_form.reviewees.render_kw = {'disabled':'disabled'}
     filter_form.groups.choices = sorted([
         (group.id.hex, group.name)
         for group in [current_user.internal_group ]+ current_user.external_groups.all()
@@ -354,8 +354,8 @@ def view_all_reviews():
         reviewees = filters.get("reviewees", [])
         reviewers = filters.get("reviewers", [])
         groups = filters.get("groups", [])
-        create_time_start = filters.get("create_time_start", None)
-        create_time_end = filters.get("create_time_end", None)
+        implement_date_start = filters.get("implement_date_start", None)
+        implement_date_end = filters.get("implement_date_end", None)
         epas = filters.get("epas",[])
         sort_key = filters.get("sort_key", 'create_time')
 
@@ -391,16 +391,16 @@ def view_all_reviews():
                     Review.reviewee_id.in_(selected_user_ids),
                 )
             )
-        if create_time_start:
-            filter_form.create_time_start.data = datetime.date.fromisoformat(create_time_start)
+        if implement_date_start:
+            filter_form.implement_date_start.data = datetime.date.fromisoformat(implement_date_start)
             filtering_clause.append(
-                Review.create_time >= datetime.date.fromisoformat(create_time_start)
+                Review.implement_date >= datetime.date.fromisoformat(implement_date_start)
             )
             
-        if create_time_end:
-            filter_form.create_time_end.data = datetime.date.fromisoformat(create_time_end)
+        if implement_date_end:
+            filter_form.implement_date_end.data = datetime.date.fromisoformat(implement_date_end)
             filtering_clause.append(
-                Review.create_time < datetime.date.fromisoformat(create_time_end)
+                Review.implement_date < datetime.date.fromisoformat(implement_date_end)
             )
         if set(epas) & set([epa[0] for epa in filter_form.epas.choices]):
             filter_form.epas.data = epas
@@ -732,7 +732,7 @@ def progress_stat():
     for key in epa_stats:
         epa_stats[key].update({
             'img_src':f'{key[3:].zfill(2)}.svg',
-            'url':url_for('view_all_reviews',filters_json=json.dumps({"epas":[epa_stats[key]['id']]}))
+            'url':url_for('view_all_reviews',filters_json=json.dumps({"epas":[str(epa_stats[key]['id'])]}))
             })
     epa_stats=dict(sorted(epa_stats.items(),key=lambda x:int(x[0].split(" ")[0][3:])))
     return render_template(

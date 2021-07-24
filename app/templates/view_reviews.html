@@ -7,12 +7,8 @@
             <div class="card-body">
                 <h5 class="card-title">{{title}}</h5>
                 
-                {% if current_user.can_create_review() %}
-                    <h6 class="card-subtitle d-none d-sm-none d-md-none d-lg-block mb-2 text-muted">你可以選擇篩選、排序規則(限電腦版)</h6>
-                    {% include "_review_filter.html"%}
-                {% else %}
-                    <h6 class="card-subtitle d-none d-sm-none d-md-none d-lg-block mb-2 text-muted">你可查看所有歷史評核</h6>
-                {% endif %}
+                <h6 class="card-subtitle d-none d-sm-none d-md-none d-lg-block mb-2 text-muted">你可以選擇篩選、排序規則(限電腦版)</h6>
+                {% include "_review_filter.html"%}
             </div>
             
         </div>

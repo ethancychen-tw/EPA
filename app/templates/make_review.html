@@ -95,7 +95,6 @@
         selected_epa_code = selected_epa_code.substring(0,3) + parseInt(selected_epa_code.substring(3))
         console.log(selected_epa_code)
         var epa_milestones = find_epa_milestone(selected_epa_code)
-        console.log(epa_milestones)
         var htmltext = "<ul>"+epa_milestones.map(x=>"<li>"+x+"</li>").join("")+"<ul>"
         var $epa_modal = $('#epa_milestone_modal')
         $epa_modal.find(".modal-body").html(htmltext)
