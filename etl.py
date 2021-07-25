@@ -1,10 +1,11 @@
 # this is only for system admin, not managers
 # store some etl jobs that later on we could make them cronjobs
+import os
 import datetime
 from flask import url_for
 
 from app import db, create_app  # 此時db仍沒有連上engine，因為app在  __init__.py 中只有初始化SQLAlchemy空物件而已
-app = create_app() # 這裏db也還是沒有連上，只是創造出app 環境而已
+app = create_app(os.environ.get('FLASK_ENV')) # 這裏db也還是沒有連上，只是創造出app 環境而已
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
 
 from app.models.review import Review, Location, ReviewDifficulty, ReviewScore, ReviewSource, Milestone, CoreCompetence, MilestoneItemEPA, EPA, MilestoneItem
@@ -41,7 +42,7 @@ def update_rich_menu(callback_url=None):
     old_rich_menu_list = line_bot_api.get_rich_menu_list()
     for rich_menu in old_rich_menu_list:
         line_bot_api.delete_rich_menu(rich_menu.rich_menu_id)
-        
+    print(line_bot_api.headers)
     rich_menu_to_create = RichMenu(
         size=RichMenuSize(width=1200, height=400),
         selected=False,

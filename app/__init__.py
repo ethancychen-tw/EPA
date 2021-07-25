@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate 
@@ -13,8 +15,11 @@ login_manager.login_message = '請先登入以存取此頁面'
 login_manager.login_message_category = 'alert-info'
 login_manager.login_view = 'login'
 mail = Mail()
-line_bot_api = LineBotApi(config['production'].LINEBOT_MSG_CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(config['production'].LINEBOT_MSG_CHANNEL_SECRET)
+
+# Line: this is not consistent with other extensions
+# line doesn't have init_app method
+line_bot_api = LineBotApi(config[os.environ.get('FLASK_ENV')].LINEBOT_MSG_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(config[os.environ.get('FLASK_ENV')].LINEBOT_MSG_CHANNEL_SECRET)
 
 from app.routes.route import index, login, logout, register, page_not_found, \
     edit_profile, reset_password_request, password_reset, create_review, request_review, edit_review, view_all_reviews, inspect_review, delete_review, progress_stat

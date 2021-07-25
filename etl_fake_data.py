@@ -3,7 +3,8 @@ import random
 import os
 from sqlalchemy import literal
 from app import db, create_app  # 此時db仍沒有連上engine，因為app在  __init__.py 中只有初始化SQLAlchemy空物件而已
-app = create_app('development') # 這裏db也還是沒有連上，只是創造出app 環境而已
+app = create_app('production') # 這裏db也還是沒有連上，只是創造出app 環境而已
+# 呼叫flask cmd時會去讀取現在environment裡面的，這裏create_app 也要重新指定一次環境
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
 
 from app.models.review import Review, Location, ReviewDifficulty, ReviewScore, ReviewSource, Milestone, CoreCompetence, MilestoneItemEPA, EPA, MilestoneItem

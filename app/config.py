@@ -23,12 +23,6 @@ class Config:
     SQLALCHEMY_COMMIT_ON_TEARDOWN = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # linebot
-    LINEBOT_MSG_CHANNEL_ACCESS_TOKEN = os.environ.get('LINEBOT_MSG_CHANNEL_ACCESS_TOKEN')
-    LINEBOT_MSG_CHANNEL_SECRET = os.environ.get('LINEBOT_MSG_CHANNEL_SECRET')
-    if not LINEBOT_MSG_CHANNEL_ACCESS_TOKEN or not LINEBOT_MSG_CHANNEL_SECRET:
-        print("line bot not set!!! ")
-
     # email
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
     MAIL_PORT = os.environ.get('MAIL_PORT', 465)
@@ -59,33 +53,53 @@ class DevelopmentConfig(Config):
     STATIC_FOLDER = "static"
     DEBUG = True
     SQLALCHEMY_ECHO = False
+
+    # linebot
+    LINEBOT_MSG_CHANNEL_ACCESS_TOKEN = os.environ.get('DEV_LINEBOT_MSG_CHANNEL_ACCESS_TOKEN', None)
+    LINEBOT_MSG_CHANNEL_SECRET = os.environ.get('DEV_LINEBOT_MSG_CHANNEL_SECRET', None)
+    if not LINEBOT_MSG_CHANNEL_ACCESS_TOKEN or not LINEBOT_MSG_CHANNEL_SECRET:
+        print("line bot not set!!! ")
+
     @staticmethod
     def init_app(app):
         Config.init_app(app)
         if not os.environ.get('SECRET_KEY'):
-            raise Exception('SECRET_KEY IS NOT SET!')
+            raise Exception('DEVELOPMENT: SECRET_KEY IS NOT SET!')
 
 class StagingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL')
-
+    
+    STATIC_FOLDER = "static"
     DEBUG = False
     SQLALCHEMY_ECHO = False
+
+    # linebot
+    LINEBOT_MSG_CHANNEL_ACCESS_TOKEN = os.environ.get('STAGING_LINEBOT_MSG_CHANNEL_ACCESS_TOKEN', None)
+    LINEBOT_MSG_CHANNEL_SECRET = os.environ.get('STAGING_LINEBOT_MSG_CHANNEL_SECRET', None)
+    if not LINEBOT_MSG_CHANNEL_ACCESS_TOKEN or not LINEBOT_MSG_CHANNEL_SECRET:
+        print("line bot not set!!! ")
     @staticmethod
     def init_app(app):
         Config.init_app(app)
         if not os.environ.get('SECRET_KEY'):
-            raise Exception('SECRET_KEY IS NOT SET!')
+            raise Exception('STAGING: SECRET_KEY IS NOT SET!')
 
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('PROD_DATABASE_URL')
 
     DEBUG = False
     SQLALCHEMY_ECHO = False
+
+    # linebot
+    LINEBOT_MSG_CHANNEL_ACCESS_TOKEN = os.environ.get('PRODUCTION_LINEBOT_MSG_CHANNEL_ACCESS_TOKEN', None)
+    LINEBOT_MSG_CHANNEL_SECRET = os.environ.get('PRODUCTION_LINEBOT_MSG_CHANNEL_SECRET', None)
+    if not LINEBOT_MSG_CHANNEL_ACCESS_TOKEN or not LINEBOT_MSG_CHANNEL_SECRET:
+        print("line bot not set!!! ")
     @staticmethod
     def init_app(app):
         Config.init_app(app)
         if not os.environ.get('SECRET_KEY'):
-            raise Exception('SECRET_KEY IS NOT SET!')
+            raise Exception('PRODUCTION: SECRET_KEY IS NOT SET!')
 
 
 config = {
