@@ -118,6 +118,7 @@ def create_review():
     review = Review()
     review.reviewer = current_user
     review.creator = current_user
+    review.is_draft = True
     review.review_source = ReviewSource.query.filter(ReviewSource.name == 'new').first()
     db.session.add(review)
     db.session.commit()
@@ -158,10 +159,7 @@ def edit_review(review_id):
 
     # configure - request fields
     form.epa.choices = [(str(epa.id), epa.desc)for epa in EPA.query.with_entities(EPA.id,EPA.desc).all()]
-    if current_user.role.is_manager:
-        # TODO manager
-        pass
-    elif current_user == prefilled_review.reviewer:
+    if current_user == prefilled_review.reviewer:
         form.reviewer.choices = [(prefilled_review.reviewer_id, prefilled_review.reviewer.username)]
         form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees()]
         form.reviewee_note.render_kw = {'disabled':'disabled'}
@@ -175,10 +173,7 @@ def edit_review(review_id):
     form.review_difficulty.choices = [(str(rd.id), rd.desc) for rd in ReviewDifficulty.query.with_entities(ReviewDifficulty.id, ReviewDifficulty.desc).all()]
     form.review_score.choices = [(str(rs.id), rs.desc) for rs in ReviewScore.query.with_entities(ReviewScore.id, ReviewScore.desc).all()]
     
-    if current_user.role.is_manager:
-        # TODO manager
-        pass
-    elif current_user == prefilled_review.reviewer:
+    if current_user == prefilled_review.reviewer:
         showing_fields = form.requesting_fields + form.scoring_fields
     elif current_user == prefilled_review.reviewee:
         showing_fields = form.requesting_fields
@@ -211,26 +206,29 @@ def edit_review(review_id):
                 # 是學生 提交 就設為false，這樣就會通知老師
                 review.complete = False
         elif form.submit_draft.data:
+            if review.reviewer == current_user and review.review_source.name == 'request':
+                review.is_draft = False
+            else:
+                review.is_draft = True
             # press save draft btn
-            review.is_draft = True
         review.last_edited = datetime.datetime.now()
 
         try:
             db.session.commit()
-            if review.complete:
+            if review.complete and form.submit.data:
                 flash("評核提交成功", "alert-success")
                 # notify std
                 subject = "[EPA通知]您已被評核"
                 msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
                 notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
                 db.session.add(notification)
-            if not review.complete and not review.is_draft:
+            elif form.submit.data and not review.complete:
                 subject = "[EPA通知]學生請求評核"
                 msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}'
                 notification = Notification(user_id=review.reviewer.id,subject=subject, msg_body=msg_body)
                 db.session.add(notification)
                 flash('請求提交成功，將會通知老師評核','alert-success')
-            if review.is_draft:
+            elif form.submit_draft.data:
                 flash('儲存成功','alert-success')
         except Exception as e:
             print(e)
@@ -501,21 +499,42 @@ def get_epa_linkages():
 
 @login_required
 def index():
-    draft_reviews = current_user.get_draft_reviews()
-    unfin_being_reviews = current_user.get_unfin_being_reviews()
-    unfin_make_reviews = current_user.get_unfin_reviews()
+    view_as = request.args.get('view_as', None)
     # show notification and del notification
     for notification in current_user.notifications:
         flash( Markup(f'{notification.subject}: {notification.msg_body}') , 'alert-info',)
         db.session.delete(notification)
     db.session.commit()
 
+    
+    all_todos = {
+        'draft_request_reviews': current_user.get_draft_request_reviews(),
+        'unfin_request_reviews': current_user.get_unfin_request_reviews(), 
+        'draft_reviews':current_user.get_draft_reviews(), 
+        'unfin_reviews': current_user.get_unfin_reviews()
+    }
+    if current_user.can_request_review() and current_user.can_create_review() and not view_as:
+        todos = {
+            '暫存評核(學生)': all_todos['draft_request_reviews'],
+            '等待老師評核': all_todos['unfin_request_reviews'],
+            '暫存評核(老師)': all_todos['draft_reviews'],
+            '未完成評核':all_todos['unfin_reviews']
+            }
+    elif view_as == 'reviewer' or current_user.can_create_review():
+        todos = {
+            '暫存評核': all_todos['draft_reviews'],
+            '未完成評核': all_todos['unfin_reviews'],
+            }
+    elif view_as == 'reviewee' or current_user.can_request_review(): 
+        todos = {
+            '暫存評核': all_todos['draft_request_reviews'],
+            '等待老師評核': all_todos['unfin_request_reviews'],
+            }    
+
     return render_template(
         "index.html",
-        title="首頁",
-        draft_reviews=draft_reviews,
-        unfin_being_reviews=unfin_being_reviews,
-        unfin_make_reviews=unfin_make_reviews,
+        title="首頁" if not view_as else '未完成評核(老師)' if view_as == 'reviewer' else '未完成評核(學生)',
+        todos=todos
     )
 
 
