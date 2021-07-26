@@ -13,17 +13,18 @@
         </div>
         <div class="card-body">
             <div class="row">
-                {% set card_text = review.epa.desc%}
+                {% if current_user.id == review.reviewer_id %}
+                    {% set card_title = ("評核學生 " + review.reviewee.username) if review.reviewee_id else "評核未知學生"%}
+                {% elif current_user.id == review.reviewee_id %}
+                    {% set card_title = ("給老師 " + review.reviewer.username) if review.reviewer_id else "給未知的老師"%} 
+                {% else %}
+                    {% set card_title = ("由" + review.reviewer.username + review.reviewer.role.name + " 評核 " + review.reviewee.role.name + review.reviewee.username) if review.reviewer else "評核未知的使用者" %}
+                {% endif %}
+                
                 {% if current_user.can_edit_review(review) %}
-                    {% set card_title = "評核" + review.reviewee.username if review.reviewee_id else "評核未知的使用者"%}
                     {% set btn_url = url_for('edit_review',review_id=review.id) %}
-                    {% if review.complete %}
-                        {% set btn_text = "查看/編輯 " %}
-                    {% else %}
-                        {% set btn_text = "前往填寫" %}
-                    {% endif %}
+                    {% set btn_text = "編輯 " %}
                 {% elif current_user.can_view_review(review) %}
-                    {% set card_title = (review.reviewer.username + review.reviewer.role.name) if review.reviewer else "評核未知的使用者" %}
                     {% set btn_url = url_for('inspect_review',review_id=review.id) %}
                     {% set btn_text = "查看" %}
                 {% endif %}
@@ -33,7 +34,7 @@
                 </div>
                 <div class="col-9 col-md-5">
                     <h5 class="card-title">{{card_title}}</h5>
-                    <p class="card-text">{{card_text}}</p>
+                    <p class="card-text">{{review.epa.desc}}</p>
 
                 </div>
 
