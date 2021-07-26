@@ -8,12 +8,16 @@
             
             <div class="card-body">
                 {% if view_as == 'reviewee' %}
-                <a class='btn btn-outline-dark'href="{{url_for('progress_stat')}}">← 回評核總覽</a>
-            {% endif %}
+                    <a class='btn btn-outline-dark'href="{{url_for('progress_stat')}}">← 回評核總覽</a>
+                {% endif %}
+                <button id = 'filter_controller_toggle_btn' class='btn btn-outline-dark'>收起篩選器</button>
+
                 <p></p>
                 <h5 class="card-title">{{title}}</h5>
-                <h6 class="card-subtitle d-none d-sm-none d-md-none d-lg-block mb-2 text-muted">你可以選擇篩選、排序規則(限電腦版)</h6>
-                {% include "_review_filter.html"%}
+                <h6 class="card-subtitle d-none d-sm-none d-md-none d-lg-block mb-2 text-muted">你可以選擇篩選、排序規則(限用電腦瀏覽)</h6>
+                <div id="filter_controller">
+                    {% include "_review_filter.html"%}
+                </div>
             </div>
         </div>
         
@@ -30,6 +34,11 @@
     </div>  
     
 </div>
+<script>
+    $( "#filter_controller_toggle_btn" ).click(function() {
+        $( "#filter_controller" ).slideToggle( "slow" );
+    });
+</script>
 
 {% endblock %}
 
