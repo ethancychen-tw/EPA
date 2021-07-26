@@ -6,9 +6,8 @@
     <!-- <div class='row justify-content-center align-items-center index-page'><h1>嗨，{{current_user.role.name}} {{current_user.username}}</h1></div>  -->
         
     {% if todos %}
-        {% for key, val in todos.items() %}
-            <p><h5>{{val|length}}則{{key}}</h5></p>
-            {% set reviews = val %}
+        {% for key, reviews in todos.items() %}
+            <p><h5>{{reviews|length}}則{{key}}</h5></p>
             {% include "_reviews.html" %}
         {% endfor %}
     {% endif %}

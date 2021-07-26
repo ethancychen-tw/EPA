@@ -143,7 +143,6 @@ def request_review():
 
 @login_required
 def edit_review(review_id):
-    #TODO: could refactor "new", "inspect", "edit" into a factory. no need to configure every single time
     try:
         prefilled_review = Review.query.get(review_id)
     except Exception as e:
@@ -501,18 +500,18 @@ def get_epa_linkages():
 def index():
     view_as = request.args.get('view_as', None)
     # show notification and del notification
-    for notification in current_user.notifications:
-        flash( Markup(f'{notification.subject}: {notification.msg_body}') , 'alert-info',)
-        db.session.delete(notification)
-    db.session.commit()
-
-    
+    if not view_as:
+        for notification in current_user.notifications:
+            flash( Markup(f'{notification.subject}: {notification.msg_body}') , 'alert-info',)
+            db.session.delete(notification)
+        db.session.commit()
     all_todos = {
         'draft_request_reviews': current_user.get_draft_request_reviews(),
         'unfin_request_reviews': current_user.get_unfin_request_reviews(), 
         'draft_reviews':current_user.get_draft_reviews(), 
         'unfin_reviews': current_user.get_unfin_reviews()
     }
+    
     if current_user.can_request_review() and current_user.can_create_review() and not view_as:
         todos = {
             '暫存評核(學生)': all_todos['draft_request_reviews'],
@@ -530,7 +529,6 @@ def index():
             '暫存評核': all_todos['draft_request_reviews'],
             '等待老師評核': all_todos['unfin_request_reviews'],
             }    
-
     return render_template(
         "index.html",
         title="首頁" if not view_as else '未完成評核(老師)' if view_as == 'reviewer' else '未完成評核(學生)',
