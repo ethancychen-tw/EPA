@@ -95,7 +95,6 @@ def inspect_review(review_id):
     form.review_suggestion.data = prefilled_review.review_suggestion
     form.creator.data= [("", prefilled_review.creator.username)]
     form.review_source.data = [("", prefilled_review.review_source.desc)]
-    form.review_score.data = [("", prefilled_review.review_score.desc)]
     form.complete = [("", prefilled_review.complete)]
     form.create_time.data = prefilled_review.create_time
     form.last_edited.data = prefilled_review.last_edited
@@ -126,9 +125,7 @@ def create_review():
     review.creator = current_user
     review.is_draft = True
     review.review_source = ReviewSource.query.filter(ReviewSource.name == 'new').first()
-    db.session.add(review)
-    db.session.commit()
-    return redirect(url_for('edit_review', review_id=review.id))
+    return process_review(review, is_new=True)
 
 
 @login_required
@@ -143,34 +140,34 @@ def request_review():
     review.creator = current_user
     review.review_source = ReviewSource.query.filter(ReviewSource.name == 'request').first()
     review.is_draft = True # must set to true so that could edit
-    db.session.add(review)
-    db.session.commit()
-    return redirect(url_for('edit_review', review_id=review.id))
+    return process_review(review, is_new=True)
 
 @login_required
 def edit_review(review_id):
     try:
-        prefilled_review = Review.query.get(review_id)
+        review = Review.query.get(review_id)
     except Exception as e:
         flash("review not found!")
         print(e)
-    if not current_user.can_edit_review(prefilled_review):
+    if not current_user.can_edit_review(review):
         flash("您沒有權限編輯這個評核", "alert-warning")
         return redirect(url_for("index"))
-    
+    return process_review(review)
+
+def process_review(review, is_new=False):
     review_type = "user_edit"
     # (1) form configuration mostly for select fields
     form = ReviewForm()
 
     # configure - request fields
     form.epa.choices = [(str(epa.id), epa.desc)for epa in EPA.query.with_entities(EPA.id,EPA.desc).all()]
-    if current_user == prefilled_review.reviewer:
-        form.reviewer.choices = [(prefilled_review.reviewer_id, prefilled_review.reviewer.username)]
+    if current_user == review.reviewer:
+        form.reviewer.choices = [(review.reviewer_id, review.reviewer.username)]
         form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees()]
         form.reviewee_note.render_kw = {'disabled':'disabled'}
-    elif current_user == prefilled_review.reviewee:
+    elif current_user == review.reviewee:
         form.reviewer.choices = [(user.id, user.username) for user in current_user.get_potential_reviewers()]
-        form.reviewee.choices = [(prefilled_review.reviewee.id, prefilled_review.reviewee.username)]
+        form.reviewee.choices = [(review.reviewee.id, review.reviewee.username)]
         form.review_difficulty.validate_choice=False
         form.review_score.validate_choice=False
     form.location.choices = [(str(location.id), location.desc) for location in Location.query.with_entities(Location.id, Location.desc).all()]
@@ -178,14 +175,13 @@ def edit_review(review_id):
     form.review_difficulty.choices = [(str(rd.id), rd.desc) for rd in ReviewDifficulty.query.with_entities(ReviewDifficulty.id, ReviewDifficulty.desc).all()]
     form.review_score.choices = [(str(rs.id), rs.desc) for rs in ReviewScore.query.with_entities(ReviewScore.id, ReviewScore.desc).all()]
     
-    if current_user == prefilled_review.reviewer:
+    if current_user == review.reviewer:
         showing_fields = form.requesting_fields + form.scoring_fields
-    elif current_user == prefilled_review.reviewee:
+    elif current_user == review.reviewee:
         showing_fields = form.requesting_fields
 
     # (2) on submit process
     if form.validate_on_submit():
-        review = prefilled_review
         # requesting fields
         review.epa = EPA.query.get(int(form.epa.data))
         review.reviewer = User.query.get(form.reviewer.data)
@@ -219,6 +215,8 @@ def edit_review(review_id):
         review.last_edited = datetime.datetime.now()
 
         try:
+            if is_new:
+                db.session.add(review)
             db.session.commit()
             if review.complete and form.submit.data:
                 flash("評核提交成功", "alert-success")
@@ -238,28 +236,28 @@ def edit_review(review_id):
         except Exception as e:
             print(e)
         
-        return redirect(url_for("inspect_review", review_id=review_id))
+        return redirect(url_for("inspect_review", review_id=review.id))
 
     # (3) prefill (if have)
     # no matter it's std or teacher, we could prefill with prefilled review anyway
     # (PS) if field render_kw is disabled, the prefill could only be default, or it won't pass form validation
     # requesting fields
     # if prefilled_review.epa_id:
-    form.epa.data = str(prefilled_review.epa_id or form.epa.choices[0][0])
+    form.epa.data = str(review.epa_id or form.epa.choices[0][0])
     # if prefilled_review.reviewer_id:
-    form.reviewer.data = prefilled_review.reviewer_id or form.reviewer.choices[0][0]
+    form.reviewer.data = review.reviewer_id or form.reviewer.choices[0][0]
     # if prefilled_review.reviewee_id:
-    form.reviewee.data = prefilled_review.reviewee_id or form.reviewee.choices[0][0]
+    form.reviewee.data = review.reviewee_id or form.reviewee.choices[0][0]
     # if prefilled_review.location_id:
-    form.location.data = str(prefilled_review.location_id) or form.location.choices[0][0]
-    form.implement_date.data = prefilled_review.implement_date or datetime.datetime.now()
-    form.reviewee_note.data = prefilled_review.reviewee_note 
+    form.location.data = str(review.location_id) or form.location.choices[0][0]
+    form.implement_date.data = review.implement_date or datetime.datetime.now()
+    form.reviewee_note.data = review.reviewee_note 
 
     # scoring field
-    form.review_difficulty.data = str(prefilled_review.review_difficulty_id or str(form.review_difficulty.choices[0][0]))
-    form.review_compliment.data = prefilled_review.review_compliment
-    form.review_suggestion.data = prefilled_review.review_suggestion
-    form.review_score.data = str(prefilled_review.review_score_id or str(form.review_score.choices[0][0]))
+    form.review_difficulty.data = str(review.review_difficulty_id or str(form.review_difficulty.choices[0][0]))
+    form.review_compliment.data = review.review_compliment
+    form.review_suggestion.data = review.review_suggestion
+    form.review_score.data = str(review.review_score_id or str(form.review_score.choices[0][0]))
     
     
     milestone_item_epa_linkage, milestone_items, epa_milestones = get_epa_linkages()
@@ -271,9 +269,10 @@ def edit_review(review_id):
         milestone_item_epa_linkage=milestone_item_epa_linkage,
         milestone_items=milestone_items,
         epa_milestones=epa_milestones,
-        review=prefilled_review,
+        review=review,
         review_type=review_type,
-        showing_fields=showing_fields
+        showing_fields=showing_fields,
+        is_new=is_new
     )
 
 
