@@ -11,12 +11,14 @@
             <div class="text-center col-md-6 mb-3">
                 <div class="card">
                     <div class="card-body">
-                        {% if review.is_draft %}
-                            <span class="badge bg-danger">暫存</span>
-                        {% elif review.complete %} 
-                            <span class="badge bg-success">已完成</span> 
-                        {% else %} 
-                            <span class="badge bg-warning text-dark">未完成</span> 
+                        {% if not is_new %}
+                            {% if review.is_draft %}
+                                <span class="badge bg-danger">暫存</span>
+                            {% elif review.complete %} 
+                                <span class="badge bg-success">已完成</span> 
+                            {% else %} 
+                                <span class="badge bg-warning text-dark">未完成</span> 
+                            {% endif %}
                         {% endif %}
                         <h5 class="card-title">{{title}}</h5>
                         <h6 class="card-subtitle mb-2 text-muted">
