@@ -95,14 +95,20 @@ def inspect_review(review_id):
     form.review_suggestion.data = prefilled_review.review_suggestion
     form.creator.data= [("", prefilled_review.creator.username)]
     form.review_source.data = [("", prefilled_review.review_source.desc)]
+    form.review_score.data = [("", prefilled_review.review_score.desc)]
     form.complete = [("", prefilled_review.complete)]
     form.create_time.data = prefilled_review.create_time
     form.last_edited.data = prefilled_review.last_edited
+
+    milestone_item_epa_linkage, milestone_items, epa_milestones = get_epa_linkages()
     
     return render_template(
         "make_review.html",
         title="查看評核",
         form=form,
+        milestone_item_epa_linkage=milestone_item_epa_linkage,
+        milestone_items=milestone_items,
+        epa_milestones=epa_milestones,
         review=prefilled_review,
         review_type="inspect",
         showing_fields=showing_fields
