@@ -189,12 +189,29 @@ class User(UserMixin, db.Model):
         else:
             return []
     
-    def get_draft_reviews(self):
+    def get_draft_request_reviews(self, role=None):
+        # std draft request
+        if not self.can_request_review():
+            return []
         return Review.query.filter(Review.creator_id == self.id, Review.complete==False, Review.is_draft == True).all()
-    def get_unfin_being_reviews(self):
-        return Review.query.filter(Review.reviewee_id == self.id, Review.complete==False, Review.is_draft == False).all()
+
+    def get_unfin_request_reviews(self):
+        # as a std. std submit request, teacher unfin
+        if not self.can_request_review():
+            return []
+        return Review.query.filter(Review.creator_id == self.id, Review.reviewee_id == self.id, Review.complete==False, Review.is_draft == False).all()
+
+    def get_draft_reviews(self):
+        # teacher draft review directly
+        if not self.can_create_review():
+            return []
+        return Review.query.filter(Review.creator_id == self.id, Review.reviewer_id == self.id, Review.complete==False, Review.is_draft == True).all()
+
     def get_unfin_reviews(self):
-        return Review.query.filter(Review.reviewer_id == self.id, Review.complete==False, Review.is_draft == False).all()
+        # as a teacher. std submit request, teacher unfin
+        if not self.can_create_review:
+            return []
+        return Review.query.filter(Review.creator_id != self.id, Review.reviewer_id == self.id, Review.complete==False, Review.is_draft == False).all()
 
 class Notification(db.Model):
     __tablename__ = "notifications"

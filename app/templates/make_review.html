@@ -11,12 +11,14 @@
             <div class="text-center col-md-6 mb-3">
                 <div class="card">
                     <div class="card-body">
-                        {% if review.is_draft %}
-                            <span class="badge bg-danger">暫存</span>
-                        {% elif review.complete %} 
-                            <span class="badge bg-success">已完成</span> 
-                        {% else %} 
-                            <span class="badge bg-warning text-dark">未完成</span> 
+                        {% if not is_new %}
+                            {% if review.is_draft %}
+                                <span class="badge bg-danger">暫存</span>
+                            {% elif review.complete %} 
+                                <span class="badge bg-success">已完成</span> 
+                            {% else %} 
+                                <span class="badge bg-warning text-dark">未完成</span> 
+                            {% endif %}
                         {% endif %}
                         <h5 class="card-title">{{title}}</h5>
                         <h6 class="card-subtitle mb-2 text-muted">
@@ -39,14 +41,25 @@
                     <div class="form-floating">
                         {% if field.type in ["SelectField"] %}
                             {{ field(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
+                            {{ field.label }}
                         {% elif field.type == "TextAreaField"%}
                             {{ field(class="form-control", style="height: 100px") }}
+                            {{ field.label }}
                         {% elif field.type == "RadioField"%}
-                            {{ field(class="form-control", style="height: 100px") }}
+                            <h5><p class='text-start'>{{ field.label }}</p></h5>
+                            <div class="row">
+                                {% for choice in field %}
+                                    <div class="col-12 text-start">
+                                        {{ choice(class="form-check-input")}}
+                                        {{ choice.label(class="form-check-label") }}
+                                    </div>
+                                {% endfor %}
+                            </div>
                         {% else %}
                             {{ field(class="form-control form-check") }}
+                            {{ field.label }}
                         {% endif %}
-                        {{ field.label }}
+                        
                         {% for error in field.errors %}
                             <div class="text-danger"><span style="color: red;">[{{ error }}]</span></div>
                         {% endfor %}
@@ -64,10 +77,9 @@
                     {% endif %}
                     {{ form.submit(title=form.submit.description, class="col-3 btn btn-outline-primary")}}
                 {% else %}
-                <div class="col-3">
                     <a href="{{url_for('view_all_reviews')}}" class="w-100 btn btn-outline-primary">回查看所有評核</a>
-                </div>
                 {% endif %}
+                <p></p>
             </div>
 
         </div>
