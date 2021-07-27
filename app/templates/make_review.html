@@ -12,7 +12,7 @@
                 <div class="card">
                     <div class="card-body">
                         {% if review.is_draft %}
-                            <span class="badge bg-secondary">暫存</span>
+                            <span class="badge bg-danger">暫存</span>
                         {% elif review.complete %} 
                             <span class="badge bg-success">已完成</span> 
                         {% else %} 
@@ -75,10 +75,9 @@
                     {% endif %}
                     {{ form.submit(title=form.submit.description, class="col-3 btn btn-outline-primary")}}
                 {% else %}
-                <div class="col-3">
                     <a href="{{url_for('view_all_reviews')}}" class="w-100 btn btn-outline-primary">回查看所有評核</a>
-                </div>
                 {% endif %}
+                <p></p>
             </div>
 
         </div>

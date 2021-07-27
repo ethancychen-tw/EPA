@@ -95,14 +95,20 @@ def inspect_review(review_id):
     form.review_suggestion.data = prefilled_review.review_suggestion
     form.creator.data= [("", prefilled_review.creator.username)]
     form.review_source.data = [("", prefilled_review.review_source.desc)]
+    form.review_score.data = [("", prefilled_review.review_score.desc)]
     form.complete = [("", prefilled_review.complete)]
     form.create_time.data = prefilled_review.create_time
     form.last_edited.data = prefilled_review.last_edited
+
+    milestone_item_epa_linkage, milestone_items, epa_milestones = get_epa_linkages()
     
     return render_template(
         "make_review.html",
         title="查看評核",
         form=form,
+        milestone_item_epa_linkage=milestone_item_epa_linkage,
+        milestone_items=milestone_items,
+        epa_milestones=epa_milestones,
         review=prefilled_review,
         review_type="inspect",
         showing_fields=showing_fields
@@ -505,30 +511,23 @@ def index():
             flash( Markup(f'{notification.subject}: {notification.msg_body}') , 'alert-info',)
             db.session.delete(notification)
         db.session.commit()
-    all_todos = {
-        'draft_request_reviews': current_user.get_draft_request_reviews(),
-        'unfin_request_reviews': current_user.get_unfin_request_reviews(), 
-        'draft_reviews':current_user.get_draft_reviews(), 
-        'unfin_reviews': current_user.get_unfin_reviews()
-    }
-    
     if current_user.can_request_review() and current_user.can_create_review() and not view_as:
         todos = {
-            '暫存評核(學生)': all_todos['draft_request_reviews'],
-            '等待老師評核': all_todos['unfin_request_reviews'],
-            '暫存評核(老師)': all_todos['draft_reviews'],
-            '未完成評核':all_todos['unfin_reviews']
+            '暫存評核(學生)': current_user.get_draft_request_reviews(),
+            '等待老師評核': current_user.get_unfin_request_reviews(),
+            '暫存評核(老師)': current_user.get_draft_reviews(),
+            '未完成評核':current_user.get_unfin_reviews()
             }
-    elif view_as == 'reviewer' or current_user.can_create_review():
+    elif view_as == 'reviewer' or (current_user.can_create_review() and not current_user.can_request_review()):
         todos = {
-            '暫存評核': all_todos['draft_reviews'],
-            '未完成評核': all_todos['unfin_reviews'],
+            '暫存評核': current_user.get_draft_reviews(),
+            '未完成評核': current_user.get_unfin_reviews(),
             }
-    elif view_as == 'reviewee' or current_user.can_request_review(): 
+    elif view_as == 'reviewee' or (not current_user.can_create_review() and current_user.can_request_review()):
         todos = {
-            '暫存評核': all_todos['draft_request_reviews'],
-            '等待老師評核': all_todos['unfin_request_reviews'],
-            }    
+            '暫存評核': current_user.get_draft_request_reviews(),
+            '等待老師評核': current_user.get_unfin_request_reviews(),
+            }
     return render_template(
         "index.html",
         title="首頁" if not view_as else '未完成評核(老師)' if view_as == 'reviewer' else '未完成評核(學生)',
