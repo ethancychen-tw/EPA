@@ -57,6 +57,7 @@
           <div class="btn-group" >
             <a href="#" type="button" class="
                   btn
+                  btn-light
                   d-block
                   link-dark
                   text-decoration-none
@@ -92,26 +93,26 @@
   {% if current_user.is_authenticated %}
     {% if current_user.can_request_review() and  current_user.can_create_review() %}
       {% set nav_items = [
-        (url_for('index', view_as='reviewee'), '未完成評核(學生)'),
-        (url_for('request_review'),'新增評核(學生)'),
-        (url_for('progress_stat'), '評核總覽(學生)'),
-        (url_for('index', view_as='reviewer'), '未完成評核(老師)'),
+        (url_for('request_review'),'新增評核'),
+        (url_for('index'), '未完成評核'),
+        (url_for('progress_stat'), '評核總覽'),
         (url_for('create_review'),'新增評核(老師)'),
+        (url_for('index'), '未完成評核(老師)'),
         (url_for('view_all_reviews', view_as='reviewer'), '評核總覽(老師)')
         ] 
       %}
     {% elif current_user.can_request_review() %}
       {% set nav_items = [
-        (url_for('index'), '未完成評核'),
         (url_for('request_review'),'新增評核'),
+        (url_for('index'), '未完成評核'),
         (url_for('progress_stat'), '評核總覽'),
         ] 
       %}
         
     {% elif current_user.can_create_review() %}
       {% set nav_items = [
-        (url_for('index'), '未完成評核'),
         (url_for('create_review'),'新增評核'),
+        (url_for('index'), '未完成評核'),
         (url_for('view_all_reviews', view_as='reviewee'), '評核總覽')
         ] 
       %}
@@ -125,12 +126,17 @@
         <ul class="navbar-nav">
           {% for nav_item in nav_items %}
             <li>
-              <a href="{{ nav_item[0]}}" class="nav-link px-3 active sidebar-link">
-                <span class="me-2">
-                  <i class="bi bi-check-square"></i>
-                </span>
-                <span>{{nav_item[1]}}</span>
-              </a>
+              <div class="btn-group-vertical" >
+                <button type="button" class="btn btn-outline-light mb-1" style="width: 270px;padding-left:0;border:none;">
+                <a href="{{ nav_item[0]}}" class="nav-link px-3 active sidebar-link">
+                  <span class="me-2">
+                    <i class="bi bi-arrow-right-circle text-secondary"></i>
+                  </span>
+                  <span class="text-secondary">{{nav_item[1]}}</span>
+                </a>
+              </button>
+              </div>
+             
             </li>
           {% endfor %}
         </ul>
@@ -156,11 +162,11 @@
           {% block content %} {% endblock %}
     </div>
   </main>
-  <footer style="position:relative; bottom: 0px; height: 10px; width: 100%">
+  <!-- <footer style="position:relative; bottom: 0px; height: 10px; width: 100%">
     <p class="text-center mt-3 text-muted" style="font-size: 0.5rem;">
       Copyright &copy; 2021 CHT ENT. All rights reserved.
     </p>
-  </footer>
+  </footer> -->
   </div>
 </body>
 

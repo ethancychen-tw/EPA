@@ -32,6 +32,7 @@ align-items: center;
 
 .index-page{
     padding-top:  var(--topNavbarHeight);
+    margin:auto;
     /* margin-left: var( --offcanvas-width); */
     /* overflow: auto; */
 }
