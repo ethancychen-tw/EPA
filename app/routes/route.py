@@ -361,7 +361,7 @@ def view_all_reviews():
         )
         return redirect(url_for("view_all_reviews", filters_json=filters_json))
     
-    sort_entity = Review.create_time.desc()
+    sort_entity = Review.implement_date.desc()
     filtering_clause = []
 
     if view_as == 'reviewer':
