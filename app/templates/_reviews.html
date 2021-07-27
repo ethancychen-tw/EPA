@@ -15,8 +15,10 @@
             <div class="row">
                 {% if current_user.id == review.reviewer_id %}
                     {% set card_title = ("評核學生 " + review.reviewee.username) if review.reviewee_id else "評核未知學生"%}
-                {% elif current_user.id == review.reviewee_id %}
-                    {% set card_title = ("給老師 " + review.reviewer.username) if review.reviewer_id else "給未知的老師"%} 
+                {% elif current_user.id == review.reviewee_id and current_user.id == review.creator_id %}
+                    {% set card_title = ("給老師 " + review.reviewer.username) if review.reviewer_id else "給未知的老師"%}
+                {% elif current_user.id == review.reviewee_id and current_user.id != review.creator_id %}
+                    {% set card_title = ("老師 " + review.reviewer.username) + "主動評核" if review.reviewer_id else "給未知的老師"%}  
                 {% else %}
                     {% set card_title = ("由" + review.reviewer.username + review.reviewer.role.name + " 評核 " + review.reviewee.role.name + review.reviewee.username) if review.reviewer else "評核未知的使用者" %}
                 {% endif %}

@@ -48,7 +48,8 @@
                         {% elif field.type == "RadioField"%}
                             <h5><p class='text-start'>{{ field.label }}</p></h5>
                             <div class="row">
-                                {% for choice in field %}
+                                
+                                {% for choice in field if choice.label.text != ''%}
                                     <div class="col-12 text-start">
                                         {{ choice(class="form-check-input")}}
                                         {{ choice.label(class="form-check-label") }}
@@ -77,7 +78,8 @@
                     {% endif %}
                     {{ form.submit(title=form.submit.description, class="col-3 btn btn-outline-primary")}}
                 {% else %}
-                    <a href="{{url_for('view_all_reviews')}}" class="w-100 btn btn-outline-primary">回查看所有評核</a>
+                    {% if current_user.can_edit_review(review) %} <a href="{{url_for('edit_review',review_id=review.id)}}" class="w-100 btn btn-outline-primary">編輯此評核</a> {%endif%}
+                    
                 {% endif %}
                 <p></p>
             </div>
@@ -103,9 +105,9 @@
 <script>
     $("#btn_epa_milestones").on("click", (e) => {
         var selectedText = $('#epa :selected').text();
+        if(selectedText=='')return
         var selected_epa_code = selectedText.match(/EPA\d+/)[0]
         selected_epa_code = selected_epa_code.substring(0,3) + parseInt(selected_epa_code.substring(3))
-        console.log(selected_epa_code)
         var epa_milestones = find_epa_milestone(selected_epa_code)
         var htmltext = "<ul>"+epa_milestones.map(x=>"<li>"+x+"</li>").join("")+"<ul>"
         var $epa_modal = $('#epa_milestone_modal')

@@ -47,58 +47,48 @@ def inspect_review(review_id):
     see only, can't edit
     only reviewer or reviewee could see
     """
-    prefilled_review = Review.query.get(review_id)
-    if not prefilled_review:
+    review = Review.query.get(review_id)
+    if not review:
         flash("no such review", "alert-danger")
         return redirect(url_for("index"))
-    if not current_user.can_view_review(prefilled_review):
+    if not current_user.can_view_review(review):
         flash("您沒有權限存取這個評核", "alert-warning")
         return redirect(url_for("index"))
     
     # (1) form configuration
     form = ReviewForm()
-    
-    form.location.choices = [("", prefilled_review.location.desc)]
-    form.epa.choices = [("", prefilled_review.epa.desc)]
-    form.reviewee.choices = [("", prefilled_review.reviewee.username)]
-    form.reviewer.choices = [("", prefilled_review.reviewer.username)]
-    form.review_difficulty.choices = [
-        (
-            "",
-            prefilled_review.review_difficulty.desc
-            if prefilled_review.review_difficulty
-            else "",
-        )
-    ]
-    form.review_score.choices = [
-        (
-            "",
-            prefilled_review.review_score.desc if prefilled_review.review_score else "",
-        )
-    ]
-    form.creator.choices = [("", prefilled_review.creator.username)]
-    form.review_source.choices = [("", prefilled_review.review_source.desc)]
-
+    if review.epa_id:
+        form.epa.choices = [("",review.epa.desc)]
+    if review.reviewer_id:
+        form.reviewer.choices = [("",review.reviewer.username)]
+    if review.reviewee_id:
+        form.reviewee.choices = [("",review.reviewee.username)]
+    if review.location_id:
+        form.location.choices = [("",review.location.desc)]
+    if review.implement_date:
+        form.implement_date.data = review.implement_date
+    form.reviewee_note.data = review.reviewee_note
+    if review.review_difficulty_id:
+        form.review_difficulty.choices = [("",review.review_difficulty.desc)]
+    form.review_compliment.data = review.review_compliment
+    form.review_suggestion.data = review.review_suggestion
+    if review.review_score_id:
+        form.review_score.choices = [("",review.review_score.desc)]
+    form.creator.choices = [("",review.creator.username)]
+    form.review_source.choices = [("",review.review_source.desc)]
+    form.complete.choices = [("", '是' if review.complete else '否')]
+    form.create_time.data = review.create_time
+    form.last_edited.data = review.last_edited
 
     for field in form:
         field.render_kw = {"disabled": "disabled"}
-    if not prefilled_review.complete and prefilled_review.creator_id == current_user.id and prefilled_review.review_source_id == ReviewSource.query.filter(ReviewSource.name=='request').first().id:
+    if current_user.id == review.reviewee_id and not review.complete:
         showing_fields = form.requesting_fields + form.meta_fields
     else:   
         showing_fields = form.requesting_fields + form.scoring_fields + form.meta_fields
     # (2) on submit handle (not applicable here)
 
-    # (3) prefill: (for select fields, must be valid choices configured above)
-    form.implement_date.data = prefilled_review.implement_date
-    form.reviewee_note.data = prefilled_review.reviewee_note
-    form.review_compliment.data = prefilled_review.review_compliment
-    form.review_suggestion.data = prefilled_review.review_suggestion
-    form.creator.data= [("", prefilled_review.creator.username)]
-    form.review_source.data = [("", prefilled_review.review_source.desc)]
-    form.complete = [("", prefilled_review.complete)]
-    form.create_time.data = prefilled_review.create_time
-    form.last_edited.data = prefilled_review.last_edited
-
+    # (3) prefill: no needed, it's view only
     milestone_item_epa_linkage, milestone_items, epa_milestones = get_epa_linkages()
     
     return render_template(
@@ -108,7 +98,7 @@ def inspect_review(review_id):
         milestone_item_epa_linkage=milestone_item_epa_linkage,
         milestone_items=milestone_items,
         epa_milestones=epa_milestones,
-        review=prefilled_review,
+        review=review,
         review_type="inspect",
         showing_fields=showing_fields
     )
@@ -155,25 +145,24 @@ def edit_review(review_id):
     return process_review(review)
 
 def process_review(review, is_new=False):
-    review_type = "user_edit"
     # (1) form configuration mostly for select fields
     form = ReviewForm()
 
     # configure - request fields
-    form.epa.choices = [(str(epa.id), epa.desc)for epa in EPA.query.with_entities(EPA.id,EPA.desc).all()]
+    form.epa.choices += [(str(epa.id), epa.desc)for epa in EPA.query.with_entities(EPA.id,EPA.desc).all()]
     if current_user == review.reviewer:
         form.reviewer.choices = [(review.reviewer_id, review.reviewer.username)]
-        form.reviewee.choices = [(user.id, user.username) for user in current_user.get_potential_reviewees()]
+        form.reviewee.choices += [(user.id, user.username) for user in current_user.get_potential_reviewees()]
         form.reviewee_note.render_kw = {'disabled':'disabled'}
     elif current_user == review.reviewee:
-        form.reviewer.choices = [(user.id, user.username) for user in current_user.get_potential_reviewers()]
+        form.reviewer.choices += [(user.id, user.username) for user in current_user.get_potential_reviewers()]
         form.reviewee.choices = [(review.reviewee.id, review.reviewee.username)]
         form.review_difficulty.validate_choice=False
         form.review_score.validate_choice=False
-    form.location.choices = [(str(location.id), location.desc) for location in Location.query.with_entities(Location.id, Location.desc).all()]
+    form.location.choices += [(str(location.id), location.desc) for location in Location.query.with_entities(Location.id, Location.desc).all()]
     # configure - scoring field
-    form.review_difficulty.choices = [(str(rd.id), rd.desc) for rd in ReviewDifficulty.query.with_entities(ReviewDifficulty.id, ReviewDifficulty.desc).all()]
-    form.review_score.choices = [(str(rs.id), rs.desc) for rs in ReviewScore.query.with_entities(ReviewScore.id, ReviewScore.desc).all()]
+    form.review_difficulty.choices += [(str(rd.id), rd.desc) for rd in ReviewDifficulty.query.with_entities(ReviewDifficulty.id, ReviewDifficulty.desc).all()]
+    form.review_score.choices += [(str(rs.id), rs.desc) for rs in ReviewScore.query.with_entities(ReviewScore.id, ReviewScore.desc).all()]
     
     if current_user == review.reviewer:
         showing_fields = form.requesting_fields + form.scoring_fields
@@ -183,20 +172,46 @@ def process_review(review, is_new=False):
     # (2) on submit process
     if form.validate_on_submit():
         # requesting fields
-        review.epa = EPA.query.get(int(form.epa.data))
-        review.reviewer = User.query.get(form.reviewer.data)
-        review.reviewee = User.query.get(form.reviewee.data)
-        review.location = Location.query.get(int(form.location.data))
+        if form.epa.data:
+            review.epa = EPA.query.get(int(form.epa.data))
+        else:
+            review.epa_id = None
+        if form.reviewer.data:
+            review.reviewer = User.query.get(form.reviewer.data)
+        else:
+            review.reviewer_id = None
+        if form.reviewee.data:
+            review.reviewee = User.query.get(form.reviewee.data)
+        else:
+            review.reviewee_id = None
+        if form.location.data:
+            review.location = Location.query.get(int(form.location.data))
+        else:
+            review.location_id = None
         review.implement_date = form.implement_date.data
         review.reviewee_note = form.reviewee_note.data
         # scoring fields
         if current_user.id == review.reviewer_id:
             if form.review_difficulty.data:
                 review.review_difficulty = ReviewDifficulty.query.get(int(form.review_difficulty.data)) 
+            else:
+                review.review_difficulty_id = None
             review.review_compliment = form.review_compliment.data
             review.review_suggestion = form.review_suggestion.data
             if form.review_score.data:
                 review.review_score = ReviewScore.query.get(int(form.review_score.data))
+            else:
+                review.review_score_id = None
+        # form validation(since there is blank option, the validation can't catch empty)
+        # should refactor to make the validation based on the button being pressed
+        # see https://stackoverflow.com/questions/23283348/validate-wtform-form-based-on-clicked-button
+        if form.submit.data and (
+                (not all([field.data for field in form.requesting_fields if field != form.reviewee_note])) 
+                or 
+                (review.reviewer_id == current_user.id and not all([field.data for field in form.scoring_fields if field not in [form.review_compliment, form.review_suggestion]]))):
+            form.submit.data = False
+            form.submit_draft.data = True
+            flash('提交失敗，需填寫所有欄位，已暫存此評核', 'alert-warning')
         # meta fields (when editing, no need to update every one)
         if form.submit.data:
             # press submit btn
@@ -243,21 +258,21 @@ def process_review(review, is_new=False):
     # (PS) if field render_kw is disabled, the prefill could only be default, or it won't pass form validation
     # requesting fields
     # if prefilled_review.epa_id:
-    form.epa.data = str(review.epa_id or form.epa.choices[0][0])
+    form.epa.data = str(review.epa_id)
     # if prefilled_review.reviewer_id:
-    form.reviewer.data = review.reviewer_id or form.reviewer.choices[0][0]
+    form.reviewer.data = str(review.reviewer_id) if review.reviewer_id else None
     # if prefilled_review.reviewee_id:
-    form.reviewee.data = review.reviewee_id or form.reviewee.choices[0][0]
+    form.reviewee.data = str(review.reviewee_id) if review.reviewee_id else None
     # if prefilled_review.location_id:
-    form.location.data = str(review.location_id) or form.location.choices[0][0]
+    form.location.data = str(review.location_id)
     form.implement_date.data = review.implement_date or datetime.datetime.now()
     form.reviewee_note.data = review.reviewee_note 
 
     # scoring field
-    form.review_difficulty.data = str(review.review_difficulty_id or str(form.review_difficulty.choices[0][0]))
+    form.review_difficulty.data = str(review.review_difficulty_id)
     form.review_compliment.data = review.review_compliment
     form.review_suggestion.data = review.review_suggestion
-    form.review_score.data = str(review.review_score_id or str(form.review_score.choices[0][0]))
+    form.review_score.data = str(review.review_score_id)
     
     
     milestone_item_epa_linkage, milestone_items, epa_milestones = get_epa_linkages()
@@ -270,7 +285,7 @@ def process_review(review, is_new=False):
         milestone_items=milestone_items,
         epa_milestones=epa_milestones,
         review=review,
-        review_type=review_type,
+        review_type = "user_edit",
         showing_fields=showing_fields,
         is_new=is_new
     )
