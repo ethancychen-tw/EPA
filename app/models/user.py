@@ -193,7 +193,7 @@ class User(UserMixin, db.Model):
         # std draft request
         if not self.can_request_review():
             return []
-        return Review.query.filter(Review.creator_id == self.id, Review.complete==False, Review.is_draft == True).all()
+        return Review.query.filter(Review.creator_id == self.id, Review.reviewee_id == self.id, Review.complete==False, Review.is_draft == True).all()
 
     def get_unfin_request_reviews(self):
         # as a std. std submit request, teacher unfin

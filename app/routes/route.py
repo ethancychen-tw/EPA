@@ -657,7 +657,7 @@ def register():
 def page_not_found(e):
     return render_template("404.html"), 404
 
-def get_stats_by_user(user):
+def get_stats_by_user(user, include_milestone=False):
     entities = [ Review.epa_id, ReviewScore.value.label('score')]
     user_reviews = Review.query.join(EPA).join(ReviewScore).filter(Review.reviewee_id == user.id ).with_entities(*entities).all()
 
@@ -668,16 +668,30 @@ def get_stats_by_user(user):
     re_dict = dict()
     if len(user_reviews) == 0:
         re_dict['epa_stats'] = {epa.name: {'id': epa.epa_id, 'score': 0, 'review_cnt':0, 'desc': epa.desc} for epa in epas}
-        re_dict['milestone_stats'] = {ms.name: {'id': ms.milestone_id, 'score': 0, 'desc': ms.desc} for ms in milestones}
-        re_dict['corecompetence_stats'] = {cc.name: {'id': cc.corecompetence_id, 'score': 0, 'desc': cc.desc} for cc in corecompetences}
-        re_dict['milestone_item_checking'] = dict()
+        if include_milestone:
+            re_dict['milestone_stats'] = {ms.name: {'id': ms.milestone_id, 'score': 0, 'desc': ms.desc} for ms in milestones}
+            re_dict['corecompetence_stats'] = {cc.name: {'id': cc.corecompetence_id, 'score': 0, 'desc': cc.desc} for cc in corecompetences}
+            re_dict['milestone_item_checking'] = dict()
         return re_dict
 
     import pandas as pd
     review_df = pd.DataFrame(user_reviews,columns=user_reviews[0].keys())
-    milestone_items = MilestoneItem.query.join(Milestone).with_entities(MilestoneItem.id.label('milestone_item_id'), MilestoneItem.level, Milestone.name.label('milestone'), MilestoneItem.code, MilestoneItem.content)
     
     epa_df = pd.DataFrame(epas, columns=epas[0].keys())
+    # epa
+    grouped = review_df.groupby('epa_id')
+    epa_stats_df = pd.concat([
+        grouped['score'].max().rename('score'),
+        grouped['score'].count().rename('review_cnt')
+        ],axis='columns')
+    epa_stats_df = pd.merge(epa_stats_df,epa_df, on='epa_id', how='outer').fillna(0)
+    epa_stats = epa_stats_df.rename({'epa_id':'id'},axis='columns').set_index('name').T.to_dict()
+    re_dict['epa_stats'] = epa_stats
+
+    # milestone & corecompetence
+    if not include_milestone:
+        return re_dict
+    milestone_items = MilestoneItem.query.join(Milestone).with_entities(MilestoneItem.id.label('milestone_item_id'), MilestoneItem.level, Milestone.name.label('milestone'), MilestoneItem.code, MilestoneItem.content)
     milestone_df = pd.DataFrame(milestones, columns=milestones[0].keys())
     milestone_item_df = pd.DataFrame(milestone_items, columns=milestone_items[0].keys())
     corecompetence_df = pd.DataFrame(corecompetences, columns=corecompetences[0].keys())
@@ -692,19 +706,17 @@ def get_stats_by_user(user):
     linkage = MilestoneItemEPA.query.join(EPA).join(MilestoneItem).join(Milestone).join(CoreCompetence).with_entities(*linkage_entites).all()
     linkage_df = pd.DataFrame(linkage, columns=linkage[0].keys())
 
-    # epa
-    grouped = review_df.groupby('epa_id')
-    epa_stats_df = pd.concat([
-        grouped['score'].max().rename('score'),
-        grouped['score'].count().rename('review_cnt')
-        ],axis='columns')
-    epa_stats_df = pd.merge(epa_stats_df,epa_df, on='epa_id', how='outer').fillna(0)
-    epa_stats = epa_stats_df.rename({'epa_id':'id'},axis='columns').set_index('name').T.to_dict()
-
-    milestoneitem_stats_df = pd.merge(epa_stats_df[['epa_id','score']], linkage_df, on='epa_id')
-    milestoneitem_stats_df['checked'] = milestoneitem_stats_df['score'] > milestoneitem_stats_df['min_epa_level']
+    milestoneitem_check_df = pd.merge(epa_stats_df[['epa_id','score']], linkage_df, on='epa_id')
+    milestoneitem_check_df['checked'] = milestoneitem_check_df['score'] > milestoneitem_check_df['min_epa_level']
     
-    grouped = milestoneitem_stats_df.groupby(['milestone_id','milestone_item_level'])
+    grouped = milestoneitem_check_df.groupby(['milestone_item_id'])
+    milestoneitem_check_df = pd.concat([
+        grouped['milestone_id'].first(),
+        grouped['milestone_item_level'].first(),
+        grouped['checked'].any(),
+    ],axis='columns').reset_index()
+    
+    grouped = milestoneitem_check_df.groupby(['milestone_id','milestone_item_level'])
     milestone_level_stats_df = pd.concat([
         grouped['checked'].all().rename('all'),
         grouped['checked'].any().rename('any'),
@@ -732,7 +744,7 @@ def get_stats_by_user(user):
     
     milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id',how='outer').fillna(0).drop(['milestone_id'],axis='columns').set_index('name').T.to_dict()
     corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df, on='corecompetence_id',how='outer').drop(['corecompetence_id'],axis='columns').fillna(0).set_index('name').T.to_dict()
-    milestone_item_checking = pd.merge(milestoneitem_stats_df.groupby('milestone_item_id')['checked'].any().reset_index(), milestone_item_df , on='milestone_item_id').drop(['milestone_item_id'],axis='columns')#.set_index(['code']).T.to_dict()
+    milestone_item_checking = pd.merge(milestoneitem_check_df, milestone_item_df , on='milestone_item_id').drop(['milestone_item_id'],axis='columns')#.set_index(['code']).T.to_dict()
     
     milestone_item_checking_dict = dict()
     for _, row in milestone_item_checking.iterrows():
@@ -743,41 +755,47 @@ def get_stats_by_user(user):
         for level in range(1,6):
             milestone_item_checking_dict[key][level].sort(key=lambda x:int(x['code'].split(".")[-1]))
     
-    re_dict['epa_stats'] = epa_stats
     re_dict['milestone_stats'] = milestone_stats
     re_dict['corecompetence_stats'] = corecompetence_stats
     re_dict['milestone_item_checking'] = milestone_item_checking_dict
 
     return re_dict
 
-def get_corecompetence_stats_by_user(user):
-    pass
-
 @login_required
-def progress_stat():
-    query_user_id = request.args.get("username", None)
-    if current_user.role.is_manager and query_user_id:
-        user = User.query.filter(User.username == "username").first()
+def epa_stat():
+    query_username = request.args.get("username", None)
+    if current_user.role.is_manager and query_username:
+        user = User.query.filter(User.username == query_username).first()
     else:
         user = current_user
-    
-    user_stats = get_stats_by_user(user)
-    epa_stats = user_stats['epa_stats']
-    corecompetence_stats_json = json.dumps(user_stats['corecompetence_stats'])
-    milestone_stats_json = json.dumps(user_stats['milestone_stats'])
-    milestone_item_checking_json = json.dumps(user_stats['milestone_item_checking'])
+    epa_stats = get_stats_by_user(user,include_milestone=False)['epa_stats']
     for key in epa_stats:
         epa_stats[key].update({
             'img_src':f'{key[3:].zfill(2)}.svg',
             'url':url_for('view_all_reviews',view_as='reviewee',filters_json=json.dumps({"epas":[str(epa_stats[key]['id'])]}))
             })
     epa_stats=dict(sorted(epa_stats.items(),key=lambda x:int(x[0].split(" ")[0][3:])))
+    return render_template(
+        "epa_stat.html",
+        title=user.username,
+        epa_stats=epa_stats,
+    )
+
+@login_required
+def milestone_stat():
+    query_username = request.args.get("username", None)
+    if current_user.role.is_manager and query_username:
+        user = User.query.filter(User.username == query_username).first()
+    else:
+        user = current_user
+    user_stats = get_stats_by_user(user,include_milestone=True)
+    corecompetence_stats_json = json.dumps(user_stats['corecompetence_stats'])
+    milestone_stats_json = json.dumps(user_stats['milestone_stats'])
+    milestone_item_checking_json = json.dumps(user_stats['milestone_item_checking'])
 
     return render_template(
-        "progress_stat.html",
+        "milestone_stat.html",
         title=user.username,
-        user=user,
-        epa_stats=epa_stats,
         corecompetence_stats_json=corecompetence_stats_json,
         milestone_stats_json=milestone_stats_json,
         milestone_item_checking_json=milestone_item_checking_json

@@ -95,7 +95,8 @@
       {% set nav_items = [
         (url_for('request_review'),'新增評核'),
         (url_for('index', view_as='reviewee'), '未完成評核'),
-        (url_for('progress_stat'), '評核總覽'),
+        (url_for('progress_stat'),'學習里程碑'),
+        (url_for('view_all_reviews', view_as='reviewee'), '評核總覽(學生)'),
         (url_for('create_review'),'新增評核(老師)'),
         (url_for('index', view_as='reviewer'), '未完成評核(老師)'),
         (url_for('view_all_reviews', view_as='reviewer'), '評核總覽(老師)')
@@ -105,15 +106,15 @@
       {% set nav_items = [
         (url_for('request_review'),'新增評核'),
         (url_for('index'), '未完成評核'),
-        (url_for('progress_stat'), '評核總覽'),
+        (url_for('milestone_stat'),'學習里程碑'),
+        (url_for('view_all_reviews'), '評核總覽')
         ] 
       %}
-        
     {% elif current_user.can_create_review() %}
       {% set nav_items = [
         (url_for('create_review'),'新增評核'),
         (url_for('index'), '未完成評核'),
-        (url_for('view_all_reviews', view_as='reviewee'), '評核總覽')
+        (url_for('view_all_reviews'), '評核總覽')
         ] 
       %}
     {% endif %}
