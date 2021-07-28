@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<meta id="meta_stats" data-corecompetence="{{corecompetence_stats_json}}" data-milestone="{{milestone_stats_json}}" data-milestoneitemchecking="{{milestone_item_checking_json}}">
+<div class="container progress-stat-page">
+    <a class='btn btn-outline-dark' href="{{url_for('view_all_reviews', view_as='reviewee')}}">←回評核總覽</a>
+    <main class="container" style="justify-content: flex-start">
+    <div class="row d-flex justify-content-start">
+      {% for epa_name, epa_stat in epa_stats.items() %}
+
+      <div class="card col-md-5 px-0 mb-2 progress-stat-card" style="margin-right: 0.3rem">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-9 col-md-8">
+              <p class="card-title card-title pricing-card-title">
+                {% if epa_stat['review_cnt'] >0 %}
+                  <a href="{{epa_stat['url']}}">
+                    <h3>{{epa_name}}</h3>
+                  </a>
+                {% else %}
+                  <h3>{{epa_name}}</h3>
+                {% endif %}
+              </p>
+              <p class="card-text">{{epa_stat['desc'].split(' ')[1]}}</p>
+            </div>
+            <div class="col-3 col-md-4">
+              <img src="static/img/epa_icon/{{epa_stat['img_src']}}" class="w-100">
+            </div>
+            <div class="col-4 col-md-3">
+              <span class=" badge bg-info text-dark">完成度</span>
+            </div>
+            <div class="col-5 col-md-5">
+              {{epa_stat['score']|int }}/5 ({{epa_stat['score'] * 20 | int}}%)
+            </div>
+          </div>
+        </div>
+        <h5 class="card-header text-center">Level {{ epa_stat['score'] | int}}</h5>
+
+      </div>
+      {% endfor %}
+
+    </div>
+
+  </main>
+
+</div>
+{% endblock %}

@@ -22,7 +22,7 @@ line_bot_api = LineBotApi(config[os.environ.get('FLASK_ENV')].LINEBOT_MSG_CHANNE
 handler = WebhookHandler(config[os.environ.get('FLASK_ENV')].LINEBOT_MSG_CHANNEL_SECRET)
 
 from app.routes.route import index, login, logout, register, page_not_found, \
-    edit_profile, reset_password_request, password_reset, create_review, request_review, edit_review, view_all_reviews, inspect_review, delete_review, progress_stat
+    edit_profile, reset_password_request, password_reset, create_review, request_review, edit_review, view_all_reviews, inspect_review, delete_review, milestone_stat, epa_stat
 from app.routes.admin_routes import admin_view_users, user, create_notifications_fill_review_wrapper
 from app.channels import linebot
 
@@ -66,8 +66,8 @@ def create_app(config_name='development'):
     app.add_url_rule('/review/inspect/<review_id>', 'inspect_review', inspect_review, methods=['GET'])
     app.add_url_rule('/review/view_all', 'view_all_reviews', view_all_reviews, methods=['GET', 'POST'])
 
-
-    app.add_url_rule('/progress_stat', 'progress_stat', progress_stat, methods=['GET'])
+    app.add_url_rule('/milestone_stat', 'milestone_stat', milestone_stat, methods=['GET'])
+    app.add_url_rule('/epa_stat', 'epa_stat', epa_stat, methods=['GET'])
     
     # admin
     app.add_url_rule('/admin/view_users','admin_view_users', admin_view_users, methods=['GET', 'POST'])

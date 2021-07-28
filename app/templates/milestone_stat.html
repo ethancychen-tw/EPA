@@ -4,41 +4,6 @@
 <meta id="meta_stats" data-corecompetence="{{corecompetence_stats_json}}" data-milestone="{{milestone_stats_json}}" data-milestoneitemchecking="{{milestone_item_checking_json}}">
 <div class="container progress-stat-page">
     <main class="container" style="justify-content: flex-start">
-    <div class="row d-flex justify-content-start">
-      {% for epa_name, epa_stat in epa_stats.items() %}
-
-      <div class="card col-md-5 px-0 mb-2 progress-stat-card" style="margin-right: 0.3rem">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-9 col-md-8">
-              <p class="card-title card-title pricing-card-title">
-                {% if epa_stat['review_cnt'] >0 %}
-                  <a href="{{epa_stat['url']}}">
-                    <h3>{{epa_name}}</h3>
-                  </a>
-                {% else %}
-                  <h3>{{epa_name}}</h3>
-                {% endif %}
-              </p>
-              <p class="card-text">{{epa_stat['desc'].split(' ')[1]}}</p>
-            </div>
-            <div class="col-3 col-md-4">
-              <img src="static/img/epa_icon/{{epa_stat['img_src']}}" class="w-100">
-            </div>
-            <div class="col-4 col-md-3">
-              <span class=" badge bg-info text-dark">完成度</span>
-            </div>
-            <div class="col-5 col-md-5">
-              {{epa_stat['score']|int }}/5 ({{epa_stat['score'] * 20 | int}}%)
-            </div>
-          </div>
-        </div>
-        <h5 class="card-header text-center">Level {{ epa_stat['score'] | int}}</h5>
-
-      </div>
-      {% endfor %}
-
-    </div>
     <div class="w-100">
       <p></p>
     </div>
@@ -57,6 +22,24 @@
   </main>
 
 </div>
+
+<div class="modal fade" id="modal_milestone_checking" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title">達成之里程碑項目</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+          </div>
+      </div>
+  </div>
+</div>
+
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -106,11 +89,39 @@ const data_milestoneitemchecking = $("#meta_stats").data("milestoneitemchecking"
         legend: {
           display: false,
         }
-      }
+      },
+      scale: {
+        max: 5,
+        min: 0,
+    }
     }
   };
   var core_competence_radar_chart = new Chart($('#core_competence_radar_chart'), core_competence_config);
-
+  function milestoneClickEvent(event, array){
+    if(array.length !=1 )return
+    var selected_ind = array[0]['index']
+    var selected_milestone = Object.keys(data_milestone)[selected_ind]
+    var milestone_checking = data_milestoneitemchecking[selected_milestone]
+    var $epa_modal = $('#modal_milestone_checking')
+    console.log(milestone_checking)
+    htmltext = ""
+    for(var i = 1;i <= 5;i++){
+      htmltext += `<p><h5>Level ${i} </h5></p>`
+      htmltext+=milestone_checking[i].map(x=>{
+        var checked_text = ""
+        if(x['checked'])checked_text = "checked"
+        return `<div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="" id="check_${x['code']}" ${checked_text} disabled>
+                  <label class="form-check-label" for="check_${x['code']}">
+                    ${x['code']} ${x['content']}
+                  </label>
+                </div>`
+      }).join("")
+    }
+    $epa_modal.find(".modal-body").html(htmltext)
+    $epa_modal.find(".modal-title").html(selected_milestone+"達成的項目")
+    $epa_modal.modal('show');
+  }
 
 
   const milestone_data = {
@@ -134,6 +145,7 @@ const data_milestoneitemchecking = $("#meta_stats").data("milestoneitemchecking"
     type: 'bar',
     data: milestone_data,
     options: {
+      onClick: milestoneClickEvent,
       scales: {
         y: {
           beginAtZero: true,
