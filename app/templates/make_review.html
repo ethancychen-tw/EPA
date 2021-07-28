@@ -12,18 +12,20 @@
             <div class="text-center col-md-6 mb-3">
                 <div class="card">
                     <div class="card-body" style='padding:0.3rem 1rem'>
-                        {% if review.is_draft %}
-                            <div class='row justify-content-start col-2'>
-                                <span class="badge bg-danger mb-2 ">暫存</span>
-                            </div>
-                        {% elif review.complete %}
-                            <div class='row justify-content-start col-2'>
-                                <span class="badge bg-success mb-2">已完成</span>
-                            </div>
-                        {% else %}
-                            <div class='row justify-content-start col-2'>
-                                <span class="badge bg-warning text-dark mb-2 justify-content-md-start">未完成</span>
-                            </div>
+                        {% if not is_new %}
+                            {% if review.is_draft %}
+                                <div class='row justify-content-start col-2'>
+                                    <span class="badge bg-danger mb-2 ">暫存</span>
+                                </div>
+                            {% elif review.complete %}
+                                <div class='row justify-content-start col-2'>
+                                    <span class="badge bg-success mb-2">已完成</span>
+                                </div>
+                            {% else %}
+                                <div class='row justify-content-start col-2'>
+                                    <span class="badge bg-warning text-dark mb-2 justify-content-md-start">未完成</span>
+                                </div>
+                            {% endif %}
                         {% endif %}
                         
                         <h6 class="card-subtitle mb-2 text-muted">
