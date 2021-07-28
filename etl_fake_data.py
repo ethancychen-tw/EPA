@@ -15,7 +15,8 @@ for table_name in [
      "role", 
      "reviews",
  "location",  "review_source", "review_score", "review_difficulty", 
-     "users", "groups", "user_externalgroup",  'notifications'
+     "users",
+ "groups", "user_externalgroup",  'notifications'
 ]:
     db.session.execute(f"TRUNCATE TABLE \"{table_name}\" RESTART IDENTITY CASCADE ;")# RESTART IDENTITY would reset id starting from 1, cascade would del related rows in other tables
 
