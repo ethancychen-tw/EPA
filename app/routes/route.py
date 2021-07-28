@@ -279,7 +279,7 @@ def process_review(review, is_new=False):
     
     return render_template(
         "make_review.html",
-        title="填寫/編輯評核",
+        title="新增評核",
         form=form,
         milestone_item_epa_linkage=milestone_item_epa_linkage,
         milestone_items=milestone_items,
@@ -527,10 +527,10 @@ def index():
         db.session.commit()
     if current_user.can_request_review() and current_user.can_create_review() and not view_as:
         todos = {
-            '暫存評核(學生)': current_user.get_draft_request_reviews(),
+            '暫存評核': current_user.get_draft_request_reviews(),
             '等待老師評核': current_user.get_unfin_request_reviews(),
             '暫存評核(老師)': current_user.get_draft_reviews(),
-            '未完成評核':current_user.get_unfin_reviews()
+            '未完成評核(老師)':current_user.get_unfin_reviews()
             }
     elif view_as == 'reviewer' or (current_user.can_create_review() and not current_user.can_request_review()):
         todos = {

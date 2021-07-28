@@ -4,11 +4,11 @@
 
         <div class="card-header">
             {% if review.is_draft %}
-                <span class="badge bg-danger">暫存</span>
-            {% elif review.complete %} 
-                <span class="badge bg-success">已完成</span> 
-            {% else %} 
-                <span class="badge bg-warning text-dark">未完成</span> 
+            <span class="badge bg-danger">暫存</span>
+            {% elif review.complete %}
+            <span class="badge bg-success">已完成</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">未完成</span>
             {% endif %}
         </div>
         <div class="card-body">
@@ -20,19 +20,20 @@
                 {% elif current_user.id == review.reviewee_id and current_user.id != review.creator_id %}
                     {% set card_title = ("老師 " + review.reviewer.username) + "主動評核" if review.reviewer_id else "給未知的老師"%}  
                 {% else %}
-                    {% set card_title = ("由" + review.reviewer.username + review.reviewer.role.name + " 評核 " + review.reviewee.role.name + review.reviewee.username) if review.reviewer else "評核未知的使用者" %}
+                {% set card_title = ("由" + review.reviewer.username + review.reviewer.role.name + " 評核 " +
+                review.reviewee.role.name + review.reviewee.username) if review.reviewer else "評核未知的使用者" %}
                 {% endif %}
-                
+
                 {% if current_user.can_edit_review(review) %}
-                    {% set btn_url = url_for('edit_review',review_id=review.id) %}
-                    {% set btn_text = "編輯 " %}
+                {% set btn_url = url_for('edit_review',review_id=review.id) %}
+                {% set btn_text = "編輯 " %}
                 {% elif current_user.can_view_review(review) %}
-                    {% set btn_url = url_for('inspect_review',review_id=review.id) %}
-                    {% set btn_text = "查看" %}
+                {% set btn_url = url_for('inspect_review',review_id=review.id) %}
+                {% set btn_text = "查看" %}
                 {% endif %}
 
                 <div class="col-3 col-md-1">
-                    <img src="{{review.creator.avatar()}}" style="width:100px">
+                    <img src="{{review.creator.avatar()}}" style="width:50px">
                 </div>
                 <div class="col-9 col-md-5">
                     <h5 class="card-title">{{card_title}}</h5>
@@ -40,19 +41,20 @@
 
                 </div>
 
-                <div class="col-12 col-md-2 text-end text-md-start text-muted">
+                <div class="col-12 col-md-2 text-end text-md-start text-muted" style="font-size: 12px;">
                     {{review.implement_date.strftime('%Y-%m-%d') if review.implement_date else "未知時間"}}
-                    <br>{{review.location.desc if review.location_id else "未知地點"}}</div>
-                    
-                <div class="col-5 col-md-2">
-                    <a href="{{btn_url}}" class="btn w-100 btn-outline-primary">{{btn_text}}</a>
+                    <br>{{review.location.desc if review.location_id else "未知地點"}}
                 </div>
-                <div class="col-5 col-md-1">
-                {% if current_user.can_delete_review(review) %}
-                    <a href="{{url_for('delete_review',review_id=review.id)}}"
-                        class="btn w-100 btn-outline-danger">刪除</a>
-                {% endif %}
+                
+                <div class="col-6 col-md-1 text-center">
+                    <a href="{{btn_url}}" class="btn btn-sm btn-outline-primary">{{btn_text}}</a>
                 </div>
+                <div class="col-6 col-md-1 text-center">
+                    {% if current_user.can_delete_review(review) %}
+                    <a href="{{url_for('delete_review',review_id=review.id)}}" class="btn btn-sm btn-outline-danger">刪除</a>
+                    {% endif %}
+                </div>
+       
             </div>
         </div>
 

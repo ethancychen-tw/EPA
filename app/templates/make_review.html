@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
 
-<meta id="milestoneitem_epa" data-milestone_item_epa_linkage="{{ milestone_item_epa_linkage }}" data-milestone_items="{{milestone_items}}" data-epa_milestones="{{epa_milestones}}">
+<meta id="milestoneitem_epa" data-milestone_item_epa_linkage="{{ milestone_item_epa_linkage }}"
+    data-milestone_items="{{milestone_items}}" data-epa_milestones="{{epa_milestones}}">
 
 <form action="" method="post">
     <div class="container">
@@ -10,52 +11,62 @@
         <div class='row justify-content-md-center review-form'>
             <div class="text-center col-md-6 mb-3">
                 <div class="card">
-                    <div class="card-body">
-                        {% if not is_new %}
-                            {% if review.is_draft %}
-                                <span class="badge bg-danger">暫存</span>
-                            {% elif review.complete %} 
-                                <span class="badge bg-success">已完成</span> 
-                            {% else %} 
-                                <span class="badge bg-warning text-dark">未完成</span> 
-                            {% endif %}
+                    <div class="card-body" style='padding:0.3rem 1rem'>
+                        {% if review.is_draft %}
+                            <div class='row justify-content-start col-2'>
+                                <span class="badge bg-danger mb-2 ">暫存</span>
+                            </div>
+                        {% elif review.complete %}
+                            <div class='row justify-content-start col-2'>
+                                <span class="badge bg-success mb-2">已完成</span>
+                            </div>
+                        {% else %}
+                            <div class='row justify-content-start col-2'>
+                                <span class="badge bg-warning text-dark mb-2 justify-content-md-start">未完成</span>
+                            </div>
                         {% endif %}
-                        <h5 class="card-title">{{title}}</h5>
+                        
                         <h6 class="card-subtitle mb-2 text-muted">
                             {% if review.review_source.name == 'request' %}
-                                請求總醫師/主治醫師評核
+                                <h5 class="card-title">{{title}} - 傳送給老師</h5>
+                                <p class="mt-1" style="font-size: 10px;font-weight:normal;color:grey">老師可選擇所屬及外訓醫院的總醫師或主治醫師</p>
                             {% elif review.review_source.name == 'new' %}
-                                評核住院醫師/總醫師
+                                <h5 class="card-title">{{title}} - 評核學生</h5>
+                                <p class="mt-1" style="font-size: 5px;font-weight:normal;color:grey">學生可選擇所屬及外訓醫院有選貴醫院的住院醫師</p>
                             {% endif %}
                         </h6>
+
                         <p class="card-text">{{card_desc}}</p>
-                        <div id="btn_epa_milestones" class="text-center btn btn-outline-dark">查看EPA詳情</div>
+
                     </div>
                 </div>
             </div>
-        
+
             <div class="w-100"></div>
             <div class="text-center col-md-6 mb-3">
-
+                <div class="d-grid gap-2 d-flex justify-content-md-end">
+                    <div id="btn_epa_milestones" class="text-right btn-sm btn-light">EPA查詢</div>
+                </div>
                 {% for field in showing_fields %}
                     <div class="form-floating">
                         {% if field.type in ["SelectField"] %}
-                            {{ field(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
+                            {{ field(**{"class":"selectpicker form-control", "data-live-search": "true", "data-none-selected-text":"請選擇"}) }}
                             {{ field.label }}
                         {% elif field.type == "TextAreaField"%}
-                            {{ field(class="form-control", style="height: 100px") }}
+                            {{ field(class="form-control", style="height: 100px;margin-bottom:1rem") }}
                             {{ field.label }}
                         {% elif field.type == "RadioField"%}
-                            <h5><p class='text-start'>{{ field.label }}</p></h5>
-                            <div class="row">
-                                
+                            <div class="form-control" name="{{field.name}}" style="block-size: fit-content;text-align: left;padding: 2rem;font-size:14px">
                                 {% for choice in field if choice.label.text != ''%}
-                                    <div class="col-12 text-start">
+                                    <div class="text-start">
                                         {{ choice(class="form-check-input")}}
                                         {{ choice.label(class="form-check-label") }}
                                     </div>
                                 {% endfor %}
                             </div>
+                            {{ field.label }}
+                            
+                            
                         {% else %}
                             {{ field(class="form-control form-check") }}
                             {{ field.label }}
@@ -74,12 +85,11 @@
 
                 {% if review_type != "inspect" %}
                     {% if review.complete == False %}
-                        {{ form.submit_draft(title=form.submit_draft.description, class="col-3 btn btn-outline-dark")}}
+                        {{ form.submit_draft(title=form.submit_draft.description, class="col-3 btn btn-outline-dark mt-1 m-3")}}
                     {% endif %}
-                    {{ form.submit(title=form.submit.description, class="col-3 btn btn-outline-primary")}}
-                {% else %}
-                    {% if current_user.can_edit_review(review) %} <a href="{{url_for('edit_review',review_id=review.id)}}" class="w-100 btn btn-outline-primary">編輯此評核</a> {%endif%}
-                    
+                        {{ form.submit(title=form.submit.description, class="col-3 btn btn-outline-primary mt-1 m-3")}}
+                    {% else %}
+                        {% if current_user.can_edit_review(review) %} <a href="{{url_for('edit_review',review_id=review.id)}}" class="w-100 btn btn-outline-primary">編輯此評核</a> {%endif%}
                 {% endif %}
                 <p></p>
             </div>
@@ -107,18 +117,18 @@
         var selectedText = $('#epa :selected').text();
         if(selectedText=='')return
         var selected_epa_code = selectedText.match(/EPA\d+/)[0]
-        selected_epa_code = selected_epa_code.substring(0,3) + parseInt(selected_epa_code.substring(3))
+        selected_epa_code = selected_epa_code.substring(0, 3) + parseInt(selected_epa_code.substring(3))
         var epa_milestones = find_epa_milestone(selected_epa_code)
-        var htmltext = "<ul>"+epa_milestones.map(x=>"<li>"+x+"</li>").join("")+"<ul>"
+        var htmltext = "<ul>" + epa_milestones.map(x => "<li>" + x + "</li>").join("") + "<ul>"
         var $epa_modal = $('#epa_milestone_modal')
         $epa_modal.find(".modal-body").html(htmltext)
         $epa_modal.find(".modal-title").html(selectedText)
         $epa_modal.modal('show');
 
     });
-    function find_epa_milestone(epa){
+    function find_epa_milestone(epa) {
         var epa_milestones = $("#milestoneitem_epa").data("epa_milestones")
-        return epa_milestones[epa].map(x=>x['name'] + " "+ x['desc'])
+        return epa_milestones[epa].map(x => x['name'] + " " + x['desc'])
     }
 
     function find_epa_milestone_items(epa) {

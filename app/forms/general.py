@@ -25,7 +25,7 @@ class ReviewForm(FlaskForm):
 
     # btns
     submit = SubmitField(label='提交')
-    submit_draft = SubmitField(label='存成草稿')
+    submit_draft = SubmitField(label='暫存')
 
     # meta
     creator = SelectField(label="創建者", choices=[('', '')], default='')

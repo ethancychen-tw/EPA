@@ -3,11 +3,11 @@
 {% block content %}
 <meta id="meta_stats" data-corecompetence="{{corecompetence_stats_json}}" data-milestone="{{milestone_stats_json}}" data-milestoneitemchecking="{{milestone_item_checking_json}}">
 <div class="container progress-stat-page">
-    <main class="container" style="justify-content: space-between;">
-    <div class="row d-flex justify-content-md-between">
+    <main class="container" style="justify-content: flex-start">
+    <div class="row d-flex justify-content-start">
       {% for epa_name, epa_stat in epa_stats.items() %}
 
-      <div class="card col-6 col-md-4 px-0 mb-2 progress-stat-card" style="margin-right: 0.3rem">
+      <div class="card col-md-5 px-0 mb-2 progress-stat-card" style="margin-right: 0.3rem">
         <div class="card-body">
           <div class="row">
             <div class="col-9 col-md-8">
