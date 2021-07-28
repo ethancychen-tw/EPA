@@ -95,8 +95,8 @@
       {% set nav_items = [
         (url_for('request_review'),'新增評核'),
         (url_for('index', view_as='reviewee'), '未完成評核'),
+        (url_for('view_all_reviews', view_as='reviewee'), '評核總覽'),
         (url_for('milestone_stat'),'學習里程碑'),
-        (url_for('view_all_reviews', view_as='reviewee'), '評核總覽(學生)'),
         (url_for('create_review'),'新增評核(老師)'),
         (url_for('index', view_as='reviewer'), '未完成評核(老師)'),
         (url_for('view_all_reviews', view_as='reviewer'), '評核總覽(老師)')
@@ -131,9 +131,9 @@
                 <button type="button" class="btn btn-outline-light mb-1" style="width: 270px;padding-left:0;border:none;">
                 <a href="{{ nav_item[0]}}" class="nav-link px-3 active sidebar-link">
                   <span class="me-2">
-                    <i class="bi bi-arrow-right-circle text-secondary"></i>
+                    <i class="bi bi-arrow-right-circle" style="color: rgb(73, 72, 72);"></i>
                   </span>
-                  <span class="text-secondary">{{nav_item[1]}}</span>
+                  <span style="color: rgb(73, 72, 72);">{{nav_item[1]}}</span>
                 </a>
               </button>
               </div>

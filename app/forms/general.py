@@ -114,9 +114,9 @@ class UserFilterForm(FlaskForm):
     role = SelectMultipleField(label='職級/角色', choices=[('', '')], default=[''])
 
 class ReviewFilterForm(FlaskForm):
-    reviewees = SelectMultipleField(label='學生', choices=[])
-    reviewers = SelectMultipleField(label='老師', choices=[])
-    groups = SelectMultipleField(label='群組', choices=[]) # only available for manager
+    reviewees = SelectMultipleField(label='學生(可複選)', choices=[])
+    reviewers = SelectMultipleField(label='老師(可複選)', choices=[])
+    groups = SelectMultipleField(label='醫院(可複選)', choices=[]) # only available for manager
     implement_date_start = DateField(label='實作時間開始', default=datetime.datetime.now()-datetime.timedelta(days=360), validators=[DataRequired()])
     implement_date_end = DateField(label='實作時間結束', default=datetime.datetime.now()+datetime.timedelta(days=1), validators=[DataRequired()])
     epas = SelectMultipleField(label='EPA', choices=[])
