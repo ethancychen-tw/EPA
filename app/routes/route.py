@@ -230,24 +230,24 @@ def process_review(review, is_new=False):
         review.last_edited = datetime.datetime.now()
 
         try:
-            if is_new:
-                db.session.add(review)
+            db.session.merge(review) # create if not exist
             db.session.commit()
             if review.complete and form.submit.data:
                 flash("評核提交成功", "alert-success")
                 # notify std
                 subject = "[EPA通知]您已被評核"
-                msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
+                msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看: {url_for("inspect_review", review_id=review.id, _external=True)}'
                 notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
                 db.session.add(notification)
             elif form.submit.data and not review.complete:
                 subject = "[EPA通知]學生請求評核"
-                msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}'
+                msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可點選此連結填寫: {url_for("edit_review",review_id=review.id, _external=True)}'
                 notification = Notification(user_id=review.reviewer.id,subject=subject, msg_body=msg_body)
                 db.session.add(notification)
                 flash('請求提交成功，將會通知老師評核','alert-success')
             elif form.submit_draft.data:
                 flash('儲存成功','alert-success')
+            flush_channel_notifications(user_ids=[review.reviewer_id, review.reviewee_id])
         except Exception as e:
             print(e)
         

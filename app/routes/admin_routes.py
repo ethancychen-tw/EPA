@@ -81,7 +81,7 @@ def create_notifications_fill_review_wrapper():
         return False
 
 def create_notifications_fill_review(flush=False):
-    unfin_reviews = Review.query.filter(Review.complete == False).all()
+    unfin_reviews = Review.query.filter(Review.complete == False, Review.is_draft == False).all()
     for review in unfin_reviews:
         # could refactor with request_review msg
         subject = f"[EPA通知]請評核{review.reviewee.username}"
@@ -96,7 +96,7 @@ def flush_channel_notifications(user_ids=None):
     if not user_ids:
         notifications = Notification.query.all()
     else:
-        notifications = Notification.query.filter(Notification.user_id.in_(user_ids))
+        notifications = Notification.query.filter(Notification.user_id.in_(user_ids)).all()
     
     if len(notifications) == 0:
         print("No notification to send via channels")
