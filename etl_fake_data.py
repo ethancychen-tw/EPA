@@ -3,7 +3,7 @@ import random
 import os
 from sqlalchemy import literal
 from app import db, create_app  # 此時db仍沒有連上engine，因為app在  __init__.py 中只有初始化SQLAlchemy空物件而已
-app = create_app('production') # 這裏db也還是沒有連上，只是創造出app 環境而已
+app = create_app('development') # 這裏db也還是沒有連上，只是創造出app 環境而已
 # 呼叫flask cmd時會去讀取現在environment裡面的，這裏create_app 也要重新指定一次環境
 app.app_context().push()  # 把環境推入，這時候db就連上了，也可以使用with app.context():裡面再使用query
 
@@ -11,7 +11,8 @@ from app.models.review import Review, Location, ReviewDifficulty, ReviewScore, R
 from app.models.user import User, Group, Role, Notification
 
 for table_name in [
-    "epa", "corecompetence",'milestone','milestone_item', "milestone_item_epa",
+    "epa", "corecompetence",'milestone','milestone_item', 
+    "milestone_item_epa",
      "role", 
      "reviews",
  "location",  "review_source", "review_score", "review_difficulty", 
@@ -69,7 +70,7 @@ for line in milestone_items_lines:
     code = li[0].strip()
     level = int(code.split(".")[1])
     content = li[1].replace("\n","")
-    milestone = Milestone.query.filter(Milestone.name==code.split(".")[0]).first()
+    milestone = Milestone.query.filter(Milestone.name==code.split(".")[0].strip()).first()
     mi = MilestoneItem(code=code,level=level,content=content,milestone=milestone)
     db.session.add(mi)
 db.session.commit()
@@ -134,40 +135,43 @@ db.session.commit()
 
 #Group
 group_names = [
+    "test1",
+    "test2",
+    "test3",
     "基隆長庚紀念醫院(基長)",
-"台大醫院(台大)",
-"三軍總醫院(三總)",
-"臺北榮民總醫院(北榮)",
-"馬偕紀念醫院(馬偕)",
-"國泰綜合醫院(國泰)",
-"臺北市立聯合醫院(北市聯)",
-"萬芳醫院(萬芳)",
-"新光吳火獅紀念醫院(新光)",
-"臺北醫學大學附設醫院(北醫)",
-"振興醫院(振興)",
-"亞東紀念醫院(亞東)",
-"耕莘醫院(耕莘)",
-"台北慈濟醫院(北慈)",
-"雙和醫院(雙和)",
-"林口長庚紀念醫院(林長)",
-"臺中榮民總醫院(中榮)",
-"中國醫藥大學附設醫院(中國醫)",
-"中山醫學大學附設醫院(中山醫)",
-"光田綜合醫院(光田)",
-"童綜合醫院(童綜合)",
-"台中慈濟醫院(中慈)",
-"彰化基督教醫院(彰基)",
-"台大醫院雲林分院(雲林台大)",
-"嘉義長庚紀念醫院(嘉長)",
-"成大醫院(成大)",
-"奇美醫院(奇美)",
-"國軍高雄總醫院(國高總)",
-"高雄醫學大學附設醫院(高醫)",
-"高雄榮民總醫院(高榮)",
-"高雄長庚紀念醫院(高長)",
-"義大醫院(義大)",
-"羅東博愛醫院 (羅東)",
-"花蓮慈濟醫院 (花慈)",
+    "台大醫院(台大)",
+    "三軍總醫院(三總)",
+    "臺北榮民總醫院(北榮)",
+    "馬偕紀念醫院(馬偕)",
+    "國泰綜合醫院(國泰)",
+    "臺北市立聯合醫院(北市聯)",
+    "萬芳醫院(萬芳)",
+    "新光吳火獅紀念醫院(新光)",
+    "臺北醫學大學附設醫院(北醫)",
+    "振興醫院(振興)",
+    "亞東紀念醫院(亞東)",
+    "耕莘醫院(耕莘)",
+    "台北慈濟醫院(北慈)",
+    "雙和醫院(雙和)",
+    "林口長庚紀念醫院(林長)",
+    "臺中榮民總醫院(中榮)",
+    "中國醫藥大學附設醫院(中國醫)",
+    "中山醫學大學附設醫院(中山醫)",
+    "光田綜合醫院(光田)",
+    "童綜合醫院(童綜合)",
+    "台中慈濟醫院(中慈)",
+    "彰化基督教醫院(彰基)",
+    "台大醫院雲林分院(雲林台大)",
+    "嘉義長庚紀念醫院(嘉長)",
+    "成大醫院(成大)",
+    "奇美醫院(奇美)",
+    "國軍高雄總醫院(國高總)",
+    "高雄醫學大學附設醫院(高醫)",
+    "高雄榮民總醫院(高榮)",
+    "高雄長庚紀念醫院(高長)",
+    "義大醫院(義大)",
+    "羅東博愛醫院 (羅東)",
+    "花蓮慈濟醫院 (花慈)",
 ]
 
 for name in group_names:
@@ -233,6 +237,29 @@ user = User(username="G2R6", email="G2R6@epa.com")
 user.set_password("G2R6")
 user.role = Role.query.filter(Role.name=="主治醫師").first()
 user.internal_group = Group.query.filter(Group.name == "亞東紀念醫院(亞東)").first()
+db.session.add(user)
+
+user = User(username="VS", email="cthent1720@gmail.com")
+user.set_password("VS")
+user.role = Role.query.filter(Role.name=="主治醫師").first()
+user.internal_group = Group.query.filter(Group.name == "test1").first()
+db.session.add(user)
+
+user = User(username="R", email="entmilestone2017@gmail.com")
+user.set_password("R")
+user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
+user.internal_group = Group.query.filter(Group.name == "test2").first()
+user.external_groups.append(Group.query.filter(Group.name == "test1").first())
+user.external_groups.append(Group.query.filter(Group.name == "test3").first())
+db.session.add(user)
+
+user = User(username="CR", email="entepa2021@gmail.com")
+user.set_password("CR")
+user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
+user.internal_group = Group.query.filter(Group.name == "test3").first()
+user.external_groups.append(Group.query.filter(Group.name == "test1").first())
+user.external_groups.append(Group.query.filter(Group.name == "test2").first())
+
 db.session.add(user)
 
 db.session.commit()
