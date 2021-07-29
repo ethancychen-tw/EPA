@@ -20,8 +20,8 @@
                 {% elif current_user.id == review.reviewee_id and current_user.id != review.creator_id %}
                     {% set card_title = ("老師 " + review.reviewer.username) + "主動評核" if review.reviewer_id else "給未知的老師"%}  
                 {% else %}
-                {% set card_title = ("由" + review.reviewer.username + review.reviewer.role.name + " 評核 " +
-                review.reviewee.role.name + review.reviewee.username) if review.reviewer else "評核未知的使用者" %}
+                    {% set card_title = ("由" + review.reviewer.username + review.reviewer.role.name + " 評核 " +
+                    review.reviewee.role.name + review.reviewee.username) if review.reviewer else "評核未知的使用者" %}
                 {% endif %}
 
                 {% if current_user.can_edit_review(review) %}
