@@ -23,7 +23,7 @@ handler = WebhookHandler(config[os.environ.get('FLASK_ENV')].LINEBOT_MSG_CHANNEL
 
 from app.routes.route import index, login, logout, register, page_not_found, \
     edit_profile, reset_password_request, password_reset, create_review, request_review, edit_review, view_all_reviews, inspect_review, delete_review, milestone_stat, epa_stat
-from app.routes.admin_routes import admin_view_users, user, create_notifications_fill_review_wrapper
+from app.routes.admin_routes import admin_view_users, create_notifications_fill_review_wrapper
 from app.channels import linebot
 
 def create_app(config_name='development'):
@@ -41,7 +41,7 @@ def create_app(config_name='development'):
     app.add_url_rule('/login', 'login', login, methods=['GET', 'POST'])
     app.add_url_rule('/logout', 'logout', logout)
     app.add_url_rule('/register', 'register', register, methods=['GET', 'POST'])
-    app.add_url_rule('/<username>', 'profile', user, methods=['GET', 'POST'])
+    # app.add_url_rule('/<account>', 'profile', user, methods=['GET', 'POST'])
     app.add_url_rule('/edit_profile', 'edit_profile', edit_profile, methods=['GET', 'POST'])
     app.add_url_rule(
         '/reset_password_request',

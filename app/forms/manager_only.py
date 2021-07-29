@@ -12,6 +12,7 @@ class AdminEditProfileForm(FlaskForm):
     internal_group = SelectField(label="所屬醫院", validators=[DataRequired()])
     external_groups = SelectMultipleField(label="外派醫院", choices=[('', '')], default='')
     create_time = DateTimeLocalField(label='創建時間', validators=[DataRequired()])
+    account = StringField(label='帳號', validators=[DataRequired()])
     username = StringField(label='姓名', validators=[DataRequired()])
     password = PasswordField(label="密碼", validators=[DataRequired("這是必填項目")])
     is_activated = BooleanField(label="已啟用")

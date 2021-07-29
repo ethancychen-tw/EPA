@@ -31,11 +31,24 @@
                         </div>
                         <div class="col-md-4 card-body text-start">
                             
-                            
+                            <div class="form-floating mb-2">
+                                {{ form.account(class="form-select") }}
+                                {{ form.account.label }}
+                                {% for error in form.account.errors %}
+                                    <span style="color: red;">[{{ error }}]</span>
+                                {% endfor %}
+                            </div>
                             <div class="form-floating mb-2">
                                 {{ form.role(class="form-select") }}
                                 {{ form.role.label }}
                                 {% for error in form.role.errors %}
+                                    <span style="color: red;">[{{ error }}]</span>
+                                {% endfor %}
+                            </div>
+                            <div class="form-floating mb-2">
+                                {{ form.username(class="form-select") }}
+                                {{ form.username.label }}
+                                {% for error in form.username.errors %}
                                     <span style="color: red;">[{{ error }}]</span>
                                 {% endfor %}
                             </div>
@@ -54,7 +67,7 @@
                                 {% endfor %}
                             </div>
                             <div class="form-floating mb-2">
-                                {{ form.external_groups(**{"class":"selectpicker form-control", "data-live-search": "true"}) }}
+                                {{ form.external_groups(**{"class":"selectpicker form-control", "data-live-search": "true", "data-none-selected-text":"無"}) }}
                                 {{ form.external_groups.label }}
                                 {% for error in form.external_groups.errors %}
                                     <span style="color: red;">[{{ error }}]</span>

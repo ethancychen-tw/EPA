@@ -195,57 +195,58 @@ for i in range(200):
         # 主治醫師沒有外派的
         for j in range(1, len(fake_groups)):
             user.external_groups.append(fake_groups[j])
-    user.username = fake_groups[0].name+"_"+user.role.name+"_"+str(i)
-    user.set_password(user.username)    
+    user.account = fake_groups[0].name+"_"+user.role.name+"_"+str(i)
+    user.username = user.account
+    user.set_password(user.account)    
     db.session.add(user)
 
 
 #group1 "耕莘醫院(耕莘)"
-user = User(username="G1R1", email="G1R1@epa.com")
+user = User(account="G2R1", username="G1R1", email="G1R1@epa.com")
 user.set_password("G1R1")
 user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
 user.internal_group = Group.query.filter(Group.name == "耕莘醫院(耕莘)").first()
 user.external_groups.append(Group.query.filter(Group.name == "亞東紀念醫院(亞東)").first())
 db.session.add(user)
 
-user = User(username="G1R5",email="G1R5@epa.com")
+user = User(account="G1R5",username="G1R5",email="G1R5@epa.com")
 user.set_password("G1R5")
 user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
 user.internal_group = Group.query.filter(Group.name == "耕莘醫院(耕莘)").first()
 db.session.add(user)
 
-user = User(username="G1R6", email="G1R6@epa.com")
+user = User(account="G1R6",username="G1R6", email="G1R6@epa.com")
 user.set_password("G1R6")
 user.role = Role.query.filter(Role.name=="主治醫師").first()
 user.internal_group = Group.query.filter(Group.name == "耕莘醫院(耕莘)").first()
 db.session.add(user)
 
 # group2 "亞東紀念醫院(亞東)"
-user = User(username="G2R1", email="G2R1@epa.com")
+user = User(account="G2R1",username="G2R1", email="G2R1@epa.com")
 user.set_password("G2R1")
 user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
 user.internal_group = Group.query.filter(Group.name == "亞東紀念醫院(亞東)").first()
 db.session.add(user)
 
-user = User(username="G2R5",email="G2R5@epa.com")
+user = User(account="G2R5",username="G2R5",email="G2R5@epa.com")
 user.set_password("G2R5")
 user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
 user.internal_group = Group.query.filter(Group.name == "亞東紀念醫院(亞東)").first()
 db.session.add(user)
 
-user = User(username="G2R6", email="G2R6@epa.com")
+user = User(account="G2R6",username="G2R6", email="G2R6@epa.com")
 user.set_password("G2R6")
 user.role = Role.query.filter(Role.name=="主治醫師").first()
 user.internal_group = Group.query.filter(Group.name == "亞東紀念醫院(亞東)").first()
 db.session.add(user)
 
-user = User(username="VS", email="cthent1720@gmail.com")
+user = User(account="VS",username="VS", email="cthent1720@gmail.com")
 user.set_password("VS")
 user.role = Role.query.filter(Role.name=="主治醫師").first()
 user.internal_group = Group.query.filter(Group.name == "test1").first()
 db.session.add(user)
 
-user = User(username="R", email="entmilestone2017@gmail.com")
+user = User(account="R",username="R", email="entmilestone2017@gmail.com")
 user.set_password("R")
 user.role = Role.query.filter(Role.name=="住院醫師-R1").first()
 user.internal_group = Group.query.filter(Group.name == "test2").first()
@@ -253,7 +254,7 @@ user.external_groups.append(Group.query.filter(Group.name == "test1").first())
 user.external_groups.append(Group.query.filter(Group.name == "test3").first())
 db.session.add(user)
 
-user = User(username="CR", email="entepa2021@gmail.com")
+user = User(account="CR",username="CR", email="entepa2021@gmail.com")
 user.set_password("CR")
 user.role = Role.query.filter(Role.name=="住院醫師-R5(總醫師)").first()
 user.internal_group = Group.query.filter(Group.name == "test3").first()
@@ -274,7 +275,7 @@ for i in range(10):
 db.session.commit()
 
 # ask review
-all_users = User.query.filter(User.username.in_(["G1R1","G1R5","G1R6","G2R1","G2R5","G2R6"])).all()
+all_users = User.query.filter(User.account.in_(["G1R1","G1R5","G1R6","G2R1","G2R5","G2R6"])).all()
 
 all_locations = Location.query.all()
 all_epa = EPA.query.all()
