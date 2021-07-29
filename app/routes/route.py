@@ -148,6 +148,7 @@ def process_review(review, is_new=False):
     # (1) form configuration mostly for select fields
     form = ReviewForm()
 
+    # TODO: could use form validators to save draft for blank input
     # configure - request fields
     form.epa.choices += [(str(epa.id), epa.desc)for epa in EPA.query.with_entities(EPA.id,EPA.desc).all()]
     if current_user == review.reviewer:
@@ -230,24 +231,24 @@ def process_review(review, is_new=False):
         review.last_edited = datetime.datetime.now()
 
         try:
-            if is_new:
-                db.session.add(review)
+            db.session.merge(review) # create if not exist
             db.session.commit()
             if review.complete and form.submit.data:
                 flash("評核提交成功", "alert-success")
                 # notify std
                 subject = "[EPA通知]您已被評核"
-                msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看'
+                msg_body = f'{review.reviewee.username}你好，\n{review.reviewer.username}已評核你於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可前往系統查看: {url_for("inspect_review", review_id=review.id, _external=True)}'
                 notification = Notification(user_id=review.reviewee.id,subject=subject, msg_body=msg_body)
                 db.session.add(notification)
             elif form.submit.data and not review.complete:
                 subject = "[EPA通知]學生請求評核"
-                msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}'
+                msg_body = f'{review.reviewer.username}你好，\n{review.reviewee.username}請求您評核他於{review.implement_date.strftime("%Y-%m-%d")}實作的{review.epa.desc}，你可點選此連結填寫: {url_for("edit_review",review_id=review.id, _external=True)}'
                 notification = Notification(user_id=review.reviewer.id,subject=subject, msg_body=msg_body)
                 db.session.add(notification)
                 flash('請求提交成功，將會通知老師評核','alert-success')
             elif form.submit_draft.data:
                 flash('儲存成功','alert-success')
+            flush_channel_notifications(user_ids=[review.reviewer_id, review.reviewee_id])
         except Exception as e:
             print(e)
         
@@ -556,7 +557,7 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        u = User.query.filter_by(username=form.username.data).first()
+        u = User.query.filter(User.account==form.account.data).first()
         if u is None or not u.check_password(form.password.data):
             flash("帳號或密碼錯誤", "alert-danger")
             return redirect(url_for("login"))
@@ -616,7 +617,7 @@ def register():
 
     # (2) on submit handling
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
+        user = User(account=form.account.data, username=form.username.data, email=form.email.data)
         user.role = Role.query.filter(
             Role.id == form.role.data, Role.is_manager == False
         ).first()
@@ -742,8 +743,14 @@ def get_stats_by_user(user, include_milestone=False):
     milestone_stats = milestone_stats_df[['milestone_id','score']]
     corecompetence_stats = milestone_stats_df.groupby('corecompetence_id')['score'].mean().reset_index()
     
-    milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id',how='outer').fillna(0).drop(['milestone_id'],axis='columns').set_index('name').T.to_dict()
-    corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df, on='corecompetence_id',how='outer').drop(['corecompetence_id'],axis='columns').fillna(0).set_index('name').T.to_dict()
+    cc_seq = ["PC", "MK","SBP","PBLI","PROF", "ICS"]
+    milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id',how='outer').fillna(0).drop(['milestone_id'],axis='columns').set_index('name')
+    ind_seq = [[col for col in milestone_stats.index.values if col.startswith(prefix) ] for prefix in cc_seq]
+    ind_seq = [item for sublist in ind_seq for item in sublist]
+    milestone_stats = milestone_stats.loc[ind_seq].T.to_dict()
+    
+    corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df, on='corecompetence_id',how='outer').drop(['corecompetence_id'],axis='columns').fillna(0).set_index('name')
+    corecompetence_stats = corecompetence_stats.loc[cc_seq].T.to_dict()
     milestone_item_checking = pd.merge(milestoneitem_check_df, milestone_item_df , on='milestone_item_id').drop(['milestone_item_id'],axis='columns')#.set_index(['code']).T.to_dict()
     
     milestone_item_checking_dict = dict()
@@ -763,9 +770,9 @@ def get_stats_by_user(user, include_milestone=False):
 
 @login_required
 def epa_stat():
-    query_username = request.args.get("username", None)
-    if current_user.role.is_manager and query_username:
-        user = User.query.filter(User.username == query_username).first()
+    query_account = request.args.get("account", None)
+    if current_user.role.is_manager and query_account:
+        user = User.query.filter(User.account == query_account).first()
     else:
         user = current_user
     epa_stats = get_stats_by_user(user,include_milestone=False)['epa_stats']
@@ -783,9 +790,9 @@ def epa_stat():
 
 @login_required
 def milestone_stat():
-    query_username = request.args.get("username", None)
-    if current_user.role.is_manager and query_username:
-        user = User.query.filter(User.username == query_username).first()
+    query_account = request.args.get("account", None)
+    if current_user.role.is_manager and query_account:
+        user = User.query.filter(User.account == query_account).first()
     else:
         user = current_user
     user_stats = get_stats_by_user(user,include_milestone=True)
@@ -822,6 +829,7 @@ def edit_profile():
     # (1) form configuration
     form = EditProfileForm()
     all_groups = Group.query.with_entities(Group.id, Group.name).all()
+    form.account.render_kw = {"disabled": "disabled"}
     form.role.render_kw = {"disabled": "disabled"}
     form.internal_group.choices = [(group.id.hex, group.name) for group in all_groups]
     form.external_groups.choices = [(group.id.hex, group.name) for group in all_groups]
@@ -830,6 +838,7 @@ def edit_profile():
     if form.validate_on_submit():
         if not form.bindline.data:
             user.line_userId = None
+        user.username = form.username.data
         user.email = form.email.data
         user.internal_group = Group.query.get(form.internal_group.data)
         user.external_groups = [
@@ -840,6 +849,8 @@ def edit_profile():
         return redirect(url_for("edit_profile"))
     # (3) prefill
     form.bindline.data = True if user.line_userId else False
+    form.account.data = user.account
+    form.username.data = user.username
     form.email.data = user.email
     form.role.choices = [
         ("", user.role.name)
@@ -865,7 +876,7 @@ def reset_password_request():
 
     form = PasswdResetRequestForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        user = User.query.filter(or_(User.account == form.account.data ,User.email==form.email.data)).first()
         if user:
             flash("已發送密碼重置連結到你的 line 或 email", "alert-info")
             token = user.get_jwt()
@@ -877,7 +888,7 @@ def reset_password_request():
             except Exception as e:
                 print(e)
         else:
-            flash("找不到這個這個email註冊的使用者", "alert-warning")
+            flash("找不到這個使用者", "alert-warning")
         return redirect(url_for("login"))
     return render_template("password_reset_request.html", form=form)
 

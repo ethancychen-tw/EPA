@@ -1,13 +1,13 @@
+from typing import Optional
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, \
     TextAreaField, SelectField, SelectMultipleField, RadioField, widgets
 from wtforms.fields.html5 import DateField, EmailField, DateTimeLocalField
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional
 
 from app.models.user import User
 
 import datetime
-
 class ReviewForm(FlaskForm):
     # requesting fields
     epa = SelectField(label='EPA',choices=[('','')], default='')
@@ -51,7 +51,7 @@ class ReviewForm(FlaskForm):
         return [self.creator, self.review_source, self.complete, self.create_time, self.last_edited]    
 
 class LoginForm(FlaskForm):
-    username = StringField("姓名" ,validators=[DataRequired()])
+    account = StringField("帳號", validators=[DataRequired()])
     password = PasswordField("密碼", validators=[DataRequired()])
     remember_me = BooleanField("記住我")
     submit = SubmitField('登入')
@@ -63,28 +63,31 @@ class RegisterForm(FlaskForm):
     internal_group = SelectField(label="所屬醫院/群組", validators=[DataRequired("至少要選一間醫院")])
     external_groups = SelectMultipleField(label="外訓醫院/群組(可複選)")
     email = EmailField(label="Email", validators=[DataRequired("這是必填項目"), Email()])
+    account = StringField("帳號", validators=[DataRequired()])
     password = PasswordField(label="密碼", validators=[DataRequired("這是必填項目")])
     password2 = PasswordField(label="密碼確認", validators=[DataRequired("這是必填項目"), EqualTo('password', message='密碼兩次填寫不一致')])
     submit = SubmitField(label='送出')
 
-    def validate_username(self, username):
-        user = User.query.filter_by(username=username.data).first()
+    def validate_account(self, account):
+        user = User.query.filter(User.account==account.data).first()
         if user is not None:
-            raise ValidationError('這個姓名已被使用')
+            raise ValidationError('這個帳號已被使用')
     
     def validate_email(self, email):
-        user = User.query.filter_by(email=email.data).first()
+        user = User.query.filter(User.email==email.data).first()
         if user is not None:
             raise ValidationError('這個email已被使用')
 
     def validate_external_groups(self, external_groups):
         if self.internal_group.data in external_groups.data:
             raise ValidationError('外訓醫院不可包含所屬醫院')
-class EditProfileForm(FlaskForm):
     
+class EditProfileForm(FlaskForm):
     bindline = BooleanField(label="Line帳號")
-    email = EmailField("Email", validators=[DataRequired(), Email()])
+    account = StringField("帳號")
     role = SelectField(label='職級', choices=[('', '')], default='')
+    username = StringField("姓名", validators=[DataRequired()])
+    email = EmailField("Email", validators=[DataRequired(), Email("Email格式不正確")])
     internal_group = SelectField(label="所屬醫院", validators=[DataRequired()])
     external_groups = SelectMultipleField(label="外訓醫院", choices=[('', '')], default='')
     submit = SubmitField(label='更新並儲存')
@@ -92,13 +95,24 @@ class EditProfileForm(FlaskForm):
     def validate_external_groups(self, external_groups):
         if self.internal_group.data in external_groups.data:
             raise ValidationError('外訓醫院不可包含所屬醫院')
+    
+    def validate_email(self, email):
+        user = User.query.filter(email==email.data).first()
+        if user is not None:
+            raise ValidationError('這個email已被使用')
 
 class PasswdResetRequestForm(FlaskForm):
-    email = StringField("Email", validators=[DataRequired(), Email()])
+    account = StringField("帳號", validators=[Optional()])
+    email = StringField("Email (與帳號擇一填寫即可)", validators=[Optional(), Email()])
     submit = SubmitField('發送 email')
 
+    def validate_account(self, account):
+        user = User.query.filter(User.account==account.data).first()
+        if not user:
+            raise ValidationError('沒有此帳號')
+
     def validate_email(self, email):
-        user = User.query.filter_by(email=email.data).first()
+        user = User.query.filter(User.email==email.data).first()
         if not user:
             raise ValidationError('沒有帳號註冊此 Email')
 

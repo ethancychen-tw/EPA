@@ -29,16 +29,19 @@
                         {% endif %}
                         
                         <h6 class="card-subtitle mb-2 text-muted">
-                            {% if review.review_source.name == 'request' %}
-                                <h5 class="card-title">{{title}} - 傳送給老師</h5>
-                                <p class="mt-1" style="font-size: 10px;font-weight:normal;color: rgb(73, 72, 72);">老師可選擇所屬及外訓醫院的總醫師或主治醫師</p>
+                            {% if review.review_source.name == 'request' and review.reviewee_id == current_user.id%}
+                                {% set card_subtitle = "傳送給老師" %}
+                                {% set card_instruction = "老師可選擇所屬及外訓醫院的總醫師或主治醫師" if review.is_draft and not review.complete else "此評核已提交，等待老師評分" if not review.complete else "老師已完成評分，請注意老師仍可編輯修改" %}
+                            {% elif review.review_source.name == 'request' and review.reviewer_id == current_user.id and not review.is_draft%}
+                                {% set card_subtitle = "學生請求評核" %}    
+                                {% set card_instruction = "請填寫下方評分項目" if not review.complete else "評核已完成，老師仍可編輯修改" %}
                             {% elif review.review_source.name == 'new' %}
-                                <h5 class="card-title">{{title}} - 評核學生</h5>
-                                <p class="mt-1" style="font-size: 10px;font-weight:normal;color: rgb(73, 72, 72);">學生可選擇所屬及外訓醫院有選貴醫院的住院醫師</p>
+                                {% set card_subtitle = "評核學生" %}
+                                {% set card_instruction = "請填寫下方評分項目" if not review.complete else "評核已完成，老師仍可編輯修改" %}
                             {% endif %}
+                            <h5 class="card-title">{{title}} - {{card_subtitle}}</h5>
+                            <p class="mt-1" style="font-size: 10px;font-weight:normal;color: rgb(73, 72, 72);">{{card_instruction}}</p>
                         </h6>
-
-                        <p class="card-text">{{card_desc}}</p>
 
                     </div>
                 </div>

@@ -21,14 +21,14 @@ def admin_view_users():
     pass
 
 @login_required
-def user(username):
+def user(user_id):
     if current_user.role.is_manager:
         flash(
             "This is a page accessable for 醫院管理者. If you think this is an error, Please contact to get access",
             "alert-danger",
         )
         return redirect(url_for("index"))
-    user = User.query.filter_by(username=username).first()
+    user = User.query.get(user_id)
     if user is None:
         abort(404)
     current_page_num = int(request.args.get("page") or 1)
@@ -81,7 +81,7 @@ def create_notifications_fill_review_wrapper():
         return False
 
 def create_notifications_fill_review(flush=False):
-    unfin_reviews = Review.query.filter(Review.complete == False).all()
+    unfin_reviews = Review.query.filter(Review.complete == False, Review.is_draft == False).all()
     for review in unfin_reviews:
         # could refactor with request_review msg
         subject = f"[EPA通知]請評核{review.reviewee.username}"
@@ -96,7 +96,7 @@ def flush_channel_notifications(user_ids=None):
     if not user_ids:
         notifications = Notification.query.all()
     else:
-        notifications = Notification.query.filter(Notification.user_id.in_(user_ids))
+        notifications = Notification.query.filter(Notification.user_id.in_(user_ids)).all()
     
     if len(notifications) == 0:
         print("No notification to send via channels")

@@ -46,8 +46,9 @@ class Role(db.Model):
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    create_time = db.Column(db.DateTime, default=datetime.utcnow)  
-    username = db.Column(db.String(64), unique=True, index=True)
+    create_time = db.Column(db.DateTime, default=datetime.utcnow) 
+    account = db.Column(db.String(64), unique=True, index=True)
+    username = db.Column(db.String(64))
     email = db.Column(db.String(64), unique=True, index=True)
     password_hash = db.Column(db.String(128))
     internal_group_id = db.Column(UUID(as_uuid=True), db.ForeignKey('groups.id')) 
@@ -62,9 +63,7 @@ class User(UserMixin, db.Model):
     notifications = db.relationship('Notification', backref="user", lazy='dynamic') # first specify the target
 
     def __repr__(self):
-        return 'id={}, username={}, email={}, password_hash={}'.format(
-            self.id, self.username, self.email, self.password_hash
-        )
+        return f'id={self.id}, account={self.account}, username={self.username}, email={self.email}, line_id={self.line_userId}'
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -179,13 +178,20 @@ class User(UserMixin, db.Model):
     
     def get_potential_reviewees(self):
         if self.role.can_be_reviewer:
-            return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user !=self and user.role.can_be_reviewee]))
+            internal_users = self.internal_group.internal_users.all() #本身就在和老師相同所屬醫院的內部成員
+            been_sent_to_internal_users = self.internal_group.external_users # 被外派到和老師相同所屬醫院的成員
+            unique_users = list(set(internal_users+been_sent_to_internal_users))
+            return [user for user in unique_users if not user.role.is_manager and user !=self and user.role.can_be_reviewee]
         else:
             return []
     
     def get_potential_reviewers(self):
         if self.role.can_be_reviewee:
-            return list(set([user for user in self.internal_group.internal_users.all() + self.internal_group.external_users if not user.role.is_manager and user != self and user.role.can_be_reviewer]))
+            internal_users = self.internal_group.internal_users.all() #本身就在和學生相同醫院的內部成員
+            external_users = [ext_group.internal_users.all() for ext_group in self.external_groups] # 在外派醫院的內部成員
+            external_users = [item for sublist in external_users for item in sublist]
+            unique_users = list(set(internal_users+external_users))
+            return [user for user in unique_users if not user.role.is_manager and user != self and user.role.can_be_reviewer]
         else:
             return []
     
