@@ -742,8 +742,14 @@ def get_stats_by_user(user, include_milestone=False):
     milestone_stats = milestone_stats_df[['milestone_id','score']]
     corecompetence_stats = milestone_stats_df.groupby('corecompetence_id')['score'].mean().reset_index()
     
-    milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id',how='outer').fillna(0).drop(['milestone_id'],axis='columns').set_index('name').T.to_dict()
-    corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df, on='corecompetence_id',how='outer').drop(['corecompetence_id'],axis='columns').fillna(0).set_index('name').T.to_dict()
+    cc_seq = ["PC", "MK","SBP","PBLI","PROF", "ICS"]
+    milestone_stats = pd.merge(milestone_stats, milestone_df, on='milestone_id',how='outer').fillna(0).drop(['milestone_id'],axis='columns').set_index('name')
+    ind_seq = [[col for col in milestone_stats.index.values if col.startswith(prefix) ] for prefix in cc_seq]
+    ind_seq = [item for sublist in ind_seq for item in sublist]
+    milestone_stats = milestone_stats.loc[ind_seq].T.to_dict()
+    
+    corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df, on='corecompetence_id',how='outer').drop(['corecompetence_id'],axis='columns').fillna(0).set_index('name')
+    corecompetence_stats = corecompetence_stats.loc[cc_seq].T.to_dict()
     milestone_item_checking = pd.merge(milestoneitem_check_df, milestone_item_df , on='milestone_item_id').drop(['milestone_item_id'],axis='columns')#.set_index(['code']).T.to_dict()
     
     milestone_item_checking_dict = dict()
