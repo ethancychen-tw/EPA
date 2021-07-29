@@ -31,10 +31,10 @@
                         <h6 class="card-subtitle mb-2 text-muted">
                             {% if review.review_source.name == 'request' %}
                                 <h5 class="card-title">{{title}} - 傳送給老師</h5>
-                                <p class="mt-1" style="font-size: 10px;font-weight:normal;color:grey">老師可選擇所屬及外訓醫院的總醫師或主治醫師</p>
+                                <p class="mt-1" style="font-size: 10px;font-weight:normal;color: rgb(73, 72, 72);">老師可選擇所屬及外訓醫院的總醫師或主治醫師</p>
                             {% elif review.review_source.name == 'new' %}
                                 <h5 class="card-title">{{title}} - 評核學生</h5>
-                                <p class="mt-1" style="font-size: 5px;font-weight:normal;color:grey">學生可選擇所屬及外訓醫院有選貴醫院的住院醫師</p>
+                                <p class="mt-1" style="font-size: 10px;font-weight:normal;color: rgb(73, 72, 72);">學生可選擇所屬及外訓醫院有選貴醫院的住院醫師</p>
                             {% endif %}
                         </h6>
 

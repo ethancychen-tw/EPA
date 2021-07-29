@@ -3,26 +3,28 @@
 {% block content %}
 <div class="container">
     <div class="row justify-content-md-center review-form">
-        
-        <div class="card">
-            
-            <div class="card-body">
-                {% if current_user.can_request_review() and not view_as == 'reviewer' %}
-                    <a class='btn btn-outline-dark' href="{{url_for('epa_stat')}}">→成績計算</a>
-                {% endif %}
-                <button id = 'filter_controller_toggle_btn' class='btn btn-outline-dark d-none d-sm-none d-md-none d-lg-block'>收起篩選器</button>
 
-                <p></p>
+        <div class="card mb-2 px-0">
+            <h5 class="card-header d-flex justify-content-between align-items-center" style="border-bottom: none;background-color:#ffffff">
+                <button id='filter_controller_toggle_btn'
+                    class='btn btn-outline-dark d-none d-sm-none d-md-none d-lg-block'>收起篩選器</button>
+                <button type="button" class="btn btn-sm"> {% if current_user.can_request_review() and not
+                    view_as == 'reviewer' %}
+                    <a class='btn btn-outline-dark float-right' type="button" href="{{url_for('epa_stat')}}">成績計算→</a>
+                    {% endif %}</button>
+            </h5>
+            <div class="card-body">
                 <h5 class="card-title">{{title}}</h5>
-                <h6 class="card-subtitle d-none d-sm-none d-md-none d-lg-block mb-2 text-muted">你可以選擇篩選、排序規則(限用電腦瀏覽)</h6>
+                <h6 class="card-subtitle d-none d-sm-none d-md-none d-lg-block mb-2 text-muted">你可以選擇篩選、排序規則(限用電腦瀏覽)
+                </h6>
                 <div id="filter_controller">
                     {% include "_review_filter.html"%}
                 </div>
             </div>
         </div>
-        
 
-        {% include "_reviews.html" %}     
+
+        {% include "_reviews.html" %}
         <div class='row'>
             <div class='col-lg-6 text-center'>
                 {% if prev_url %}<a href="{{ prev_url }}">Prev Page</a>{% endif %}
@@ -31,17 +33,13 @@
                 {% if next_url %}<a href="{{ next_url }}">Next Page</a>{% endif %}
             </div>
         </div>
-    </div>  
-    
+    </div>
+
 </div>
 <script>
-    $( "#filter_controller_toggle_btn" ).click(function() {
-        $( "#filter_controller" ).slideToggle( "slow" );
+    $("#filter_controller_toggle_btn").click(function () {
+        $("#filter_controller").slideToggle("slow");
     });
 </script>
 
 {% endblock %}
-
-
-
-    

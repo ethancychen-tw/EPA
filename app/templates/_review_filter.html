@@ -1,11 +1,11 @@
 <form action="" method="post">
     {{ filter_form.hidden_tag() }}
     {{ filter_form.csrf_token }}
-    <div class="d-none d-sm-none d-md-none d-lg-block d-xl-block review-form">
+    <div class="d-none d-sm-none d-md-none d-lg-block d-xl-block justify-content-center mt-1">
         <div class="row">
             {% for field in filter_form if field.type not in ["CSRFTokenField", "SubmitField"] %}
-                <div class="col-2 text-end">{{ field.label }}</div>
-                <div class="col-10">
+                <div class="col-2 text-end mb-1">{{ field.label }}</div>
+                <div class="col-10 mb-1">
                     {% if field.type in ["SelectMultipleField", "MultiCheckboxField"] %}
                         {{ field(**{"class":"selectpicker form-control", "data-live-search": "true" , "data-none-selected-text":"請選擇"}) }}
                     
@@ -31,11 +31,11 @@
                 </div>
                 
             {% endfor %}
-            <div class="col-3"></div>
+
+            <div class="row justify-content-around mt-1">
             <div class="col-2"><a class="w-100 btn btn-outline-secondary" href="{{url_for('view_all_reviews',view_as=view_as)}}">清除條件</a></div>
-            <div class="col-1"></div>
             <div class="col-2">{{ filter_form.submit(class="w-100 btn btn-outline-primary") }}</div>
-            
+            </div>
             
             
         </div>
