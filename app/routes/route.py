@@ -151,11 +151,18 @@ def process_review(review, is_new=False):
     # TODO: could use form validators to save draft for blank input
     # configure - request fields
     form.epa.choices += [(str(epa.id), epa.desc)for epa in EPA.query.with_entities(EPA.id,EPA.desc).all()]
-    if current_user == review.reviewer:
+    if current_user.id == review.reviewer_id:
         form.reviewer.choices = [(review.reviewer_id, review.reviewer.username)]
-        form.reviewee.choices += [(user.id, user.username) for user in current_user.get_potential_reviewees()]
+        if review.review_source.name == 'request':
+            form.reviewee.choices += [(review.reviewee_id, review.reviewee.username)]
+            for field in form.requesting_fields:
+                if field.type == "SelectField":
+                    field.validate_choice = False
+                field.render_kw = {'disabled':'disabled'}
+        else:
+            form.reviewee.choices += [(user.id, user.username) for user in current_user.get_potential_reviewees()]
         form.reviewee_note.render_kw = {'disabled':'disabled'}
-    elif current_user == review.reviewee:
+    elif current_user.id == review.reviewee_id:
         form.reviewer.choices += [(user.id, user.username) for user in current_user.get_potential_reviewers()]
         form.reviewee.choices = [(review.reviewee.id, review.reviewee.username)]
         form.review_difficulty.validate_choice=False
@@ -172,25 +179,26 @@ def process_review(review, is_new=False):
 
     # (2) on submit process
     if form.validate_on_submit():
-        # requesting fields
-        if form.epa.data:
-            review.epa = EPA.query.get(int(form.epa.data))
-        else:
-            review.epa_id = None
-        if form.reviewer.data:
-            review.reviewer = User.query.get(form.reviewer.data)
-        else:
-            review.reviewer_id = None
-        if form.reviewee.data:
-            review.reviewee = User.query.get(form.reviewee.data)
-        else:
-            review.reviewee_id = None
-        if form.location.data:
-            review.location = Location.query.get(int(form.location.data))
-        else:
-            review.location_id = None
-        review.implement_date = form.implement_date.data
-        review.reviewee_note = form.reviewee_note.data
+        if not(review.review_source.name == 'request' and current_user.id == review.reviewer_id):
+            # requesting fields
+            if form.epa.data:
+                review.epa = EPA.query.get(int(form.epa.data))
+            else:
+                review.epa_id = None
+            if form.reviewer.data:
+                review.reviewer = User.query.get(form.reviewer.data)
+            else:
+                review.reviewer_id = None
+            if form.reviewee.data:
+                review.reviewee = User.query.get(form.reviewee.data)
+            else:
+                review.reviewee_id = None
+            if form.location.data:
+                review.location = Location.query.get(int(form.location.data))
+            else:
+                review.location_id = None
+            review.implement_date = form.implement_date.data
+            review.reviewee_note = form.reviewee_note.data
         # scoring fields
         if current_user.id == review.reviewer_id:
             if form.review_difficulty.data:
@@ -203,11 +211,11 @@ def process_review(review, is_new=False):
                 review.review_score = ReviewScore.query.get(int(form.review_score.data))
             else:
                 review.review_score_id = None
-        # form validation(since there is blank option, the validation can't catch empty)
+        # TODO: form validation(since there is blank option, the validation can't catch empty)
         # should refactor to make the validation based on the button being pressed
         # see https://stackoverflow.com/questions/23283348/validate-wtform-form-based-on-clicked-button
         if form.submit.data and (
-                (not all([field.data for field in form.requesting_fields if field != form.reviewee_note])) 
+                (not(review.review_source.name == 'request' and current_user.id == review.reviewer_id) and not all([field.data for field in form.requesting_fields if field != form.reviewee_note])) 
                 or 
                 (review.reviewer_id == current_user.id and not all([field.data for field in form.scoring_fields if field not in [form.review_compliment, form.review_suggestion]]))):
             form.submit.data = False
@@ -223,6 +231,7 @@ def process_review(review, is_new=False):
                 # 是學生 提交 就設為false，這樣就會通知老師
                 review.complete = False
         elif form.submit_draft.data:
+            review.complete = False
             if review.reviewer == current_user and review.review_source.name == 'request':
                 review.is_draft = False
             else:
@@ -258,13 +267,9 @@ def process_review(review, is_new=False):
     # no matter it's std or teacher, we could prefill with prefilled review anyway
     # (PS) if field render_kw is disabled, the prefill could only be default, or it won't pass form validation
     # requesting fields
-    # if prefilled_review.epa_id:
     form.epa.data = str(review.epa_id)
-    # if prefilled_review.reviewer_id:
     form.reviewer.data = str(review.reviewer_id) if review.reviewer_id else None
-    # if prefilled_review.reviewee_id:
     form.reviewee.data = str(review.reviewee_id) if review.reviewee_id else None
-    # if prefilled_review.location_id:
     form.location.data = str(review.location_id)
     form.implement_date.data = review.implement_date or datetime.datetime.now()
     form.reviewee_note.data = review.reviewee_note 
