@@ -715,6 +715,11 @@ def get_stats_by_user(user, include_milestone=False):
     milestoneitem_check_df = pd.merge(epa_stats_df[['epa_id','score']], linkage_df, on='epa_id')
     milestoneitem_check_df['checked'] = milestoneitem_check_df['score'] > milestoneitem_check_df['min_epa_level']
     
+    milestoneitem_epa_linkage = linkage_df[['epa_id','min_epa_level','milestone_item_id']].copy()
+    milestoneitem_epa_linkage['epa_name'] = milestoneitem_epa_linkage['epa_id'].map(epa_df.set_index('epa_id')['name'])
+    milestoneitem_epa_linkage['name_min_level'] = milestoneitem_epa_linkage['epa_name']+" Lv."+milestoneitem_epa_linkage['min_epa_level'].astype(str)
+    milestoneitem_epa_linkage = milestoneitem_epa_linkage.groupby('milestone_item_id')['name_min_level'].apply(', '.join).rename('epa_requirements')
+
     grouped = milestoneitem_check_df.groupby(['milestone_item_id'])
     milestoneitem_check_df = pd.concat([
         grouped['milestone_id'].first(),
@@ -756,13 +761,13 @@ def get_stats_by_user(user, include_milestone=False):
     
     corecompetence_stats = pd.merge(corecompetence_stats, corecompetence_df, on='corecompetence_id',how='outer').drop(['corecompetence_id'],axis='columns').fillna(0).set_index('name')
     corecompetence_stats = corecompetence_stats.loc[cc_seq].T.to_dict()
-    milestone_item_checking = pd.merge(milestoneitem_check_df, milestone_item_df , on='milestone_item_id').drop(['milestone_item_id'],axis='columns')#.set_index(['code']).T.to_dict()
+    milestone_item_checking = pd.merge(milestoneitem_check_df, milestone_item_df , on='milestone_item_id').merge(milestoneitem_epa_linkage, on='milestone_item_id').drop(['milestone_item_id'],axis='columns')
     
     milestone_item_checking_dict = dict()
     for _, row in milestone_item_checking.iterrows():
         if not row['milestone'] in milestone_item_checking_dict.keys():
             milestone_item_checking_dict[row['milestone']] = {i:[] for i in range(1,6)}
-        milestone_item_checking_dict[row['milestone']][row['level']].append(row.loc[['code','checked','content']].to_dict())
+        milestone_item_checking_dict[row['milestone']][row['level']].append(row.loc[['code','checked','content','epa_requirements']].to_dict())
     for key in milestone_item_checking_dict.keys():
         for level in range(1,6):
             milestone_item_checking_dict[key][level].sort(key=lambda x:int(x['code'].split(".")[-1]))
@@ -770,7 +775,6 @@ def get_stats_by_user(user, include_milestone=False):
     re_dict['milestone_stats'] = milestone_stats
     re_dict['corecompetence_stats'] = corecompetence_stats
     re_dict['milestone_item_checking'] = milestone_item_checking_dict
-
     return re_dict
 
 @login_required
