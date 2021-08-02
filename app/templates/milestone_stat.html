@@ -111,7 +111,7 @@ const data_milestoneitemchecking = $("#meta_stats").data("milestoneitemchecking"
       htmltext+=milestone_checking[i].map(x=>{
         var checked_text = ""
         if(x['checked'])checked_text = "checked"
-        return `<div class="form-check">
+        return `<div class="form-check" data-toggle="tooltip" title="${x['epa_requirements']}">
                   <input class="form-check-input" type="checkbox" value="" id="check_${x['code']}" ${checked_text} disabled>
                   <label class="form-check-label" for="check_${x['code']}">
                     ${x['code']} ${x['content']}
@@ -162,5 +162,8 @@ const data_milestoneitemchecking = $("#meta_stats").data("milestoneitemchecking"
   };
   var milestone_bar_chart = new Chart($('#milestone_bar_chart'), milestone_config);
 
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
 </script>
 {% endblock %}
