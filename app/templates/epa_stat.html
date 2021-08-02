@@ -2,13 +2,13 @@
 
 {% block content %}
 <meta id="meta_stats" data-corecompetence="{{corecompetence_stats_json}}" data-milestone="{{milestone_stats_json}}" data-milestoneitemchecking="{{milestone_item_checking_json}}">
-<div class="container progress-stat-page">
+<div class="container epa-stat-page">
     <a class='btn btn-outline-dark' href="{{url_for('view_all_reviews', view_as='reviewee')}}">←回評核總覽</a>
     <main class="container" style="justify-content: flex-start">
     <div class="row d-flex justify-content-start">
       {% for epa_name, epa_stat in epa_stats.items() %}
 
-      <div class="card col-md-5 px-0 mb-2 progress-stat-card" style="margin-right: 0.3rem">
+      <div class="card col-md-5 px-0 mb-2 epa-stat-card" style="margin-right: 0.3rem">
         <div class="card-body">
           <div class="row">
             <div class="col-9 col-md-8">
