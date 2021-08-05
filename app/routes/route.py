@@ -24,7 +24,7 @@ from app.forms.general import (
 )
 
 # from app.forms import AdminEditGroupForm, AdminEditReviewForm, AdminEditProfileForm
-from app.models.user import User, load_user, Group, Role, LineNewUser, Notification
+from app.models.user import User, load_user, Group, Role, Notification
 from app.models.review import (
     Review,
     EPA,
@@ -38,7 +38,7 @@ from app.models.review import (
     ReviewSource,
 )
 from app import db
-from app.channels.linebot import linebotinfo, line_bot_api
+from app.channels.linebot import linebotinfo, line_bot_api, LineUser
 from app.routes.admin_routes import flush_channel_notifications # temploraily make the notification imediate
 
 @login_required
@@ -580,33 +580,35 @@ def logout():
 
 
 
-
 def register():
+    line_user_profile = None
     line_new_user_token = request.args.get("line_new_user_token", None)
     if line_new_user_token:
-        try:
-            line_new_user = LineNewUser.verify_jwt(line_new_user_token)
-            line_user_profile = line_bot_api.get_profile(line_new_user.line_userId)
-        except Exception as e:
+        line_user_profile = LineUser.verify_jwt(line_new_user_token)
+        if current_user.is_authenticated and line_user_profile:
+            if current_user.line_userId:
+                flash(f"{current_user.username} 已有綁定 line 帳號，請先解除綁定才可綁定新帳號", "alert-danger")
+            else:
+                current_user.line_userId = line_user_profile.user_id
+                try:
+                    db.session.commit()
+                    flash("已將你的帳號與line帳號綁定", "alert-success")
+                except Exception as e:
+                    print(f"register - bindline account error:  {e}")
+                    flash("綁定失敗，你的line帳號似乎出了點問題，請聯絡系統管理者", "alert-danger")
+            return redirect(url_for("index"))
+        if not line_user_profile:
             flash(
-                "抱歉，無法辨識你的 Line 帳號，你還是可以繼續註冊，或退出後再次聯繫EPA Line官方帳號索取註冊連結",
+                "無法辨識Line帳號，連結已過期或無效的Line驗證碼",
                 "alert-warning",
             )
-            print(e)
-            line_user_profile = None
-    else:
-        line_user_profile = None
-
-    if current_user.is_authenticated:
-        if not current_user.line_userId:
-            if line_user_profile:
-                current_user.line_userId = line_new_user.line_userId
-                db.session.commit()
-                flash("已將你的帳號與line帳號綁定", "alert-success")
-                return redirect(url_for("index"))
-            else:
-                flash("綁定失敗，你的line帳號似乎出了點問題，請聯絡系統管理者", "alert-danger")
-        return redirect(url_for("index"))
+            flash(
+                "您還是可以註冊",
+                "alert-info",
+            )
+    if line_user_profile:
+        flash('偵測到您的line帳號，如果你不是來綁定既有帳號的，請先回首頁登入後再索取綁定連結')
+    
     # (1) form configuration
     form = RegisterForm()
     registerable_roles = (
@@ -628,7 +630,6 @@ def register():
         ).first()
         if line_user_profile and form.bindline.data:
             user.line_userId = line_user_profile.user_id
-            db.session.delete(line_new_user)
         user.internal_group = Group.query.get(form.internal_group.data)
 
         for group_id in form.external_groups.data:

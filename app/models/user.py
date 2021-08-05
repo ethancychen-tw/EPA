@@ -46,7 +46,7 @@ class Role(db.Model):
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    create_time = db.Column(db.DateTime, default=datetime.utcnow) 
+    create_time = db.Column(db.DateTime, default=datetime.now) 
     account = db.Column(db.String(64), unique=True, index=True)
     username = db.Column(db.String(64))
     email = db.Column(db.String(64), unique=True, index=True)
@@ -226,35 +226,6 @@ class Notification(db.Model):
     subject = db.Column(db.String(64))
     msg_body = db.Column(db.String(256))
     UniqueConstraint('user_id', 'subject', 'msg_body', name='unique_notification')
-class LineNewUser(db.Model):
-    __tablename__ = "line_new_users"
-    id = db.Column(db.Integer, primary_key=True)
-    line_userId = db.Column(db.String(64))
-    create_time = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def get_jwt(self, expire=180):
-        return jwt.encode(
-            {
-                'line_userId': self.line_userId,
-                'exp': time.time() + expire
-            },
-            current_app.config['SECRET_KEY'],
-            algorithm='HS256'
-        )
-
-    @staticmethod
-    def verify_jwt(token):
-        try:
-            pay_load = jwt.decode(
-                token,
-                current_app.config['SECRET_KEY'],
-                algorithms=['HS256']
-            )
-            line_userId = pay_load['line_userId']
-        except:
-            return False
-        return LineNewUser.query.filter(LineNewUser.line_userId==line_userId).order_by(LineNewUser.create_time.desc()).first()
-    
 
 @login_manager.user_loader
 def load_user(id):
