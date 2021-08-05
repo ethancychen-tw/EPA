@@ -66,24 +66,6 @@ class DevelopmentConfig(Config):
         if not os.environ.get('SECRET_KEY'):
             raise Exception('DEVELOPMENT: SECRET_KEY IS NOT SET!')
 
-class StagingConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL')
-    
-    STATIC_FOLDER = "static"
-    DEBUG = False
-    SQLALCHEMY_ECHO = False
-
-    # linebot
-    LINEBOT_MSG_CHANNEL_ACCESS_TOKEN = os.environ.get('STAGING_LINEBOT_MSG_CHANNEL_ACCESS_TOKEN', None)
-    LINEBOT_MSG_CHANNEL_SECRET = os.environ.get('STAGING_LINEBOT_MSG_CHANNEL_SECRET', None)
-    if not LINEBOT_MSG_CHANNEL_ACCESS_TOKEN or not LINEBOT_MSG_CHANNEL_SECRET:
-        print("line bot not set!!! ")
-    @staticmethod
-    def init_app(app):
-        Config.init_app(app)
-        if not os.environ.get('SECRET_KEY'):
-            raise Exception('STAGING: SECRET_KEY IS NOT SET!')
-
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('PROD_DATABASE_URL')
 
@@ -104,6 +86,5 @@ class ProductionConfig(Config):
 
 config = {
     'development': DevelopmentConfig,
-    'staging': StagingConfig,
     'production': ProductionConfig
 }

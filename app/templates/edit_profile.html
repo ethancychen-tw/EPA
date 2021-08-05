@@ -46,7 +46,7 @@
                                 {% endfor %}
                             </div>
                             <div class="form-floating mb-2">
-                                {{ form.username(class="form-select") }}
+                                {{ form.username(class="form-control") }}
                                 {{ form.username.label }}
                                 {% for error in form.username.errors %}
                                     <span style="color: red;">[{{ error }}]</span>

@@ -46,23 +46,6 @@
             "REVIEW_PER_PAGE":"5"
         }
     },
-    "staging": {
-        "extends": "base",
-        "aws_environment_variables": {
-            "APP_NAME": "EPA",
-            "FLASK_ENV": "staging",
-            "MAIL_SERVER":"smtp.gmail.com",
-            "MAIL_USE_SSL":"True",
-            "MAIL_PORT":"465",
-            "MAIL_USERNAME":"epataiwan.official@gmail.com",
-            "ISSUE_REPORT_GOOGLE_FORM_URL": "https://docs.google.com/forms/d/e/1FAIpQLScCyVnF57brc8oXRSVCW7YPrWK5ibadOw9wacmEuQLs7tEgYg/viewform",
-            "ISSUE_REPORT_GOOGLE_FORM_NAME_FIELD_ID":"1656467381",
-            "ISSUE_REPORT_GOOGLE_FORM_INTERNAL_GROUP_FIELD_ID":"1513080756",
-            "ISSUE_REPORT_GOOGLE_FORM_ROLE_FIELD_ID":"1170720083",
-            "ISSUE_REPORT_GOOGLE_FORM_EMAIL_FIELD_ID":"1231672881",
-            "REVIEW_PER_PAGE":"5"
-        }
-    },
     "production": {
         "extends": "base",
         "aws_environment_variables": {
