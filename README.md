@@ -1,5 +1,9 @@
 # EPA project
 
+## Resources
+[Video DEMO](https://www.youtube.com/watch?v=nB1bcGiC-Fg)
+[What's EPA](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3613304/)
+
 ## Requirements
 Python >= 3.8
 ## Setup guide
